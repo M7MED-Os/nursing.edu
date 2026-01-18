@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>قائمة المهام | أكاديمية التمريض</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/todo.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+</head>
+
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="container">
+            <a href="dashboard.html" class="logo">
+                <i class="fas fa-user-nurse"></i>&nbsp;أكاديمية<span>التمريض</span>
+            </a>
+
+            <div class="menu-toggle">
+                <i class="fas fa-bars"></i>
+            </div>
+
+            <ul class="nav-links">
+                <li><a href="dashboard.html">الرئيسية</a></li>
+                <li><a href="todo.html" class="active">المهام</a></li>
+                <li><a href="leaderboard.html">المتصدرين</a></li>
+                <li id="adminNavBtn" style="display: none;">
+                    <a href="admin.html" style="color: var(--secondary-color); font-weight: bold;">
+                        <i class="fas fa-shield-alt"></i> Admin
+                    </a>
+                </li>
+                <li><a href="profile.html" id="navUserName">البروفايل</a></li>
+                <li><button id="logoutBtn" class="btn btn-outline" style="padding: 0.5rem 1rem;">خروج</button></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="todo-page">
+        <div class="todo-container">
+            <!-- Header Section -->
+            <header class="todo-header">
+                <div class="header-content">
+                    <h1 id="greetingText">مرحباً بك يا بطل! 🚀</h1>
+                    <p id="motivationalMessage">كل خطوة صغيرة النهاردة بتقربك لحلمك الكبير بكرة.</p>
+                </div>
+
+                <!-- Overall Progress Card -->
+                <div class="global-progress-card">
+                    <div class="progress-header">
+                        <span>إجمالي الإنجاز اليومي</span>
+                        <span id="progressPercentage">0%</span>
+                    </div>
+                    <div class="progress-bar-outer">
+                        <div id="progressBarFill" class="progress-bar-inner"></div>
+                    </div>
+                    <div id="taskCountSummary" class="task-summary">0 مهام منجزة</div>
+                </div>
+            </header>
+
+            <!-- Input Section -->
+            <div class="task-input-section">
+                <div class="input-wrapper">
+                    <input type="text" id="mainTaskInput" placeholder="ماذا تريد أن تنجز الآن؟" autocomplete="off">
+                    <button id="addTaskBtn" class="btn-add-task" title="إضافة مهمة">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- List Section -->
+            <div id="todoList" class="todo-list">
+                <!-- Tasks will be injected here via JavaScript -->
+            </div>
+
+            <!-- Empty State -->
+            <div id="emptyState" class="empty-state">
+                <h3><i class="fas fa-clipboard-list"
+                        style="display: block; margin-bottom: 1rem; font-size: 3rem; color: #E2E8F0;"></i>قائمة المهام
+                    فارغة</h3>
+                <p>ابدأ بإضافة أول هدف لك لهذا اليوم ودعنا نحتفل بإنجازك!</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Confirmation Modal -->
+    <div id="deleteModal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-icon">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <h1>مهامي الدراسية والعملية</h1>
+            <p>نظم وقتك ومذاكرتك عشان تحقق حلمك</p>
+            <div class="modal-buttons">
+                <button id="confirmDelete" class="btn-modal confirm">حذف</button>
+                <button id="cancelDelete" class="btn-modal cancel">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="copyright" style="border: none; padding-top: 0;">
+                <p>&copy; 2026 أكاديمية التمريض</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Confetti Script -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="assets/js/main.js"></script>
+    <script type="module" src="assets/js/auth.js"></script>
+    <script src="assets/js/todo.js"></script>
+</body>
+
+</html>
