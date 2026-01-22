@@ -73,3 +73,52 @@ export function clearInputError(inputElement) {
     const errorMsg = inputElement.parentNode.querySelector(".error-message");
     if (errorMsg) errorMsg.remove();
 }
+
+// ==========================
+// Smart Caching System
+// ==========================
+
+/**
+ * Stores data in localStorage with an expiry timestamp
+ * @param {string} key - Unique key for the cache
+ * @param {any} data - Data to store
+ * @param {number} expireInMinutes - Expiry time in minutes
+ */
+export function setCache(key, data, expireInMinutes = 30) {
+    const expiredAt = new Date().getTime() + (expireInMinutes * 60 * 1000);
+    const cacheData = {
+        data: data,
+        expiredAt: expiredAt
+    };
+    localStorage.setItem(`cache_${key}`, JSON.stringify(cacheData));
+}
+
+/**
+ * Retrieves valid data from localStorage, returns null if expired or missing
+ * @param {string} key - Unique key for the cache
+ * @returns {any|null}
+ */
+export function getCache(key) {
+    const rawData = localStorage.getItem(`cache_${key}`);
+    if (!rawData) return null;
+
+    try {
+        const cache = JSON.parse(rawData);
+        const now = new Date().getTime();
+
+        if (now > cache.expiredAt) {
+            localStorage.removeItem(`cache_${key}`);
+            return null;
+        }
+        return cache.data;
+    } catch (e) {
+        return null;
+    }
+}
+
+/**
+ * Manually clear a specific cache
+ */
+export function clearCache(key) {
+    localStorage.removeItem(`cache_${key}`);
+}

@@ -362,6 +362,7 @@
 
     <script type="module">
         import { supabase } from "./assets/js/supabaseClient.js";
+        import { getCache, setCache } from "./assets/js/utils.js";
 
         // Mappings
         const gradeMap = {
@@ -406,11 +407,17 @@
                     return;
                 }
 
-                const { data: profile } = await supabase
-                    .from('profiles')
-                    .select('id, full_name, points, grade, term, stream')
-                    .eq('id', user.id)
-                    .single();
+                // Use global checkAuth if possible, but here we need specific fields
+                let profile = getCache(`profile_${user.id}`);
+                if (!profile) {
+                    const { data } = await supabase
+                        .from('profiles')
+                        .select('id, full_name, points, grade, term, stream')
+                        .eq('id', user.id)
+                        .single();
+                    profile = data;
+                    if (profile) setCache(`profile_${user.id}`, profile, 10);
+                }
 
                 currentUserInfo = profile;
 
@@ -428,6 +435,8 @@
 
         function setupFilters() {
             const container = document.getElementById('filterContainer');
+            if (!container || !currentUserInfo) return;
+
             const grade = currentUserInfo.grade;
 
             // Define Buttons based on Grade
@@ -459,7 +468,7 @@
             `).join('');
         }
 
-        // Global function for onclick
+        // Global functions for onclick
         window.changeFilter = (val) => {
             currentFilterStream = val;
 
@@ -503,19 +512,21 @@
 
             body.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:4rem;"><i class="fas fa-spinner fa-spin fa-2x"></i></td></tr>';
 
+            const cacheKey = `squad_leaderboard_${user.grade}`;
+            let squads = getCache(cacheKey);
+
             try {
-                // Fetch Squads based on User's Grade
-                let query = supabase
-                    .from('squads')
-                    .select('*')
-                    .eq('academic_year', gradeMap[user.grade] || user.grade)
-                    .order('points', { ascending: false })
-                    .limit(10);
+                if (!squads) {
+                    const { data, error } = await supabase.rpc('get_top_squads', {
+                        p_limit: 10,
+                        p_academic_year: gradeMap[user.grade] || user.grade
+                    });
+                    if (error) throw error;
+                    squads = data;
+                    setCache(cacheKey, squads, 15); // 15 min cache
+                }
 
-                const { data: squads, error } = await query;
-                if (error) throw error;
-
-                if (squads.length === 0) {
+                if (!squads || squads.length === 0) {
                     body.innerHTML = '<tr><td colspan="3" style="text-align:center; padding: 2rem;">مفيش شلل لسة في عيلتك.. ابدأ شلتك دلوقتي!</td></tr>';
                     return;
                 }
@@ -551,126 +562,68 @@
             const body = document.getElementById('leaderboardBody');
             const user = currentUserInfo;
 
-            // Show Loading
-            body.innerHTML = `
-                <tr>
-                    <td colspan="3" style="text-align: center; padding: 4rem;">
-                        <i class="fas fa-spinner fa-spin fa-2x" style="color: var(--primary-color);"></i>
-                        <p style="margin-top: 1rem; color: var(--text-light);">جاري تحديث القائمة...</p>
-                    </td>
-                </tr>
-            `;
+            body.innerHTML = `<tr><td colspan="3" style="text-align: center; padding: 4rem;"><i class="fas fa-spinner fa-spin fa-2x" style="color: var(--primary-color);"></i><p style="margin-top: 1rem; color: var(--text-light);">جاري تحديث القائمة...</p></td></tr>`;
 
-            // Clear old motivation msg
             const oldMsg = document.getElementById('motivationMsg');
             if (oldMsg) oldMsg.remove();
 
+            const cacheKey = `leaderboard_${user.grade}_${user.term}_${currentFilterStream}`;
+            let data = getCache(cacheKey);
+
             try {
+                if (!data) {
+                    const { data: rpcData, error } = await supabase.rpc('get_top_students', {
+                        p_limit: 50,
+                        p_grade: user.grade,
+                        p_term: user.term,
+                        p_stream: currentFilterStream === 'all' ? null : currentFilterStream
+                    });
+                    if (error) throw error;
+                    data = rpcData;
+                    setCache(cacheKey, data, 15); // 15 min cache
+                }
+
                 // Update Title Context
                 const headerP = document.querySelector('.leaderboard-hero p');
                 let contextText = gradeMap[user.grade] || '';
-
-                if (currentFilterStream === 'all') {
-                    contextText += " (الدفعة كاملة)";
-                } else if (streamMap[currentFilterStream]) {
-                    contextText += ` - ${streamMap[currentFilterStream]}`;
-                }
+                if (currentFilterStream === 'all') contextText += " (الدفعة كاملة)";
+                else if (streamMap[currentFilterStream]) contextText += ` - ${streamMap[currentFilterStream]}`;
                 headerP.textContent = `قائمة المتصدرين لـ ${contextText}`;
 
-                // Build Query
-                let query = supabase
-                    .from('profiles')
-                    .select('id, full_name, points, grade, stream, role')
-                    .eq('show_on_leaderboard', true)
-                    .eq('grade', user.grade)
-                    .order('points', { ascending: false })
-                    .limit(10);
-
-                // Filter by Term (Fair comparison within same term)
-                if (user.term) {
-                    query = query.eq('term', user.term);
-                }
-
-                // Filter by Stream (If not 'all')
-                if (currentFilterStream !== 'all') {
-                    query = query.eq('stream', currentFilterStream);
-                }
-
-                const { data, error } = await query;
-                if (error) throw error;
-
-                if (data.length === 0) {
+                if (!data || data.length === 0) {
                     body.innerHTML = '<tr><td colspan="3" style="text-align:center; padding: 2rem;">لا يوجد متصدرين في هذا التصنيف.</td></tr>';
                     return;
                 }
 
-                // Render
                 body.innerHTML = data.map((s, i) => {
                     const rank = i + 1;
                     let rankDisplay = rank;
-                    let rankClass = `rank-${rank}`;
-                    let rowClass = s.id === user.id ? 'style="background-color: #f0f9ff;"' : '';
-
+                    let rankClass = rank <= 3 ? `rank-${rank}` : '';
                     if (rank === 1) rankDisplay = '<i class="fas fa-crown medal-icon"></i>';
                     else if (rank === 2) rankDisplay = '<i class="fas fa-medal medal-icon" style="color:#d97706"></i>';
                     else if (rank === 3) rankDisplay = '<i class="fas fa-medal medal-icon" style="color:#94a3b8"></i>';
-                    else rankClass = '';
 
-                    let displayStream = streamMap[s.stream] || '';
-                    if (!displayStream && s.stream) displayStream = s.stream;
+                    const rowClass = s.id === user.id ? 'style="background-color: #f0f9ff;"' : '';
+                    const displayStream = streamMap[s.stream] || '';
                     const subText = displayStream ? `<span style="font-size:0.8em; color:var(--primary-color);">(${displayStream})</span>` : (gradeMap[s.grade] || '-');
 
-                    return `
-                        <tr ${rowClass}>
-                            <td class="rank-cell ${rankClass}">${rankDisplay}</td>
-                            <td>
-                                <div class="user-info-cell">
-                                    <div class="user-avatar">${s.full_name ? s.full_name[0] : '?'}</div>
-                                    <div class="user-name-box">
-                                        <b>${s.full_name} ${s.id === user.id ? '(أنت)' : ''}</b>
-                                        <span>${subText}</span>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="points-cell">
-                                ${s.points || 0}
-                                <span class="points-label">نقطة</span>
-                            </td>
-                        </tr>
-                    `;
+                    return `<tr ${rowClass}><td class="rank-cell ${rankClass}">${rankDisplay}</td><td><div class="user-info-cell"><div class="user-avatar">${s.full_name ? s.full_name[0] : '?'}</div><div class="user-name-box"><b>${s.full_name} ${s.id === user.id ? '(أنت)' : ''}</b><span>${subText}</span></div></div></td><td class="points-cell">${s.points || 0}<span class="points-label">نقطة</span></td></tr>`;
                 }).join('');
 
-                // Motivation Msg Check
                 const belongsToFilter = (currentFilterStream === 'all') || (currentFilterStream === user.stream);
-                const isUserInTop10 = data.some(s => s.id === user.id);
+                const isUserInTop10 = data.slice(0, 10).some(s => s.id === user.id);
 
                 if (belongsToFilter && !isUserInTop10 && data.length > 0) {
-                    const lastPersonPoints = data[data.length - 1].points || 0;
-                    const diff = lastPersonPoints - (user.points || 0);
-
+                    const lastInListPoints = data[data.length - 1].points || 0;
+                    const diff = lastInListPoints - (user.points || 0);
                     if (diff > 0) {
                         const motivationMsg = document.createElement('div');
                         motivationMsg.id = 'motivationMsg';
-                        motivationMsg.style.cssText = `
-                            background: white; 
-                            padding: 1rem; 
-                            margin-top: 1rem; 
-                            border-radius: 12px; 
-                            text-align: center; 
-                            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); 
-                            border: 1px dashed var(--primary-color);
-                            color: #475569;
-                            animation: fadeIn 0.5s ease-out;
-                        `;
-                        motivationMsg.innerHTML = `
-                            <i class="fas fa-rocket" style="color: var(--primary-color); font-size: 1.2rem;"></i>
-                            <span style="font-weight: bold; margin: 0 5px;">أنت بطل!</span>
-                            باقي لك <span style="color: var(--primary-color); font-weight: 900; font-size: 1.1rem;">${diff + 1}</span> نقطة وتدخل هذه القائمة!
-                        `;
+                        motivationMsg.style.cssText = `background: white; padding: 1rem; margin-top: 1rem; border-radius: 12px; text-align: center; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); border: 1px dashed var(--primary-color); color: #475569;`;
+                        motivationMsg.innerHTML = `<i class="fas fa-rocket" style="color: var(--primary-color); font-size: 1.2rem;"></i><span style="font-weight: bold; margin: 0 5px;">أنت بطل!</span>باقي لك <span style="color: var(--primary-color); font-weight: 900; font-size: 1.1rem;">${diff + 1}</span> نقطة وتدخل هذه القائمة!`;
                         document.querySelector('.full-leaderboard-card').after(motivationMsg);
                     }
                 }
-
             } catch (err) {
                 console.error(err);
                 body.innerHTML = '<tr><td colspan="3" style="text-align:center; color:red; padding: 2rem;">خطأ في التحميل</td></tr>';

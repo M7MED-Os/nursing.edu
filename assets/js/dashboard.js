@@ -1,4 +1,5 @@
 import { supabase } from "./supabaseClient.js";
+import { getCache } from "./utils.js";
 
 document.addEventListener('DOMContentLoaded', async () => {
     await loadAnnouncements();
@@ -8,14 +9,19 @@ async function loadAnnouncements() {
     const container = document.getElementById('announcements-container');
     if (!container) return;
 
-    // 1. Get Current User Profile for filtering
+    // 1. Get Current User Profile from cache or auth session
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return; // Should be handled by auth.js but safety check
+    if (!user) return;
 
-    const { data: profile } = await supabase.from('profiles')
-        .select('grade, role')
-        .eq('id', user.id)
-        .single();
+    let profile = getCache(`profile_${user.id}`);
+
+    if (!profile) {
+        const { data: fetchedProfile } = await supabase.from('profiles')
+            .select('grade, role')
+            .eq('id', user.id)
+            .single();
+        profile = fetchedProfile;
+    }
 
     if (!profile) return;
 

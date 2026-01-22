@@ -1781,25 +1781,34 @@ async function loadSquadsAdmin() {
         .from('squads')
         .select(`
             *,
-            owner:owner_id (full_name),
-            members:squad_members (count)
+            profiles!squads_owner_id_fkey (full_name),
+            squad_members!squad_members_squad_id_fkey (count)
         `)
-        .order('total_points', { ascending: false });
+        .order('points', { ascending: false });
 
     if (error) return Swal.fire('Error', error.message, 'error');
 
     tbody.innerHTML = squads.map(s => `
         <tr>
-            <td data-label="اسم الشلة"><b>${s.name}</b></td>
+            <td data-label="اسم الشلة"><b style="color:var(--primary-color);">${s.name}</b></td>
             <td data-label="الفرقة">${s.academic_year || 'غير محدد'}</td>
             <td data-label="القسم">${s.department || 'عام'}</td>
-            <td data-label="المالك">${s.owner?.full_name || 'غير معروف'}</td>
-            <td data-label="النقاط">${s.total_points || 0}</td>
-            <td data-label="الأعضاء">${s.members[0]?.count || 0}</td>
-            <td data-label="إجراءات">
-                <button class="btn btn-sm" style="background:#fee2e2; color:#ef4444;" onclick="deleteSquad('${s.id}')">
-                    <i class="fas fa-trash"></i> حذف الشلة
+            <td data-label="المالك"><span class="badge bg-primary" style="font-size:0.8rem; background:#e0f2fe; color:#0369a1; padding: 4px 8px; border-radius: 6px;">${s.profiles?.full_name || 'غير معروف'}</span></td>
+            <td data-label="النقاط"><b>${s.points || 0}</b></td>
+            <td data-label="الأعضاء">
+                <button class="btn btn-outline btn-sm" style="padding: 2px 8px; font-size: 0.75rem;" onclick="viewSquadMembers('${s.id}', '${s.name}')">
+                    <i class="fas fa-users"></i> ${s.squad_members?.[0]?.count || 0} أعضاء
                 </button>
+            </td>
+            <td data-label="إجراءات">
+                <div style="display:flex; gap:5px; justify-content:center;">
+                    <button class="btn btn-sm" style="background:#fee2e2; color:#ef4444; border:1px solid #fecaca;" onclick="deleteSquad('${s.id}')" title="حذف الشلة">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                    <button class="btn btn-sm" style="background:#f0fdf4; color:#16a34a; border:1px solid #bbf7d0;" onclick="resetSquadPoints('${s.id}')" title="تصفير النقاط">
+                        <i class="fas fa-redo"></i>
+                    </button>
+                </div>
             </td>
         </tr>
     `).join('');
@@ -1825,3 +1834,86 @@ window.deleteSquad = async (id) => {
     }
 };
 
+window.viewSquadMembers = async (squadId, squadName) => {
+    openModal({
+        title: `أعضاء شلة: ${squadName}`,
+        body: '<div id="modalMemberList" class="text-center" style="padding:2rem;"><div class="spinner"></div> جاري تحميل الأعضاء...</div>',
+        onSave: () => closeModal()
+    });
+
+    try {
+        const { data: members, error } = await supabase
+            .from('squad_members')
+            .select(`
+                profile_id,
+                profiles!squad_members_profile_id_fkey (full_name, points)
+            `)
+            .eq('squad_id', squadId);
+
+        if (error) throw error;
+
+        const body = document.getElementById('modalMemberList');
+        if (!members || members.length === 0) {
+            body.innerHTML = '<p class="text-center">لا يوجد أعضاء في هذه الشلة!</p>';
+            return;
+        }
+
+        body.innerHTML = `
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                ${members.map(m => `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #f8fafc; border-radius: 12px; border: 1px solid #f1f5f9;">
+                        <span style="font-weight: 700; color: #1e293b;">${m.profiles?.full_name || 'طالب مجهول'}</span>
+                        <button class="btn btn-sm" style="color: #ef4444; background: #fff1f2; border: 1px solid #fecaca; padding: 4px 12px; border-radius: 8px; font-size: 0.8rem; font-weight: 700;" 
+                                onclick="removeMemberFromSquadAdmin('${squadId}', '${m.profile_id}', '${squadName}')">
+                            <i class="fas fa-user-minus"></i> طرد
+                        </button>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+
+    } catch (err) {
+        document.getElementById('modalMemberList').innerHTML = `<p style="color:#ef4444;">خطأ: ${err.message}</p>`;
+    }
+};
+
+window.removeMemberFromSquadAdmin = async (squadId, profileId, squadName) => {
+    const result = await Swal.fire({
+        title: 'طرد عضو؟',
+        text: 'هل أنت متأكد من طرد هذا الطالب من الشلة؟',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'نعم، اطرد',
+        cancelButtonText: 'تراجع'
+    });
+
+    if (result.isConfirmed) {
+        const { error } = await supabase.from('squad_members').delete().match({ squad_id: squadId, profile_id: profileId });
+        if (error) Swal.fire('Error', error.message, 'error');
+        else {
+            Swal.fire('تم!', 'تم طرد العضو بنجاح', 'success');
+            viewSquadMembers(squadId, squadName); // Reload list
+            loadSquadsAdmin(); // Update counts in main table
+        }
+    }
+};
+
+window.resetSquadPoints = async (id) => {
+    const result = await Swal.fire({
+        title: 'تصفير نقاط الشلة؟',
+        text: "هذا الإجراء سيعيد نقاط الشلة إلى صفر!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'تصفير الآن',
+        cancelButtonText: 'إلغاء'
+    });
+
+    if (result.isConfirmed) {
+        const { error } = await supabase.from('squads').update({ points: 0 }).eq('id', id);
+        if (error) Swal.fire('Error', error.message, 'error');
+        else {
+            Swal.fire('تم!', 'تم تصفير النقاط بنجاح', 'success');
+            loadSquadsAdmin();
+        }
+    }
+};

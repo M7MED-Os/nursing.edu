@@ -1,5 +1,5 @@
 import { supabase } from "./supabaseClient.js";
-import { showToast, showInputError, clearInputError } from "./utils.js";
+import { showToast, showInputError, clearInputError, getCache, setCache, clearCache } from "./utils.js";
 
 // ==========================
 // 1. Auth State Management
@@ -20,10 +20,16 @@ async function checkAuth() {
     }
 
     // User is logged in
-    const { data: profile } = await supabase.from('profiles')
-        .select('role, is_active, subscription_ends_at, full_name, points')
-        .eq('id', session.user.id)
-        .single();
+    let profile = getCache(`profile_${session.user.id}`);
+
+    if (!profile) {
+        const { data: fetchedProfile } = await supabase.from('profiles')
+            .select('role, is_active, subscription_ends_at, full_name, points, grade, term, stream')
+            .eq('id', session.user.id)
+            .single();
+        profile = fetchedProfile;
+        if (profile) setCache(`profile_${session.user.id}`, profile, 10); // Cache for 10 mins
+    }
 
     const protectedPages = ["dashboard.html", "subject.html", "leaderboard.html", "profile.html"];
     const currentPage = window.location.pathname.split("/").pop();
@@ -79,9 +85,14 @@ async function checkAuth() {
         }
     }
 
-    // Update Last Seen (Online Status)
+    // Update Last Seen (Online Status) - Throttle to every 2 minutes
     if (profile) {
-        supabase.from('profiles').update({ last_seen: new Date().toISOString() }).eq('id', session.user.id).then();
+        const lastUpdate = sessionStorage.getItem('last_presence_update');
+        const now = new Date().getTime();
+        if (!lastUpdate || now - parseInt(lastUpdate) > 120000) {
+            supabase.from('profiles').update({ last_seen: new Date().toISOString() }).eq('id', session.user.id).then();
+            sessionStorage.setItem('last_presence_update', now.toString());
+        }
     }
 
     return { ...session.user, profile };
@@ -495,7 +506,10 @@ async function loadUserProfile() {
                 stream: userMetadata?.stream || null,
             });
 
-            if (!insertError) updateNameUI(fullName);
+            if (!insertError) {
+                updateNameUI(fullName);
+                clearCache(`profile_${user.id}`); // Force fresh fetch next time
+            }
         }
 
         // Update UI elements that depend on the profile data
@@ -549,16 +563,43 @@ async function loadUserProfile() {
 
 async function loadUserDashboardData(userId) {
     try {
-        // Parallel Fetch: 
-        // 1. Stats (Lightweight, all history)
-        // 2. Recent Results (Heavy, limit 5)
+        // 1. Check Cache for Stats
+        let stats = getCache(`user_stats_${userId}`);
 
-        const statsPromise = supabase
-            .from('results')
-            .select('score, total_questions, percentage, exam_id') // Fetch ONLY needed columns
-            .eq('user_id', userId);
+        if (!stats) {
+            // Call RPC for heavy calculations
+            const { data: rpcData, error: rpcError } = await supabase.rpc('get_user_stats_v2', { p_user_id: userId });
 
-        const historyPromise = supabase
+            if (rpcError) throw rpcError;
+            stats = rpcData[0];
+
+            if (stats) {
+                setCache(`user_stats_${userId}`, stats, 5); // Cache for 5 minutes
+            }
+        }
+
+        // --- 1. Update Stats UI ---
+        const qEl = document.getElementById('stats-questions');
+        const eEl = document.getElementById('stats-exams');
+        const aEl = document.getElementById('stats-accuracy');
+        const pointsEl = document.getElementById('stats-points');
+
+        if (stats) {
+            const accuracy = stats.total_possible_questions > 0
+                ? Math.round((stats.total_solved_questions / stats.total_possible_questions) * 100)
+                : 0;
+
+            if (qEl) qEl.textContent = stats.total_solved_questions || 0;
+            if (eEl) eEl.textContent = stats.total_exams || 0;
+            if (aEl) aEl.textContent = `%${accuracy}`;
+            if (pointsEl) pointsEl.textContent = stats.user_points || 0;
+
+            // Update Results Stats Section
+            renderResultsStats(stats.total_exams, Math.round(stats.avg_percentage), Math.round(stats.best_percentage));
+        }
+
+        // --- 2. Recent Results (Keep this for UI display, but no calculations here) ---
+        const { data: recentResults, error: historyError } = await supabase
             .from('results')
             .select(`
                 *,
@@ -576,53 +617,20 @@ async function loadUserDashboardData(userId) {
             `)
             .eq('user_id', userId)
             .order('created_at', { ascending: false })
-            .limit(5); // Fixed Limit
+            .limit(5);
 
-        const [statsResponse, historyResponse] = await Promise.all([statsPromise, historyPromise]);
+        if (historyError) throw historyError;
 
-        if (statsResponse.error) throw statsResponse.error;
-        if (historyResponse.error) throw historyResponse.error;
-
-        const allResults = statsResponse.data || [];
-        const recentResults = historyResponse.data || [];
-
-        // --- 1. Update Stats UI ---
-        const totalSolved = allResults.reduce((sum, r) => sum + (r.score || 0), 0);
-        const totalExams = new Set(allResults.map(r => r.exam_id)).size;
-
-        // Calculate Accuracy
-        const totalPossible = allResults.reduce((sum, r) => sum + (r.total_questions || 0), 0);
-        const avgScore = allResults.length > 0 ? Math.round(allResults.reduce((sum, r) => sum + r.percentage, 0) / allResults.length) : 0;
-        const bestScore = allResults.length > 0 ? Math.max(...allResults.map(r => r.percentage)) : 0;
-        const accuracy = totalPossible > 0 ? Math.round((totalSolved / totalPossible) * 100) : 0;
-
-        const qEl = document.getElementById('stats-questions');
-        const eEl = document.getElementById('stats-exams');
-        const aEl = document.getElementById('stats-accuracy');
-
-        if (qEl) qEl.textContent = totalSolved;
-        if (eEl) eEl.textContent = totalExams;
-        if (aEl) aEl.textContent = `%${accuracy}`;
-
-        // Update Results Stats Section
-        renderResultsStats(totalExams, avgScore, bestScore);
-
-        // --- 2. Update History List UI ---
-        if (recentResults.length > 0) {
+        if (recentResults && recentResults.length > 0) {
             const resultsSection = document.getElementById('resultsSection');
             if (resultsSection) resultsSection.style.display = 'block';
 
-            // Group recent results (should be simple as we just want a list, but keeping grouping logic for safety)
             const examGroups = {};
             recentResults.forEach(result => {
                 if (!examGroups[result.exam_id]) examGroups[result.exam_id] = [];
                 examGroups[result.exam_id].push(result);
             });
 
-            // Need subjects map for the list renderer
-            const subjects = await loadSubjectsFromDB(); // This might be cached or filtered, ideally renderResultsList should handle its own lookups or we pass it.
-            // Simplified: The previous renderResultsList fetched subjects again. Let's fix that too.
-            // For now, let's call the optimized render function directly
             renderResultsList(examGroups, recentResults);
         }
 
@@ -644,11 +652,10 @@ function updateNameUI(name) {
 // 10. Dynamic Subject Rendering (Database-Driven)
 // ==========================
 
-// Cache for subjects to avoid repeated queries
-let subjectsCache = {};
-
 async function loadSubjectsFromDB(grade) {
-    if (subjectsCache[grade]) return subjectsCache[grade];
+    const cacheKey = grade ? `subjects_${grade}` : 'subjects_all';
+    const cachedData = getCache(cacheKey);
+    if (cachedData) return cachedData;
 
     let query = supabase
         .from('subjects')
@@ -657,7 +664,7 @@ async function loadSubjectsFromDB(grade) {
         .order('order_index');
 
     if (grade) {
-        query = query.eq('grade', grade); // Server-side optimized filter
+        query = query.eq('grade', grade);
     }
 
     const { data: subjects, error } = await query;
@@ -667,7 +674,7 @@ async function loadSubjectsFromDB(grade) {
         return [];
     }
 
-    subjectsCache[grade] = subjects;
+    setCache(cacheKey, subjects, 60); // Cache subjects for 1 hour
     return subjects;
 }
 

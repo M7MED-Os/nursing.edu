@@ -1,14 +1,15 @@
 import { supabase } from "./supabaseClient.js";
+import { getCache, setCache } from "./utils.js";
 
 // State
+let readQueue = [];
+let readTimeout = null;
 let currentSquad = null;
 let currentProfile = null;
-let chatSubscription = null;
-let taskSubscription = null;
+let activityChannel = null;
+let presenceChannel = null;
 let pomodoroInterval = null;
 let pomodoroEnd = null;
-let membersSubscription = null;
-let pomodoroSubscription = null;
 
 // DOM Elements
 const views = {
@@ -32,20 +33,27 @@ async function initSquad() {
         return;
     }
 
-    // 2. Get Profile
-    const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
+    // 2. Get Profile - Use Cache
+    let profile = getCache(`profile_${user.id}`);
+    if (!profile) {
+        const { data: fetchedProfile } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
+        profile = fetchedProfile;
+        if (profile) setCache(`profile_${user.id}`, profile, 10);
+    }
     currentProfile = profile;
 
-    // 3. Check for Squad Membership
-    // Use .maybeSingle() instead of .single() to avoid 406/500 errors if not found
-    const { data: memberRecord, error: memberError } = await supabase
-        .from('squad_members')
-        .select('squad_id, squads(*)')
-        .eq('profile_id', user.id)
-        .maybeSingle();
+    // 3. Check for Squad Membership - Use Cache (1 min short cache)
+    let memberRecord = getCache(`squad_member_${user.id}`);
+    if (!memberRecord) {
+        const { data: fetchedRecord, error: memberError } = await supabase
+            .from('squad_members')
+            .select('squad_id, squads(*)')
+            .eq('profile_id', user.id)
+            .maybeSingle();
 
-    if (memberError) {
-        console.error("Membership check error:", memberError);
+        if (memberError) console.error("Membership check error:", memberError);
+        memberRecord = fetchedRecord;
+        if (memberRecord) setCache(`squad_member_${user.id}`, memberRecord, 1);
     }
 
     if (memberRecord && memberRecord.squads) {
@@ -125,41 +133,6 @@ window.showCreateSquadModal = async () => {
     }
 };
 
-// --- Presence (نظام التواجد) ---
-function setupPresence() {
-    const channel = supabase.channel(`squad_presence_${currentSquad.id}`);
-
-    channel
-        .on('presence', { event: 'sync' }, () => {
-            const state = channel.presenceState();
-            updateMembersStatusUI(state);
-        })
-        .on('presence', { event: 'join', key: 'user' }, ({ newPresences }) => {
-            console.log('Joined:', newPresences);
-        })
-        .subscribe(async (status) => {
-            if (status === 'SUBSCRIBED') {
-                await channel.track({
-                    user_id: currentProfile.id,
-                    online_at: new Date().toISOString(),
-                });
-            }
-        });
-}
-
-function updateMembersStatusUI(presenceState) {
-    const onlineUserIds = Object.values(presenceState).flat().map(p => p.user_id);
-    document.querySelectorAll('.member-item').forEach(item => {
-        const userId = item.dataset.userid;
-        const dot = item.querySelector('.status-dot');
-        if (onlineUserIds.includes(userId)) {
-            dot.classList.add('online');
-        } else {
-            dot.classList.remove('online');
-        }
-    });
-}
-
 window.showJoinSquadModal = async () => {
     const { value: code } = await Swal.fire({
         title: 'ادخل كود الشلة',
@@ -184,6 +157,70 @@ window.showJoinSquadModal = async () => {
         }
     }
 };
+
+// --- Realtime ---
+function setupRealtime() {
+    if (activityChannel) supabase.removeChannel(activityChannel);
+
+    activityChannel = supabase.channel(`squad_activity_${currentSquad.id}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'squad_chat_messages', filter: `squad_id=eq.${currentSquad.id}` }, () => {
+            loadChat();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'squad_tasks', filter: `squad_id=eq.${currentSquad.id}` }, () => loadTasks())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'squad_task_completions' }, () => loadTasks())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'squad_members', filter: `squad_id=eq.${currentSquad.id}` }, () => loadMembers())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'squad_pomodoro', filter: `squad_id=eq.${currentSquad.id}` }, () => loadPomodoro())
+        .subscribe();
+}
+
+// --- Presence (نظام التواجد) ---
+function setupPresence() {
+    if (presenceChannel) supabase.removeChannel(presenceChannel);
+
+    presenceChannel = supabase.channel(`squad_presence_${currentSquad.id}`);
+    presenceChannel
+        .on('presence', { event: 'sync' }, () => {
+            const state = presenceChannel.presenceState();
+            updateMembersStatusUI(state);
+        })
+        .subscribe(async (status) => {
+            if (status === 'SUBSCRIBED') {
+                await presenceChannel.track({
+                    user_id: currentProfile.id,
+                    online_at: new Date().toISOString(),
+                });
+            }
+        });
+}
+
+// Power Saving Mode: Pause Real-time when tab is hidden
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+        if (activityChannel) supabase.removeChannel(activityChannel);
+        if (presenceChannel) supabase.removeChannel(presenceChannel);
+    } else {
+        if (currentSquad) {
+            setupRealtime();
+            setupPresence();
+            loadChat();
+            loadTasks();
+            loadPomodoro();
+        }
+    }
+});
+
+function updateMembersStatusUI(presenceState) {
+    const onlineUserIds = Object.values(presenceState).flat().map(p => p.user_id);
+    document.querySelectorAll('.member-item').forEach(item => {
+        const userId = item.dataset.userid;
+        const dot = item.querySelector('.status-dot');
+        if (onlineUserIds.includes(userId)) {
+            dot.classList.add('online');
+        } else {
+            dot.classList.remove('online');
+        }
+    });
+}
 
 // --- Members ---
 async function loadMembers() {
@@ -455,11 +492,12 @@ async function loadChat() {
         .order('created_at', { ascending: false })
         .limit(50);
 
-    renderChat(msgs.reverse());
+    if (msgs) renderChat(msgs.reverse());
 }
 
 async function renderChat(msgs) {
     const box = document.getElementById('chatBox');
+    if (!box) return;
     const myId = currentProfile.id;
 
     // Fetch read markers
@@ -498,7 +536,7 @@ async function renderChat(msgs) {
             <div class="msg ${m.sender_id === myId ? 'sent' : 'received'}" 
                  ${m.sender_id === myId ? `onclick="showReadBy('${fullReaderNames}')"` : ''} 
                  style="${m.sender_id === myId ? 'cursor:pointer;' : ''}">
-                <span class="msg-sender">${m.profiles.full_name}</span>
+                <span class="msg-sender">${m.profiles ? m.profiles.full_name : 'مستخدم'}</span>
                 <div class="msg-content">${m.text}</div>
                 <div class="msg-footer">
                     <span class="msg-time">${time}</span>
@@ -524,14 +562,29 @@ window.showReadBy = (names) => {
 };
 
 async function markAsRead(msgId) {
-    try {
-        await supabase.from('squad_message_reads').upsert({
-            message_id: msgId,
-            profile_id: currentProfile.id
-        }, { onConflict: 'message_id,profile_id' });
-    } catch (e) {
-        // Quietly fail to avoid console clutter
+    if (!readQueue.includes(msgId)) {
+        readQueue.push(msgId);
     }
+
+    if (readTimeout) clearTimeout(readTimeout);
+
+    readTimeout = setTimeout(async () => {
+        const batch = [...readQueue];
+        readQueue = [];
+
+        if (batch.length === 0) return;
+
+        try {
+            const updates = batch.map(id => ({
+                message_id: id,
+                profile_id: currentProfile.id
+            }));
+
+            await supabase.from('squad_message_reads').upsert(updates, { onConflict: 'message_id,profile_id' });
+        } catch (e) {
+            console.error("Batch read update failed", e);
+        }
+    }, 2000); // Wait 2 seconds of silence to batch
 }
 
 document.getElementById('chatForm').onsubmit = async (e) => {
@@ -547,26 +600,6 @@ document.getElementById('chatForm').onsubmit = async (e) => {
         text
     });
 };
-
-// --- Realtime ---
-function setupRealtime() {
-    // Squad Global Activity Channel
-    supabase.channel('squad_activity')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'squad_chat_messages', filter: `squad_id=eq.${currentSquad.id}` }, () => {
-            console.log('New message received!');
-            loadChat();
-        })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'squad_tasks', filter: `squad_id=eq.${currentSquad.id}` }, () => loadTasks())
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'squad_task_completions' }, () => {
-            console.log('Task completion updated!');
-            loadTasks();
-        })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'squad_members', filter: `squad_id=eq.${currentSquad.id}` }, () => loadMembers())
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'squad_pomodoro', filter: `squad_id=eq.${currentSquad.id}` }, () => loadPomodoro())
-        .subscribe((status) => {
-            console.log('Realtime Status:', status);
-        });
-}
 
 // --- Pomodoro Logic ---
 async function loadPomodoro() {
@@ -631,6 +664,7 @@ function resetPomodoroUI() {
     if (pomodoroInterval) clearInterval(pomodoroInterval);
     document.getElementById('pomodoroTimer').textContent = '25:00';
     const btn = document.getElementById('startPomodoroBtn');
+    if (!btn) return;
     btn.disabled = false;
     btn.textContent = 'ابدأ المذاكرة 🔥';
     btn.onclick = startPomodoroFlow;
@@ -761,6 +795,7 @@ window.shareSquadOnWhatsapp = () => {
     const text = `يا بطل! تعال انضم لشلتي في "تمريض بنها" ونذاكر مع بعض.. كود الشلة: ${code}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`);
 };
+
 window.clearSquadChat = async () => {
     const result = await Swal.fire({
         title: 'هل أنت متأكد؟',
@@ -790,8 +825,6 @@ window.clearSquadChat = async () => {
                 showConfirmButton: false
             });
 
-            // UI will update automatically via Realtime subscription if configured, 
-            // but calling loadChat() here for immediate local feedback.
             loadChat();
 
         } catch (err) {

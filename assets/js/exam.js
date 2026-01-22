@@ -49,52 +49,75 @@ if (!examId) {
 
 async function initExam() {
     try {
-        // 1. Fetch Exam Details
-        const { data: exam, error: examError } = await supabase
-            .from('exams')
-            .select('*')
-            .eq('id', examId)
-            .single();
+        // 0. Check SessionStorage Cache for Questions
+        const cacheKey = `exam_cache_${examId}`;
+        const cachedData = sessionStorage.getItem(cacheKey);
 
-        if (examError || !exam) throw new Error("Exam not found");
-        examTitle = exam.title;
-        if (examTitleMobile) examTitleMobile.textContent = "الامتحان";
+        if (cachedData) {
+            const parsed = JSON.parse(cachedData);
+            currentQuestions = parsed.questions;
+            examTitle = parsed.title;
+            hierarchyInfo = parsed.hierarchy;
 
-        // Fetch hierarchy: Chapter and Lesson
-        if (exam.lesson_id) {
-            const { data: lesson } = await supabase.from('lessons').select('title, chapter_id').eq('id', exam.lesson_id).single();
-            if (lesson) {
-                hierarchyInfo.lesson = lesson.title;
-                const { data: chapter } = await supabase.from('chapters').select('title').eq('id', lesson.chapter_id).single();
+            // Restore answers from local storage to keep progress on refresh
+            const savedAnswers = localStorage.getItem(`exam_progress_${examId}`);
+            if (savedAnswers) {
+                userAnswers = JSON.parse(savedAnswers);
+            }
+
+            console.log("Exam loaded from cache");
+        } else {
+            // 1. Fetch Exam Details
+            const { data: exam, error: examError } = await supabase
+                .from('exams')
+                .select('*')
+                .eq('id', examId)
+                .single();
+
+            if (examError || !exam) throw new Error("Exam not found");
+            examTitle = exam.title;
+
+            // Fetch hierarchy
+            if (exam.lesson_id) {
+                const { data: lesson } = await supabase.from('lessons').select('title, chapter_id').eq('id', exam.lesson_id).single();
+                if (lesson) {
+                    hierarchyInfo.lesson = lesson.title;
+                    const { data: chapter } = await supabase.from('chapters').select('title').eq('id', lesson.chapter_id).single();
+                    if (chapter) hierarchyInfo.chapter = chapter.title;
+                }
+            } else if (exam.chapter_id) {
+                const { data: chapter } = await supabase.from('chapters').select('title').eq('id', exam.chapter_id).single();
                 if (chapter) hierarchyInfo.chapter = chapter.title;
             }
-        } else if (exam.chapter_id) {
-            const { data: chapter } = await supabase.from('chapters').select('title').eq('id', exam.chapter_id).single();
-            if (chapter) hierarchyInfo.chapter = chapter.title;
+
+            // 2. Fetch Questions
+            const { data: questions, error: qError } = await supabase
+                .from('questions')
+                .select('*')
+                .eq('exam_id', examId);
+
+            if (qError) throw qError;
+            if (!questions || questions.length === 0) {
+                loadingEl.innerHTML = "<p>عفواً، لا توجد أسئلة في هذا الامتحان.</p>";
+                return;
+            }
+
+            currentQuestions = shuffleArray(questions);
+
+            // Save to sessionStorage
+            sessionStorage.setItem(cacheKey, JSON.stringify({
+                questions: currentQuestions,
+                title: examTitle,
+                hierarchy: hierarchyInfo
+            }));
         }
 
-        // 2. Fetch Questions
-        const { data: questions, error: qError } = await supabase
-            .from('questions')
-            .select('*')
-            .eq('exam_id', examId);
-
-        if (qError) throw qError;
-
-        if (!questions || questions.length === 0) {
-            loadingEl.innerHTML = "<p>عفواً، لا توجد أسئلة في هذا الامتحان.</p>";
-            return;
-        }
-
-        // Shuffle questions for randomized order
-        currentQuestions = shuffleArray(questions);
-
-        // Smart Timer: 1 minute per question
-        totalTime = questions.length * 60; // seconds
+        if (examTitleMobile) examTitleMobile.textContent = "الامتحان";
+        totalTime = currentQuestions.length * 60;
 
         renderQuestions();
         renderNavigator();
-        showQuestion(0);
+        showQuestion(currentQuestionIndex); // Start from saved index or 0
         startTimer();
 
         if (squadId) {
@@ -217,15 +240,20 @@ function renderQuestions() {
             <div class="question-text">${q.question_text || ''}</div>
             ${q.question_image ? `<img src="${q.question_image}" class="question-img" alt="سؤال" onclick="openLightbox(this.src)">` : ''}
             <div class="options-list">
-                ${['a', 'b', 'c', 'd'].map(opt => `
-                    <label class="option-label" id="label-${q.id}-${opt}">
-                         <input type="radio" name="q_${q.id}" value="${opt}" class="option-radio" onchange="handleAnswerChange('${q.id}', '${opt}', ${index})">
+                ${['a', 'b', 'c', 'd'].map(opt => {
+            const isChecked = userAnswers[q.id] === opt;
+            return `
+                    <label class="option-label ${isChecked ? 'checked' : ''}" id="label-${q.id}-${opt}">
+                         <input type="radio" name="q_${q.id}" value="${opt}" class="option-radio" 
+                                ${isChecked ? 'checked' : ''} 
+                                onchange="handleAnswerChange('${q.id}', '${opt}', ${index})">
                          <div class="option-content">
                             <span class="option-text">${q[`choice_${opt}`] || ''}</span>
                             ${q[`choice_${opt}_image`] ? `<img src="${q[`choice_${opt}_image`]}" class="choice-img" alt="خيار" onclick="event.preventDefault(); openLightbox(this.src)">` : ''}
                          </div>
                     </label>
-                `).join('')}
+                `;
+        }).join('')}
             </div>
         `;
         questionsContainer.appendChild(card);
@@ -301,6 +329,9 @@ function showSaveIndicator() {
 
 window.saveAnswer = async (qId, answer) => {
     userAnswers[qId] = answer;
+
+    // Save to progress cache
+    localStorage.setItem(`exam_progress_${examId}`, JSON.stringify(userAnswers));
 
     if (squadSessionId) {
         await supabase.from('squad_exam_sessions').update({
@@ -528,6 +559,10 @@ async function calculateResult() {
         } else {
             console.log("No points awarded. Not the first attempt.");
         }
+
+        // --- 5. Clear Caches ---
+        sessionStorage.removeItem(`exam_cache_${examId}`);
+        localStorage.removeItem(`exam_progress_${examId}`);
 
         // --- UI UPDATES ---
         document.getElementById("correctCount").textContent = score;

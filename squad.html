@@ -293,9 +293,34 @@
             display: none;
         }
 
-        .empty-state {
-            text-align: center;
-            padding: 4rem 2rem;
+        .btn-clear-chat {
+            margin-right: auto;
+            padding: 6px 14px;
+            font-size: 0.8rem;
+            border: 1.5px solid #fee2e2;
+            background: transparent;
+            color: #ef4444;
+            display: none;
+            /* Controlled by JS to flex */
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 700;
+        }
+
+        .btn-clear-chat:hover {
+            background: #ef4444;
+            color: white;
+            border-color: #ef4444;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .btn-clear-chat i {
+            font-size: 0.85rem;
         }
     </style>
 </head>
@@ -408,10 +433,9 @@
                     <div class="squad-card-title">
                         <i class="fas fa-comments" style="color: #10b981;"></i>
                         <span>شات الشلة (أخر 50 رسالة)</span>
-                        <button id="clearChatBtn" class="btn btn-outline"
-                            style="margin-right: auto; padding: 4px 10px; font-size: 0.75rem; border-color: #fee2e2; color: #ef4444; display: none;"
-                            onclick="clearSquadChat()">
-                            <i class="fas fa-trash-alt"></i> مسح الشات
+                        <button id="clearChatBtn" class="btn-clear-chat" onclick="clearSquadChat()">
+                            <i class="fas fa-trash-alt"></i>
+                            <span>مسح الشات</span>
                         </button>
                     </div>
                     <div class="chat-box" id="chatBox">
