@@ -747,17 +747,17 @@ window.startSharedExam = async () => {
 
         if (!examId) return;
 
-        // 3. Create Session (if doesn't exist)
+        // 3. Create Session
         const { data: session } = await supabase
             .from('squad_exam_sessions')
             .insert({
                 squad_id: currentSquad.id,
                 exam_id: examId,
-                status: 'active',
-                started_by: currentProfile.id
+                status: 'active'
             })
             .select()
             .single();
+
 
         // 4. Notify in chat with a link
         const examName = exams.find(e => e.id == examId).title;

@@ -1328,13 +1328,13 @@ window.deleteStudent = async (id, name) => {
 
     if (result.isConfirmed) {
         try {
-            const { error } = await supabase.from('profiles').delete().eq('id', id);
+            const { error } = await supabase.rpc('admin_delete_student', { p_student_id: id });
             if (error) throw error;
 
             Swal.fire({
                 icon: 'success',
                 title: 'تم الحذف!',
-                text: 'تم حذف الطالب وحسابه بالكامل.',
+                text: 'تم حذف الطالب وكل بياناته المرتبطة بنجاح.',
                 timer: 2000,
                 showConfirmButton: false
             });
@@ -1349,6 +1349,7 @@ window.deleteStudent = async (id, name) => {
         }
     }
 };
+
 
 window.toggleStudentStatus = async (id, currentStatus) => {
     const newStatus = !currentStatus;
@@ -1825,14 +1826,29 @@ window.deleteSquad = async (id) => {
     });
 
     if (result.isConfirmed) {
-        const { error } = await supabase.from('squads').delete().eq('id', id);
-        if (error) Swal.fire('Error', error.message, 'error');
-        else {
-            Swal.fire('تم!', 'تم حذف الشلة بنجاح', 'success');
+        try {
+            const { error } = await supabase.rpc('admin_delete_squad', { p_squad_id: id });
+            if (error) throw error;
+
+            Swal.fire({
+                icon: 'success',
+                title: 'تم!',
+                text: 'تم حذف الشلة بكل بياناتها بنجاح',
+                timer: 2000,
+                showConfirmButton: false
+            });
             loadSquadsAdmin();
+        } catch (err) {
+            console.error("Squad Delete Fail", err);
+            Swal.fire({
+                icon: 'error',
+                title: 'خطأ',
+                text: err.message
+            });
         }
     }
 };
+
 
 window.viewSquadMembers = async (squadId, squadName) => {
     openModal({

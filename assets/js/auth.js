@@ -1,104 +1,126 @@
 import { supabase } from "./supabaseClient.js";
 import { showToast, showInputError, clearInputError, getCache, setCache, clearCache } from "./utils.js";
+import { APP_CONFIG } from "./constants.js";
 
 // ==========================
 // 1. Auth State Management
 // ==========================
 
-// Check if user is logged in on protected pages
-async function checkAuth() {
-    const { data: { session }, error } = await supabase.auth.getSession();
+// Global state
+let currentSession = null;
+let currentProfile = null;
 
-    if (error || !session) {
-        // Not logged in, redirect to login if page is protected
-        const protectedPages = ["dashboard.html", "subject.html", "leaderboard.html", "profile.html"];
-        const currentPage = window.location.pathname.split("/").pop();
-        if (protectedPages.includes(currentPage)) {
-            window.location.href = "login.html";
+/**
+ * Enhanced Auth Check
+ * Returns { user, profile } or redirects to login
+ */
+export async function checkAuth(options = { forceRefresh: false }) {
+    try {
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+        if (sessionError || !session) {
+            handleUnauthorizedAccess();
+            return null;
         }
+
+        currentSession = session;
+        const userId = session.user.id;
+
+        // 1. Try to get profile from cache
+        let profile = options.forceRefresh ? null : getCache(`profile_${userId}`);
+
+        // 2. Fallback to database
+        if (!profile) {
+            const { data: fetchedProfile, error: profileError } = await supabase.from('profiles')
+                .select('*')
+                .eq('id', userId)
+                .single();
+
+            if (profileError) {
+                console.error("Profile fetch error:", profileError);
+                // If profile missing but auth exists, something is wrong
+                if (profileError.code === 'PGRST116') {
+                    // No profile record yet - usually new registration
+                }
+            }
+            profile = fetchedProfile;
+            if (profile) setCache(`profile_${userId}`, profile, APP_CONFIG.CACHE_TIME_PROFILE);
+        }
+
+        currentProfile = profile;
+
+        // 3. Security & Access Control
+        handleAccessControl(profile);
+
+        // 4. Presence Update (Throttled)
+        updateUserPresence(userId);
+
+        return { user: session.user, profile };
+    } catch (err) {
+        console.error("Auth Exception:", err);
         return null;
     }
+}
 
-    // User is logged in
-    let profile = getCache(`profile_${session.user.id}`);
-
-    if (!profile) {
-        const { data: fetchedProfile } = await supabase.from('profiles')
-            .select('role, is_active, subscription_ends_at, full_name, points, grade, term, stream')
-            .eq('id', session.user.id)
-            .single();
-        profile = fetchedProfile;
-        if (profile) setCache(`profile_${session.user.id}`, profile, 10); // Cache for 10 mins
-    }
-
-    const protectedPages = ["dashboard.html", "subject.html", "leaderboard.html", "profile.html"];
+function handleUnauthorizedAccess() {
+    const protectedPages = ["dashboard.html", "subject.html", "leaderboard.html", "profile.html", "squad.html"];
     const currentPage = window.location.pathname.split("/").pop();
+    if (protectedPages.includes(currentPage) || currentPage === "") {
+        window.location.href = "login.html";
+    }
+}
 
-    // 1. Check Activation & Expiry
+function handleAccessControl(profile) {
+    if (!profile) return;
+
+    const currentPage = window.location.pathname.split("/").pop();
     const now = new Date();
-    const expiry = profile?.subscription_ends_at ? new Date(profile.subscription_ends_at) : null;
+    const expiry = profile.subscription_ends_at ? new Date(profile.subscription_ends_at) : null;
     const isExpired = expiry && now > expiry;
+    const isActive = profile.is_active;
 
-    if (profile && profile.role !== 'admin') {
-        if (!profile.is_active || isExpired) {
-            if (protectedPages.includes(currentPage)) {
+    // Student specific restrictions
+    if (profile.role !== 'admin') {
+        const dashboardPages = ["dashboard.html", "subject.html", "leaderboard.html", "profile.html", "squad.html", "exam.html"];
+
+        if (!isActive || isExpired) {
+            if (dashboardPages.includes(currentPage)) {
                 window.location.href = "pending.html";
-                return null;
             }
         }
     }
 
-    // 2. Dashboard Warnings
-    if (currentPage === "dashboard.html" && profile && expiry && !isExpired) {
+    // Redirect logged in users away from auth pages
+    const authPages = ["login.html", "register.html"];
+    if (authPages.includes(currentPage) && isActive && !isExpired) {
+        window.location.href = "dashboard.html";
+    }
+
+    // Pending page auto-redirect
+    if (currentPage === "pending.html" && isActive && !isExpired) {
+        window.location.href = "dashboard.html";
+    }
+
+    // Expiry Warnings
+    if (currentPage === "dashboard.html" && expiry && !isExpired) {
         const diffMs = expiry - now;
         const diffDays = diffMs / (1000 * 60 * 60 * 24);
-
-        if (diffDays <= 3) {
-            showSubscriptionWarning(expiry);
-        }
+        if (diffDays <= 3) showSubscriptionWarning(expiry);
     }
-
-    // 3. Redirections for auth/pending pages - Only redirect from pending if NOT expired
-    const authPages = ["login.html", "register.html"];
-    if (authPages.includes(currentPage)) {
-        window.location.href = "dashboard.html";
-    }
-
-    if (currentPage === "pending.html" && profile && profile.is_active && !isExpired) {
-        window.location.href = "dashboard.html";
-    }
-
-    // PWA (Standalone) UI Adjustments for Auth Pages
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-        const authPages = ["login.html", "register.html", "index.html", ""];
-        const pageName = window.location.pathname.split("/").pop();
-
-        if (authPages.includes(pageName)) {
-            // Hide Menu and Links in Login/Register for PWA
-            const menuToggle = document.querySelector('.menu-toggle');
-            const navLinks = document.querySelector('.nav-links');
-            const footer = document.querySelector('.footer');
-
-            if (menuToggle) menuToggle.style.display = 'none';
-            if (navLinks) navLinks.style.display = 'none';
-            if (footer) footer.style.display = 'none';
-        }
-    }
-
-    // Update Last Seen (Online Status) - Throttle to every 2 minutes
-    if (profile) {
-        const lastUpdate = sessionStorage.getItem('last_presence_update');
-        const now = new Date().getTime();
-        if (!lastUpdate || now - parseInt(lastUpdate) > 120000) {
-            supabase.from('profiles').update({ last_seen: new Date().toISOString() }).eq('id', session.user.id).then();
-            sessionStorage.setItem('last_presence_update', now.toString());
-        }
-    }
-
-    return { ...session.user, profile };
 }
 
-function showSubscriptionWarning(expiry) {
+function updateUserPresence(userId) {
+    const lastUpdate = sessionStorage.getItem('last_presence_update');
+    const now = new Date().getTime();
+    if (!lastUpdate || now - parseInt(lastUpdate) > 120000) { // 2 mins
+        supabase.from('profiles').update({ last_seen: new Date().toISOString() }).eq('id', userId)
+            .then(() => sessionStorage.setItem('last_presence_update', now.toString()))
+            .catch(e => console.warn("Presence update failed", e));
+    }
+}
+
+
+export function showSubscriptionWarning(expiry) {
     const parent = document.querySelector('header.dashboard-header .container') || document.body;
 
     // Check if already exists
@@ -154,7 +176,7 @@ function showSubscriptionWarning(expiry) {
 // 2. Logout
 // ==========================
 
-async function handleLogout(e) {
+export async function handleLogout(e) {
     if (e) e.preventDefault();
     const { error } = await supabase.auth.signOut();
     if (error) {
@@ -216,15 +238,16 @@ if (registerForm) {
 
                     if (gradeNum === 3) {
                         streamSelect.innerHTML += `
-                            <option value="pediatric">تمريض الاطفال</option>
-                            <option value="obs_gyn">تمريض نسا و التوليد</option>
+                            <option value="pediatric">${STREAMS['pediatric']}</option>
+                            <option value="obs_gyn">${STREAMS['obs_gyn']}</option>
                         `;
                     } else if (gradeNum === 4) {
                         streamSelect.innerHTML += `
-                            <option value="nursing_admin">اداره التمريض</option>
-                            <option value="psychiatric">تمريض النفسيه</option>
+                            <option value="nursing_admin">${STREAMS['nursing_admin']}</option>
+                            <option value="psychiatric">${STREAMS['psychiatric']}</option>
                         `;
                     }
+
                 } else {
                     streamGroup.style.display = "none";
                 }
@@ -474,79 +497,43 @@ if (resetForm) {
 
 async function loadUserProfile() {
     try {
-        const user = await checkAuth();
-        if (!user) return;
+        const authData = await checkAuth();
+        if (!authData) return;
 
-        const userMetadata = user.user_metadata;
-        const fullName = userMetadata?.full_name || "الطالب";
-
-        // Try to fetch from profiles table
-        const { data: profile, error } = await supabase
-            .from("profiles")
-            .select("*")
-            .eq("id", user.id)
-            .maybeSingle();
-
-        if (error) {
-            console.error("Profile Fetch Error:", error);
-        }
-
-        // Use profile data if available, otherwise fallback to metadata
-        const dataToRender = profile || userMetadata;
-
-
-        if (!profile) {
-            // Profile doesn't exist, create it (Self-healing)
-            const { error: insertError } = await supabase.from("profiles").insert({
-                id: user.id,
-                full_name: fullName,
-                email: user.email,
-                grade: userMetadata?.grade || null,
-                term: userMetadata?.term || null,
-                stream: userMetadata?.stream || null,
-            });
-
-            if (!insertError) {
-                updateNameUI(fullName);
-                clearCache(`profile_${user.id}`); // Force fresh fetch next time
-            }
-        }
+        const { user, profile } = authData;
+        const fullName = profile?.full_name || user.user_metadata?.full_name || "الطالب";
 
         // Update UI elements that depend on the profile data
-        if (profile) {
-            updateNameUI(profile.full_name);
+        updateNameUI(fullName);
 
+        if (profile) {
             // Update Points Stat Card
             const pointsEl = document.getElementById('stats-points');
             if (pointsEl) pointsEl.textContent = profile.points || 0;
 
-            if (profile.role === 'admin') {
-                const adminBtn = document.getElementById('adminNavBtn');
-                if (adminBtn) adminBtn.style.display = 'block';
-                const bottomAdminBtn = document.getElementById('bottomAdminBtn');
+            const isAdmin = profile.role === 'admin';
+            const adminNavBtn = document.getElementById('adminNavBtn');
+            const bottomAdminBtn = document.getElementById('bottomAdminBtn');
+
+            if (isAdmin) {
+                if (adminNavBtn) adminNavBtn.style.display = 'block';
                 if (bottomAdminBtn) bottomAdminBtn.style.display = 'flex';
             } else {
-                const adminBtn = document.getElementById('adminNavBtn');
-                if (adminBtn) adminBtn.remove();
-                const bottomAdminBtn = document.getElementById('bottomAdminBtn');
+                if (adminNavBtn) adminNavBtn.remove();
                 if (bottomAdminBtn) bottomAdminBtn.remove();
             }
         }
 
-        // Parallel Execution: Render Subjects & Load Results
-        // This makes the dashboard load much faster by not waiting for one to finish before starting the other
-        const tasks = [];
-
-        // 1. Subjects
-        tasks.push(renderSubjects(dataToRender));
-
-        // 2. Results & Stats
-        tasks.push(loadUserDashboardData(user.id));
+        // Parallel Execution: Render UI components
+        const tasks = [
+            renderSubjects(profile || user.user_metadata),
+            loadUserDashboardData(user.id)
+        ];
 
         await Promise.all(tasks);
 
     } catch (err) {
-        console.error("Profile Fetch Error:", err);
+        console.error("Dashboard Load Error:", err);
     } finally {
         const loadingEl = document.getElementById("loading");
         if (loadingEl) {
@@ -557,6 +544,7 @@ async function loadUserProfile() {
         }
     }
 }
+
 
 // fetchLeaderboard is now handled in leaderboard.html via direct script
 

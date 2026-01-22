@@ -1,16 +1,18 @@
 import { supabase } from "./supabaseClient.js";
 import { showToast } from "./utils.js";
+import { GRADES, TERMS, STREAMS } from "./constants.js";
 
 // ==========================
-// 1. Auth Check
+// 1. Current State
 // ==========================
 
 let currentUser = null;
+let currentProfile = null;
 
 async function checkAuth() {
-    const { data: { session }, error } = await supabase.auth.getSession();
-
-    if (error || !session) {
+    // This is already handled by auth.js usually, but we keep it here for data access
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
         window.location.href = "login.html";
         return null;
     }
@@ -73,20 +75,6 @@ async function loadProfile() {
     // 4. Populate Info Display (The plain text view)
     const infoRows = document.getElementById("infoRows");
     if (infoRows) {
-        const gradeMap = {
-            "1": "الفرقة الأولى",
-            "2": "الفرقة الثانية",
-            "3": "الفرقة الثالثة",
-            "4": "الفرقة الرابعة"
-        };
-        const termMap = { "1": "الترم الأول", "2": "الترم الثاني" };
-        const streamMap = {
-            "pediatric": "تمريض الأطفال",
-            "obs_gyn": "تمريض نسا و التوليد",
-            "nursing_admin": "إدارة التمريض",
-            "psychiatric": "تمريض النفسية"
-        };
-
         let infoHtml = `
             <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding-bottom: 0.5rem;">
                 <span style="color: #64748b;">البريد الإلكتروني:</span>
@@ -94,7 +82,7 @@ async function loadProfile() {
             </div>
             <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding-bottom: 0.5rem;">
                 <span style="color: #64748b;">السنة الدراسية:</span>
-                <span style="font-weight: 500;">${gradeMap[grade] || grade || '-'}</span>
+                <span style="font-weight: 500;">${GRADES[grade] || grade || '-'}</span>
             </div>
         `;
 
@@ -103,7 +91,7 @@ async function loadProfile() {
             infoHtml += `
             <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding-bottom: 0.5rem;">
                 <span style="color: #64748b;">الترم:</span>
-                <span style="font-weight: 500;">${termMap[term] || term || '-'}</span>
+                <span style="font-weight: 500;">${TERMS[term] || term || '-'}</span>
             </div>`;
         }
 
@@ -112,11 +100,12 @@ async function loadProfile() {
             infoHtml += `
             <div style="display: flex; justify-content: space-between;">
                 <span style="color: #64748b;">القسم:</span>
-                <span style="font-weight: 500;">${streamMap[stream] || stream || '-'}</span>
+                <span style="font-weight: 500;">${STREAMS[stream] || stream || '-'}</span>
             </div>`;
         }
         infoRows.innerHTML = infoHtml;
     }
+
 
     // 5. Subscription Card Logic
     if (profile && profile.role !== 'admin') {

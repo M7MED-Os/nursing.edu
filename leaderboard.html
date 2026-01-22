@@ -363,20 +363,8 @@
     <script type="module">
         import { supabase } from "./assets/js/supabaseClient.js";
         import { getCache, setCache } from "./assets/js/utils.js";
-
-        // Mappings
-        const gradeMap = {
-            "1": "الفرقة الأولى",
-            "2": "الفرقة الثانية",
-            "3": "الفرقة الثالثة",
-            "4": "الفرقة الرابعة"
-        };
-        const streamMap = {
-            "pediatric": "قسم الأطفال",
-            "obs_gyn": "قسم النسا",
-            "nursing_admin": "قسم الإدارة",
-            "psychiatric": "قسم النفسية"
-        };
+        import { checkAuth } from "./assets/js/auth.js";
+        import { GRADES, STREAMS } from "./assets/js/constants.js";
 
         // State
         let currentUserInfo = null;
@@ -384,75 +372,47 @@
         let currentFilterStream = 'all'; // 'all' or specific stream key
 
         // Init
-        window.addEventListener('DOMContentLoaded', async () => {
-            const loadingGlobal = document.getElementById('loading');
+        document.addEventListener('DOMContentLoaded', async () => {
+            const authData = await checkAuth();
+            if (authData) {
+                currentUserInfo = authData.profile;
 
-            await fetchUserData();
-            if (currentUserInfo) {
+                // Default filter: User's stream (if year 3/4), else 'all'
+                if ((currentUserInfo.grade === '3' || currentUserInfo.grade === '4') && currentUserInfo.stream) {
+                    currentFilterStream = currentUserInfo.stream;
+                } else {
+                    currentFilterStream = 'all';
+                }
+
                 setupFilters();
                 await loadLeaderboardData();
             }
 
+            const loadingGlobal = document.getElementById('loading');
             if (loadingGlobal) {
                 loadingGlobal.style.opacity = '0';
                 setTimeout(() => { if (loadingGlobal.parentNode) loadingGlobal.remove(); }, 500);
             }
         });
 
-        async function fetchUserData() {
-            try {
-                const { data: { user } } = await supabase.auth.getUser();
-                if (!user) {
-                    window.location.href = 'login.html';
-                    return;
-                }
-
-                // Use global checkAuth if possible, but here we need specific fields
-                let profile = getCache(`profile_${user.id}`);
-                if (!profile) {
-                    const { data } = await supabase
-                        .from('profiles')
-                        .select('id, full_name, points, grade, term, stream')
-                        .eq('id', user.id)
-                        .single();
-                    profile = data;
-                    if (profile) setCache(`profile_${user.id}`, profile, 10);
-                }
-
-                currentUserInfo = profile;
-
-                // Default filter: User's stream (if year 3/4), else 'all'
-                if ((profile.grade === '3' || profile.grade === '4') && profile.stream) {
-                    currentFilterStream = profile.stream;
-                } else {
-                    currentFilterStream = 'all';
-                }
-
-            } catch (err) {
-                console.error("Auth Error", err);
-            }
-        }
-
         function setupFilters() {
             const container = document.getElementById('filterContainer');
             if (!container || !currentUserInfo) return;
 
             const grade = currentUserInfo.grade;
-
-            // Define Buttons based on Grade
             let buttons = [];
 
             if (grade === '3') {
                 buttons = [
                     { label: 'الدفعة كاملة', value: 'all' },
-                    { label: 'قسم الأطفال', value: 'pediatric' },
-                    { label: 'قسم النسا', value: 'obs_gyn' }
+                    { label: STREAMS['pediatric'], value: 'pediatric' },
+                    { label: STREAMS['obs_gyn'], value: 'obs_gyn' }
                 ];
             } else if (grade === '4') {
                 buttons = [
                     { label: 'الدفعة كاملة', value: 'all' },
-                    { label: 'إدارة التمريض', value: 'nursing_admin' },
-                    { label: 'قسم النفسية', value: 'psychiatric' }
+                    { label: STREAMS['nursing_admin'], value: 'nursing_admin' },
+                    { label: STREAMS['psychiatric'], value: 'psychiatric' }
                 ];
             } else {
                 container.style.display = 'none';
@@ -468,32 +428,26 @@
             `).join('');
         }
 
-        // Global functions for onclick
         window.changeFilter = (val) => {
             currentFilterStream = val;
-
-            // Update UI
             document.querySelectorAll('.filter-btn').forEach(btn => {
-                if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes(`window.changeFilter('${val}')`)) {
+                const onClickStr = btn.getAttribute('onclick');
+                if (onClickStr && onClickStr.includes(`window.changeFilter('${val}')`)) {
                     btn.classList.add('active');
-                } else if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes('window.changeFilter')) {
+                } else if (onClickStr && onClickStr.includes('window.changeFilter')) {
                     btn.classList.remove('active');
                 }
             });
 
-            // Reload Data
             if (currentView === 'students') loadLeaderboardData();
             else loadSquadLeaderboardData();
         };
 
         window.switchView = (view) => {
             currentView = view;
-
-            // Toggle Tab buttons
             document.getElementById('tabStudents').classList.toggle('active', view === 'students');
             document.getElementById('tabSquads').classList.toggle('active', view === 'squads');
 
-            // Refresh Header Title
             const headerH1 = document.querySelector('.leaderboard-hero h1');
             headerH1.textContent = view === 'students' ? '🏆 لوحة الشرف' : '🔥 قمة الشلل';
 
@@ -508,22 +462,20 @@
 
         async function loadSquadLeaderboardData() {
             const body = document.getElementById('leaderboardBody');
-            const user = currentUserInfo;
-
             body.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:4rem;"><i class="fas fa-spinner fa-spin fa-2x"></i></td></tr>';
 
-            const cacheKey = `squad_leaderboard_${user.grade}`;
+            const cacheKey = `squad_leaderboard_${currentUserInfo.grade}`;
             let squads = getCache(cacheKey);
 
             try {
                 if (!squads) {
                     const { data, error } = await supabase.rpc('get_top_squads', {
                         p_limit: 10,
-                        p_academic_year: gradeMap[user.grade] || user.grade
+                        p_academic_year: GRADES[currentUserInfo.grade] || currentUserInfo.grade
                     });
                     if (error) throw error;
                     squads = data;
-                    setCache(cacheKey, squads, 15); // 15 min cache
+                    setCache(cacheKey, squads, 15);
                 }
 
                 if (!squads || squads.length === 0) {
@@ -551,7 +503,6 @@
                         </td>
                     </tr>
                 `).join('');
-
             } catch (err) {
                 console.error(err);
                 body.innerHTML = '<tr><td colspan="3" style="text-align:center; color:red;">خطأ في التحميل</td></tr>';
@@ -560,34 +511,31 @@
 
         async function loadLeaderboardData() {
             const body = document.getElementById('leaderboardBody');
-            const user = currentUserInfo;
-
             body.innerHTML = `<tr><td colspan="3" style="text-align: center; padding: 4rem;"><i class="fas fa-spinner fa-spin fa-2x" style="color: var(--primary-color);"></i><p style="margin-top: 1rem; color: var(--text-light);">جاري تحديث القائمة...</p></td></tr>`;
 
             const oldMsg = document.getElementById('motivationMsg');
             if (oldMsg) oldMsg.remove();
 
-            const cacheKey = `leaderboard_${user.grade}_${user.term}_${currentFilterStream}`;
+            const cacheKey = `leaderboard_${currentUserInfo.grade}_${currentUserInfo.term}_${currentFilterStream}`;
             let data = getCache(cacheKey);
 
             try {
                 if (!data) {
                     const { data: rpcData, error } = await supabase.rpc('get_top_students', {
                         p_limit: 50,
-                        p_grade: user.grade,
-                        p_term: user.term,
+                        p_grade: currentUserInfo.grade,
+                        p_term: currentUserInfo.term,
                         p_stream: currentFilterStream === 'all' ? null : currentFilterStream
                     });
                     if (error) throw error;
                     data = rpcData;
-                    setCache(cacheKey, data, 15); // 15 min cache
+                    setCache(cacheKey, data, 15);
                 }
 
-                // Update Title Context
                 const headerP = document.querySelector('.leaderboard-hero p');
-                let contextText = gradeMap[user.grade] || '';
+                let contextText = GRADES[currentUserInfo.grade] || '';
                 if (currentFilterStream === 'all') contextText += " (الدفعة كاملة)";
-                else if (streamMap[currentFilterStream]) contextText += ` - ${streamMap[currentFilterStream]}`;
+                else if (STREAMS[currentFilterStream]) contextText += ` - ${STREAMS[currentFilterStream]}`;
                 headerP.textContent = `قائمة المتصدرين لـ ${contextText}`;
 
                 if (!data || data.length === 0) {
@@ -603,19 +551,19 @@
                     else if (rank === 2) rankDisplay = '<i class="fas fa-medal medal-icon" style="color:#d97706"></i>';
                     else if (rank === 3) rankDisplay = '<i class="fas fa-medal medal-icon" style="color:#94a3b8"></i>';
 
-                    const rowClass = s.id === user.id ? 'style="background-color: #f0f9ff;"' : '';
-                    const displayStream = streamMap[s.stream] || '';
-                    const subText = displayStream ? `<span style="font-size:0.8em; color:var(--primary-color);">(${displayStream})</span>` : (gradeMap[s.grade] || '-');
+                    const rowClass = s.id === currentUserInfo.id ? 'style="background-color: #f0f9ff;"' : '';
+                    const displayStream = STREAMS[s.stream] || '';
+                    const subText = displayStream ? `<span style="font-size:0.8em; color:var(--primary-color);">(${displayStream})</span>` : (GRADES[s.grade] || '-');
 
-                    return `<tr ${rowClass}><td class="rank-cell ${rankClass}">${rankDisplay}</td><td><div class="user-info-cell"><div class="user-avatar">${s.full_name ? s.full_name[0] : '?'}</div><div class="user-name-box"><b>${s.full_name} ${s.id === user.id ? '(أنت)' : ''}</b><span>${subText}</span></div></div></td><td class="points-cell">${s.points || 0}<span class="points-label">نقطة</span></td></tr>`;
+                    return `<tr ${rowClass}><td class="rank-cell ${rankClass}">${rankDisplay}</td><td><div class="user-info-cell"><div class="user-avatar">${s.full_name ? s.full_name[0] : '?'}</div><div class="user-name-box"><b>${s.full_name} ${s.id === currentUserInfo.id ? '(أنت)' : ''}</b><span>${subText}</span></div></div></td><td class="points-cell">${s.points || 0}<span class="points-label">نقطة</span></td></tr>`;
                 }).join('');
 
-                const belongsToFilter = (currentFilterStream === 'all') || (currentFilterStream === user.stream);
-                const isUserInTop10 = data.slice(0, 10).some(s => s.id === user.id);
+                const belongsToFilter = (currentFilterStream === 'all') || (currentFilterStream === currentUserInfo.stream);
+                const isUserInTop10 = data.slice(0, 10).some(s => s.id === currentUserInfo.id);
 
                 if (belongsToFilter && !isUserInTop10 && data.length > 0) {
                     const lastInListPoints = data[data.length - 1].points || 0;
-                    const diff = lastInListPoints - (user.points || 0);
+                    const diff = lastInListPoints - (currentUserInfo.points || 0);
                     if (diff > 0) {
                         const motivationMsg = document.createElement('div');
                         motivationMsg.id = 'motivationMsg';
@@ -630,6 +578,7 @@
             }
         }
     </script>
+
 
 </body>
 

@@ -462,105 +462,44 @@ async function calculateResult() {
     scoreValEl.innerHTML = '<i class="fas fa-spinner fa-spin" style="font-size:2rem;"></i>';
 
     try {
-        // --- CLIENT SIDE CALCULATION ---
-        let score = 0;
-        let totalQuestions = currentQuestions.length;
-
-        currentQuestions.forEach(q => {
-            const userAnswer = userAnswers[q.id];
-            if (userAnswer && userAnswer === q.correct_answer) {
-                score++;
-            }
-        });
-
-        const percentage = totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0;
-
-        // 1. Get User ID
+        // 1. Get User
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error("User not authenticated");
 
-        // 2. Check Previous Attempts (BEFORE Inserting New Result)
-        let isFirstAttempt = false;
-        try {
-            const { data: previousAttempts, error: checkError } = await supabase
-                .from('results')
-                .select('id')
-                .eq('user_id', user.id)
-                .eq('exam_id', examId)
-                .limit(1);
+        // 2. Submit Result via Server-Side RPC (Secure calculation)
+        const { data: resultData, error: rpcError } = await supabase.rpc('submit_exam_result', {
+            p_exam_id: examId,
+            p_answers: userAnswers,
+            p_time_spent: timeElapsed
+        });
 
-            if (!checkError && (!previousAttempts || previousAttempts.length === 0)) {
-                isFirstAttempt = true;
-            }
-        } catch (checkErr) {
-            console.warn("Error checking attempts:", checkErr);
-        }
+        if (rpcError) throw rpcError;
 
-        // 3. Insert Result
-        const { error: insertError } = await supabase
-            .from('results')
-            .insert({
-                user_id: user.id,
-                exam_id: examId,
-                score: score,
-                total_questions: totalQuestions,
-                answers: userAnswers,
-                time_spent: timeElapsed
+        const score = resultData.score;
+        const totalQuestions = resultData.total;
+        const pointsAwarded = resultData.points_awarded;
+        const percentage = totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0;
+
+        // 3. UI Updates
+        scoreValEl.textContent = `${percentage}%`;
+        const scoreSub = document.getElementById("scoreSubtext");
+        if (scoreSub) scoreSub.textContent = `حللت ${score} من ${totalQuestions} أسئلة`;
+
+        // 4. Show Points Toast if awarded
+        if (pointsAwarded > 0) {
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'success',
+                title: `مبروك! كسبت ${pointsAwarded} نقطة 🎉`,
+                showConfirmButton: false,
+                timer: 3000
             });
-
-        if (insertError) throw insertError;
-
-        // 4. Update Points (If First Attempt)
-        if (isFirstAttempt) {
-            try {
-                // Fetch current points
-                const { data: profile } = await supabase.from('profiles').select('points').eq('id', user.id).single();
-                const currentPoints = profile?.points || 0;
-                const newPoints = currentPoints + score;
-
-                // Update points for user
-                await supabase.from('profiles').update({ points: newPoints }).eq('id', user.id);
-
-                // SQUAD LOGIC: Award points to ALL squad members if in squad mode
-                if (squadSessionId) {
-                    const { data: members } = await supabase.from('squad_members').select('profile_id').eq('squad_id', squadId);
-
-                    for (const member of members) {
-                        if (member.profile_id === user.id) continue; // Already updated
-
-                        const { data: mProfile } = await supabase.from('profiles').select('points').eq('id', member.profile_id).single();
-                        const mPoints = (mProfile?.points || 0) + score;
-                        await supabase.from('profiles').update({ points: mPoints }).eq('id', member.profile_id);
-                    }
-
-                    // Update squad total points
-                    const { data: squad } = await supabase.from('squads').select('points').eq('id', squadId).single();
-                    await supabase.from('squads').update({ points: (squad?.points || 0) + score }).eq('id', squadId);
-
-                    // Close squad session
-                    await supabase.from('squad_exam_sessions').update({ status: 'finished' }).eq('id', squadSessionId);
-                }
-
-                console.log(`Points awarded: ${score}. First attempt detected.`);
-
-                // Show dedicated toast for points
-                Swal.fire({
-                    toast: true,
-                    position: 'top-end',
-                    icon: 'success',
-                    title: `مبروك! كسبت ${score} نقطة 🎉`,
-                    showConfirmButton: false,
-                    timer: 3000
-                });
-
-            } catch (pointErr) {
-                console.error("Points update logic failed:", pointErr);
-            }
-        } else {
-            console.log("No points awarded. Not the first attempt.");
+            // Clear stats cache to force refresh on dashboard
+            localStorage.removeItem('user_stats');
         }
 
-        // --- 5. Clear Caches ---
+        // 5. Clear Caches
         sessionStorage.removeItem(`exam_cache_${examId}`);
         localStorage.removeItem(`exam_progress_${examId}`);
 
