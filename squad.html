@@ -407,7 +407,12 @@
                 <div class="squad-card">
                     <div class="squad-card-title">
                         <i class="fas fa-comments" style="color: #10b981;"></i>
-                        شات الشلة (أخر 50 رسالة)
+                        <span>شات الشلة (أخر 50 رسالة)</span>
+                        <button id="clearChatBtn" class="btn btn-outline"
+                            style="margin-right: auto; padding: 4px 10px; font-size: 0.75rem; border-color: #fee2e2; color: #ef4444; display: none;"
+                            onclick="clearSquadChat()">
+                            <i class="fas fa-trash-alt"></i> مسح الشات
+                        </button>
                     </div>
                     <div class="chat-box" id="chatBox">
                         <!-- Messages go here -->

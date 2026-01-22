@@ -73,7 +73,16 @@ async function setupSquadUI() {
     loadChat();
     loadPomodoro();
     setupRealtime();
-    setupPresence(); // New: Presence track
+    setupPresence();
+
+    // Show Clear Chat button to Squad Owner OR Global Admin
+    const isOwner = currentSquad.owner_id === currentProfile.id;
+    const isAdmin = currentProfile.role === 'admin';
+
+    if (isOwner || isAdmin) {
+        const btn = document.getElementById('clearChatBtn');
+        if (btn) btn.style.display = 'flex';
+    }
 }
 
 // --- Squad Actions (Create/Join) ---
@@ -476,6 +485,9 @@ async function renderChat(msgs) {
         const isReadByOthers = readers.length > 0;
         const readerNames = readers.map(r => r.profiles.full_name.split(' ')[0]).join('، ');
 
+        const readerNamesList = readers.map(r => r.profiles.full_name).join('<br>');
+        const fullReaderNames = readerNamesList || 'لا يوجد أحد شاهدها بعد';
+
         const ticks = m.sender_id === myId ? `
             <div class="msg-seen-status ${isReadByOthers ? 'read' : 'sent'}" title="${isReadByOthers ? 'شوهد بواسطة: ' + readerNames : 'تم الإرسال'}">
                 <i class="fas fa-check-double"></i>
@@ -483,7 +495,9 @@ async function renderChat(msgs) {
         ` : '';
 
         return `
-            <div class="msg ${m.sender_id === myId ? 'sent' : 'received'}">
+            <div class="msg ${m.sender_id === myId ? 'sent' : 'received'}" 
+                 ${m.sender_id === myId ? `onclick="showReadBy('${fullReaderNames}')"` : ''} 
+                 style="${m.sender_id === myId ? 'cursor:pointer;' : ''}">
                 <span class="msg-sender">${m.profiles.full_name}</span>
                 <div class="msg-content">${m.text}</div>
                 <div class="msg-footer">
@@ -495,6 +509,19 @@ async function renderChat(msgs) {
     }).join('');
     box.scrollTop = box.scrollHeight;
 }
+
+window.showReadBy = (names) => {
+    Swal.fire({
+        title: '<span style="font-size: 1.2rem;">من شاهد الرسالة؟</span>',
+        html: `<div style="text-align: right; direction: rtl; font-size: 1rem; color: #475569;">${names}</div>`,
+        icon: 'info',
+        confirmButtonText: 'تمام',
+        confirmButtonColor: 'var(--primary-color)',
+        customClass: {
+            popup: 'swal2-whatsapp-style'
+        }
+    });
+};
 
 async function markAsRead(msgId) {
     try {
@@ -733,4 +760,42 @@ window.shareSquadOnWhatsapp = () => {
     const code = document.getElementById('squadCode').textContent;
     const text = `يا بطل! تعال انضم لشلتي في "تمريض بنها" ونذاكر مع بعض.. كود الشلة: ${code}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`);
+};
+window.clearSquadChat = async () => {
+    const result = await Swal.fire({
+        title: 'هل أنت متأكد؟',
+        text: "سيتم حذف جميع رسائل الشات الحالية نهائياً من قاعدة البيانات!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: 'نعم، امسح الكل',
+        cancelButtonText: 'تراجع'
+    });
+
+    if (result.isConfirmed) {
+        try {
+            const { error } = await supabase
+                .from('squad_chat_messages')
+                .delete()
+                .eq('squad_id', currentSquad.id);
+
+            if (error) throw error;
+
+            Swal.fire({
+                icon: 'success',
+                title: 'تم المسح',
+                text: 'تم حذف محادثات الشلة بنجاح.',
+                timer: 1500,
+                showConfirmButton: false
+            });
+
+            // UI will update automatically via Realtime subscription if configured, 
+            // but calling loadChat() here for immediate local feedback.
+            loadChat();
+
+        } catch (err) {
+            Swal.fire('خطأ', 'فشل في مسح الشات: ' + err.message, 'error');
+        }
+    }
 };
