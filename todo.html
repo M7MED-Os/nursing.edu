@@ -3,11 +3,15 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>قائمة المهام | أكاديمية التمريض</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>منظم المهام | ثانوية.كوم</title>
     <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="assets/css/todo.css">
+    <link rel="stylesheet" href="assets/css/bottom-nav.css">
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
@@ -19,11 +23,16 @@
     <nav class="navbar">
         <div class="container">
             <a href="dashboard.html" class="logo">
-                <i class="fas fa-user-nurse"></i>&nbsp;أكاديمية<span>التمريض</span>
+                <img src="assets/images/logo-icon.webp" alt="Logo" class="brand-icon">
+                <span class="logo-text">ثانوية<span class="logo-accent">.كوم</span></span>
             </a>
 
             <div class="menu-toggle">
                 <i class="fas fa-bars"></i>
+            </div>
+
+            <div id="pwaLogoutBtn" class="pwa-logout-btn">
+                <i class="fas fa-sign-out-alt"></i>
             </div>
 
             <ul class="nav-links">
@@ -94,8 +103,8 @@
             <div class="modal-icon">
                 <i class="fas fa-exclamation-triangle"></i>
             </div>
-            <h1>مهامي الدراسية والعملية</h1>
-            <p>نظم وقتك ومذاكرتك عشان تحقق حلمك</p>
+            <h3>هل أنت متأكد؟</h3>
+            <p>سيتم حذف هذه المهمة نهائياً من قائمتك.</p>
             <div class="modal-buttons">
                 <button id="confirmDelete" class="btn-modal confirm">حذف</button>
                 <button id="cancelDelete" class="btn-modal cancel">إلغاء</button>
@@ -103,20 +112,93 @@
         </div>
     </div>
 
+    <!-- Edit Modal -->
+    <div id="editModal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-icon" style="background: #E0F2FE; color: #0288D1;">
+                <i class="fas fa-edit"></i>
+            </div>
+            <h3>تعديل المهمة</h3>
+            <div class="form-group" style="margin: 1.5rem 0;">
+                <input type="text" id="editTaskInput" class="form-control" style="text-align: right;"
+                    placeholder="اكتب التعديل هنا...">
+            </div>
+            <div class="modal-buttons">
+                <button id="confirmEdit" class="btn-modal" style="background: var(--todo-primary); color: white;">حفظ
+                    التعديل</button>
+                <button id="cancelEdit" class="btn-modal cancel">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Subtask Modal -->
+    <div id="addSubModal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-icon" style="background: #DCFCE7; color: #16A34A;">
+                <i class="fas fa-plus"></i>
+            </div>
+            <h3>إضافة مهمة فرعية</h3>
+            <div class="form-group" style="margin: 1.5rem 0;">
+                <input type="text" id="addSubInput" class="form-control" style="text-align: right;"
+                    placeholder="اكتب المهمة الفرعية هنا...">
+            </div>
+            <div class="modal-buttons">
+                <button id="confirmAddSub" class="btn-modal" style="background: var(--todo-primary); color: white;">
+                    إضافة
+                </button>
+                <button id="cancelAddSub" class="btn-modal cancel">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+
     <!-- Footer -->
     <footer class="footer">
         <div class="container">
             <div class="copyright" style="border: none; padding-top: 0;">
-                <p>&copy; 2026 أكاديمية التمريض</p>
+                <p>&copy; 2026 ثانوية.كوم</p>
             </div>
         </div>
     </footer>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+        <div class="bottom-nav-container">
+            <a href="dashboard.html" class="bottom-nav-item">
+                <i class="fas fa-home"></i>
+                <span>الرئيسية</span>
+            </a>
+            <a href="todo.html" class="bottom-nav-item active">
+                <i class="fas fa-tasks"></i>
+                <span>المهام</span>
+            </a>
+            <a href="leaderboard.html" class="bottom-nav-item">
+                <i class="fas fa-trophy"></i>
+                <span>الأوائل</span>
+            </a>
+            <a href="profile.html" class="bottom-nav-item">
+                <i class="fas fa-user"></i>
+                <span>البروفايل</span>
+            </a>
+            <!-- <a href="#" id="bottomLogoutBtn" class="bottom-nav-item">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>خروج</span>
+            </a> -->
+            <a href="admin.html" id="bottomAdminBtn" class="bottom-nav-item admin-link" style="display: none;">
+                <i class="fas fa-shield-alt"></i>
+                <span>Admin</span>
+            </a>
+        </div>
+    </nav>
+
+
 
     <!-- Confetti Script -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="assets/js/main.js"></script>
     <script type="module" src="assets/js/auth.js"></script>
-    <script src="assets/js/todo.js"></script>
+    <script type="module" src="assets/js/todo.js"></script>
+
 </body>
 
 </html>

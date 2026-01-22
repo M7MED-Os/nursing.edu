@@ -4,8 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>إنشاء حساب جديد | أكاديمية التمريض</title>
+    <title>إنشاء حساب جديد | ثانوية.كوم</title>
     <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         .auth-card {
@@ -21,7 +22,8 @@
     <nav class="navbar">
         <div class="container">
             <a href="index.html" class="logo">
-                <i class="fas fa-user-nurse"></i>&nbsp;أكاديمية<span>التمريض</span>
+                <img src="assets/images/logo-icon.webp" alt="Logo" class="brand-icon">
+                <span class="logo-text">ثانوية<span class="logo-accent">.كوم</span></span>
             </a>
             <div class="menu-toggle">
                 <i class="fas fa-bars"></i>
@@ -56,9 +58,9 @@
 
                     <div class="row" style="display: flex; gap: 1rem;">
                         <div class="form-group" style="flex: 1;">
-                            <label for="grade">الفرقة الدراسية</label>
+                            <label for="grade">السنة الدراسية</label>
                             <select id="grade" class="form-control" required>
-                                <option value="">اختار الفرقة...</option>
+                                <option value="" disabled selected>اختر السنة</option>
                                 <option value="1">الفرقة الأولى</option>
                                 <option value="2">الفرقة الثانية</option>
                                 <option value="3">الفرقة الثالثة</option>
@@ -71,25 +73,22 @@
                         <label for="term">الترم</label>
                         <select id="term" class="form-control">
                             <option value="" disabled selected>اختر الترم</option>
-                            <option value="1" disabled>الترم الأول</option>
-                            <option value="2" disabled>الترم الثاني</option>
+                            <option value="1">الترم الأول</option>
+                            <option value="2">الترم الثاني</option>
                         </select>
                     </div>
 
-                    <div id="streamGroup" class="form-group" style="display: none;">
-                        <label for="stream">التخصص / القسم</label>
+                    <div class="form-group" id="streamGroup" style="display: none;">
+                        <label for="stream">القسم</label>
                         <select id="stream" class="form-control">
-                            <option value="">اختار التخصص...</option>
-                            <option value="general">تمريض عام</option>
-                            <option value="maternity">نساء وتوليد</option>
-                            <option value="pediatrics">تمريض أطفال</option>
-                            <option value="psychiatric">تمريض نفسي</option>
-                            <option value="community">صحة المجتمع</option>
+                            <option value="" disabled selected>اختر القسم</option>
+                            <!-- Options will be populated dynamically by JS based on year -->
                         </select>
                     </div>
 
                     <div class="form-group">
                         <label for="email">البريد الإلكتروني</label>
+                        <input type="email" id="email" class="form-control" placeholder="example@email.com" required>
                     </div>
                     <div class="form-group">
                         <label for="password">كلمة المرور</label>

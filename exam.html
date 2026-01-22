@@ -4,9 +4,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>الاختبار | أكاديمية التمريض</title>
+    <title>الامتحان | ثانوية.كوم</title>
     <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         :root {
             --header-h: 70px;
@@ -688,9 +690,10 @@
             <button class="mobile-nav-toggle" onclick="toggleDrawer()">
                 <i class="fas fa-th-large"></i>
             </button>
-            <a href="dashboard.html" class="logo">
-                <i class="fas fa-user-nurse"></i>&nbsp;أكاديمية<span>التمريض</span>
-            </a>
+            <div class="logo-box">
+                <img src="assets/images/logo-new.png" alt="Logo" class="brand-icon" style="height:30px">
+                <span id="examTitleMobile">الامتحان</span>
+            </div>
             <div style="display: flex; align-items: center; gap: 8px; margin-right: auto;">
                 <button id="headerFinishBtn" class="btn btn-secondary header-finish-btn"
                     style="padding: 8px 14px; border-radius: 12px; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">

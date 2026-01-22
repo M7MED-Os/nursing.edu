@@ -4,11 +4,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>أكاديمية التمريض | تطوير مهاراتك لمستقبل طبي أفضل</title>
+    <title>منصة الثانوية العامة | تعليم متطور لمستقبل أفضل</title>
     <!-- CSS -->
     <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="manifest" href="manifest.json">
     <!-- Icons (FontAwesome CDN for example) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <!-- PWA Redirect -->
+    <script>
+        if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) {
+            window.location.href = "login.html";
+        }
+    </script>
 </head>
 
 <body>
@@ -17,7 +25,8 @@
     <nav class="navbar">
         <div class="container">
             <a href="index.html" class="logo">
-                <i class="fas fa-user-nurse"></i>&nbsp;أكاديمية<span>التمريض</span>
+                <img src="assets/images/logo-icon.webp" alt="Logo" class="brand-icon">
+                <span class="logo-text">ثانوية<span class="logo-accent">.كوم</span></span>
             </a>
             <div class="menu-toggle">
                 <i class="fas fa-bars"></i>
@@ -35,13 +44,13 @@
     <!-- Hero Section -->
     <header class="hero">
         <div class="container hero-content">
-            <h1 class="hero-title">تفوقك في كلية التمريض يبدأ من <span class="text-primary">التدريب والحل!</span>
+            <h1 class="hero-title">مش محتاج شرح جديد.. أنت محتاج <span class="text-primary">تحل كتير!</span>
             </h1>
-            <p class="hero-subtitle">المنصة الأولى لطلاب التمريض. بنك أسئلة شامل يغطي المواد التمريضية والطبية مع شرح
-                لكل سؤال.</p>
+            <p class="hero-subtitle">أول منصة في مصر للحل والامتحانات بس. بنك أسئلة بيغطي كل تريكات المنهج و كل افكار
+                الكتب في مكان واحد</p>
             <div class="hero-cta">
                 <a href="register.html" class="btn btn-primary btn-lg">جرب ببلاش</a>
-                <a href="pricing.html" class="btn btn-outline btn-lg">شوف الباقات</a>
+                <a href="pricing.html" class="btn btn-outline btn-lg">شوف الأسعار</a>
             </div>
         </div>
         <div class="hero-shape">
@@ -57,16 +66,16 @@
     <section class="section features" id="features">
         <div class="container">
             <div class="text-center">
-                <h2 class="section-title">ليه أكاديمية التمريض؟</h2>
-                <p class="section-subtitle">عشان التطبيق والتدريب المستمر هو اللي هيخليك ممرض متميز.</p>
+                <h2 class="section-title">ليه تشترك معانا؟</h2>
+                <p class="section-subtitle">عشان الحل الكتير هو اللي بيثبت المعلومة.</p>
             </div>
             <div class="grid-3">
                 <div class="card feature-card">
                     <div class="icon-box">
-                        <i class="fas fa-stethoscope"></i>
+                        <i class="fas fa-brain"></i>
                     </div>
-                    <h3>أسئلة تخصصية</h3>
-                    <p>بنك أسئلة ضخم يغطي جميع الأقسام التمريضية والطبية.</p>
+                    <h3>أسئلة كتير</h3>
+                    <p>مش هنسيب فكرة إلا وهتلاقي عليها سؤال.</p>
                 </div>
                 <div class="card feature-card">
                     <div class="icon-box">
@@ -96,18 +105,18 @@
             <div class="steps-container">
                 <div class="step-item">
                     <div class="step-number">1</div>
-                    <h3>سجل حسابك</h3>
-                    <p>اكتب بياناتك واختر فرقتك الدراسية.</p>
+                    <h3>اعمل حساب</h3>
+                    <p>سجل اسمك ورقمك واختر شعبتك.</p>
                 </div>
                 <div class="step-item">
                     <div class="step-number">2</div>
-                    <h3>حدد تخصصك</h3>
-                    <p>اختر القسم أو المادة اللي حابب تذاكرها.</p>
+                    <h3>جرب الاول</h3>
+                    <p>هتحل اول درس من كل مادة ببلاش.</p>
                 </div>
                 <div class="step-item">
                     <div class="step-number">3</div>
-                    <h3>ابدأ التدريب</h3>
-                    <p>حل الامتحانات وتابع مستواك وتطورك.</p>
+                    <h3>اختر الباقة</h3>
+                    <p>شوف أنسب اشتراك ليك (شهري أو 3 شهور).</p>
                 </div>
             </div>
         </div>
@@ -122,27 +131,26 @@
             </div>
             <div class="grid-3">
                 <div class="card testimonial-card">
-                    <p class="testimonial-text">"المنصة وفرت علي مجهود كبير في تجميع أسئلة المحاضرات والتدريبات
-                        العملية."</p>
+                    <p class="testimonial-text">"كل افكار الاسئلة و الكتب الخارجيه في مكان واحد و ب 50 جنيه بس في الشهر
+                        عظمة الصراحة"</p>
                     <div class="student-info">
-                        <h4>أحمد محمود</h4>
-                        <span>الفرقة الثالثة - تمريض باطني</span>
+                        <h4>عمر خالد</h4>
+                        <span>3 ثانوي - علمي علوم</span>
                     </div>
                 </div>
                 <div class="card testimonial-card">
-                    <p class="testimonial-text">"أحلى حاجة إن الشرح بيجي مع الأسئلة، ده بيخليني أفهم ليه الإجابة دي هي
-                        الصح."</p>
+                    <p class="testimonial-text">"أحلى حاجة إني بقدر أحل في أي وقت. وفرت علي فلوس كتب خارجية كتير."</p>
                     <div class="student-info">
-                        <h4>سارة علي</h4>
-                        <span>الفرقة الرابعة - تمريض أطفال</span>
+                        <h4>مريم أحمد</h4>
+                        <span>3 ثانوي - أدبي</span>
                     </div>
                 </div>
                 <div class="card testimonial-card">
-                    <p class="testimonial-text">"كنت بقلق من الامتحانات، بس الامتحانات التفاعلية هنا خلتني واثق جداً من
-                        نفسي."</p>
+                    <p class="testimonial-text">"كنت بخاف من شكل الامتحان، بس كتر الحل هنا خلاني أدخل الامتحان التجريبي
+                        وأنا متعود."</p>
                     <div class="student-info">
-                        <h4>خالد حسن</h4>
-                        <span>الفرقة الثانية - أساسيات التمريض</span>
+                        <h4>يوسف مصطفى</h4>
+                        <span>3 ثانوي - علمي رياضة</span>
                     </div>
                 </div>
             </div>
@@ -176,8 +184,10 @@
         <div class="container">
             <div class="footer-grid">
                 <div class="footer-col">
-                    <h3>أكاديمية التمريض</h3>
-                    <p>منصة متكاملة تهدف لتطوير مهارات طلاب التمريض وتجهيزهم لسوق العمل بأفضل الوسائل التعليمية.</p>
+                    <h3>عن ثانوية.كوم</h3>
+                    <p>منصة تعليمية للامتحانات متكاملة تهدف لتطوير مستوى طلاب الثانوية العامة في مصر وتقديم تجربة
+                        تعليمية فريدة.
+                    </p>
                 </div>
                 <div class="footer-col">
                     <h3>روابط سريعة</h3>
@@ -191,13 +201,13 @@
                     <h3>تواصل معنا</h3>
                     <ul class="footer-links">
                         <li><i class="fas fa-phone"></i> 01000000000</li>
-                        <li><i class="fas fa-envelope"></i> nursing@academy.com</li>
-                        <li><i class="fas fa-map-marker-alt"></i> القاهرة، مصر</li>
+                        <li><i class="fas fa-envelope"></i> thanaweya@gmail.com</li>
+                        <li><i class="fas fa-map-marker-alt"></i> القليوبية، مصر</li>
                     </ul>
                 </div>
             </div>
             <div class="copyright">
-                <p>&copy; 2026 أكاديمية التمريض - جميع الحقوق محفوظة</p>
+                <p>&copy; 2026 ثانوية.كوم - جميع الحقوق محفوظة</p>
             </div>
         </div>
     </footer>

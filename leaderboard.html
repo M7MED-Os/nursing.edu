@@ -3,10 +3,14 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>لوحة المتصدرين | ثانوية.كوم</title>
     <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="assets/css/bottom-nav.css">
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
     <style>
         .leaderboard-hero {
             background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
@@ -179,6 +183,42 @@
                 margin-top: 1rem;
             }
         }
+
+        /* Filter Buttons Style */
+        .filter-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            overflow-x: auto;
+            padding-bottom: 5px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            background: white;
+            border: 1px solid #e2e8f0;
+            color: #64748b;
+            padding: 8px 16px;
+            border-radius: 50px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .filter-btn:hover {
+            background: #f8fafc;
+            border-color: #cbd5e1;
+        }
+
+        .filter-btn.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+            box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.2);
+        }
     </style>
 </head>
 
@@ -195,11 +235,16 @@
     <nav class="navbar">
         <div class="container">
             <a href="dashboard.html" class="logo">
-                <i class="fas fa-graduation-cap"></i>&nbsp;ثانوية<span>.كوم</span>
+                <img src="assets/images/logo-icon.webp" alt="Logo" class="brand-icon">
+                <span class="logo-text">ثانوية<span class="logo-accent">.كوم</span></span>
             </a>
 
             <div class="menu-toggle">
                 <i class="fas fa-bars"></i>
+            </div>
+
+            <div id="pwaLogoutBtn" class="pwa-logout-btn">
+                <i class="fas fa-sign-out-alt"></i>
             </div>
 
             <ul class="nav-links">
@@ -227,6 +272,9 @@
 
     <!-- Leaderboard Table -->
     <div class="container leaderboard-container">
+        <!-- Filters (Dynamic) -->
+        <div id="filterContainer" class="filter-container" style="display: none;"></div>
+
         <div class="full-leaderboard-card">
             <table class="leaderboard-table">
                 <thead>
@@ -249,6 +297,7 @@
         </div>
     </div>
 
+
     <!-- Footer -->
     <footer class="footer">
         <div class="container">
@@ -258,45 +307,234 @@
         </div>
     </footer>
 
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+        <div class="bottom-nav-container">
+            <a href="dashboard.html" class="bottom-nav-item">
+                <i class="fas fa-home"></i>
+                <span>الرئيسية</span>
+            </a>
+            <a href="todo.html" class="bottom-nav-item">
+                <i class="fas fa-tasks"></i>
+                <span>المهام</span>
+            </a>
+            <a href="leaderboard.html" class="bottom-nav-item active">
+                <i class="fas fa-trophy"></i>
+                <span>الأوائل</span>
+            </a>
+            <a href="profile.html" class="bottom-nav-item">
+                <i class="fas fa-user"></i>
+                <span>البروفايل</span>
+            </a>
+            <!-- <a href="#" id="bottomLogoutBtn" class="bottom-nav-item">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>خروج</span>
+            </a> -->
+            <a href="admin.html" id="bottomAdminBtn" class="bottom-nav-item admin-link" style="display: none;">
+                <i class="fas fa-shield-alt"></i>
+                <span>Admin</span>
+            </a>
+        </div>
+    </nav>
+
+
+
     <script src="assets/js/main.js"></script>
     <script type="module" src="assets/js/auth.js"></script>
+
     <script type="module">
         import { supabase } from "./assets/js/supabaseClient.js";
 
-        async function loadLeaderboardPage() {
+        // Mappings
+        const gradeMap = {
+            "1": "الفرقة الأولى",
+            "2": "الفرقة الثانية",
+            "3": "الفرقة الثالثة",
+            "4": "الفرقة الرابعة"
+        };
+        const streamMap = {
+            "pediatric": "قسم الأطفال",
+            "obs_gyn": "قسم النسا",
+            "nursing_admin": "قسم الإدارة",
+            "psychiatric": "قسم النفسية"
+        };
+
+        // State
+        let currentUserInfo = null;
+        let currentFilterStream = 'all'; // 'all' or specific stream key
+
+        // Init
+        window.addEventListener('DOMContentLoaded', async () => {
+            const loadingGlobal = document.getElementById('loading');
+
+            await fetchUserData();
+            if (currentUserInfo) {
+                setupFilters();
+                await loadLeaderboardData();
+            }
+
+            if (loadingGlobal) {
+                loadingGlobal.style.opacity = '0';
+                setTimeout(() => { if (loadingGlobal.parentNode) loadingGlobal.remove(); }, 500);
+            }
+        });
+
+        async function fetchUserData() {
+            try {
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) {
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('id, full_name, points, grade, term, stream')
+                    .eq('id', user.id)
+                    .single();
+
+                currentUserInfo = profile;
+
+                // Default filter: User's stream (if year 3/4), else 'all'
+                if ((profile.grade === '3' || profile.grade === '4') && profile.stream) {
+                    currentFilterStream = profile.stream;
+                } else {
+                    currentFilterStream = 'all';
+                }
+
+            } catch (err) {
+                console.error("Auth Error", err);
+            }
+        }
+
+        function setupFilters() {
+            const container = document.getElementById('filterContainer');
+            const grade = currentUserInfo.grade;
+
+            // Define Buttons based on Grade
+            let buttons = [];
+
+            if (grade === '3') {
+                buttons = [
+                    { label: 'الدفعة كاملة', value: 'all' },
+                    { label: 'قسم الأطفال', value: 'pediatric' },
+                    { label: 'قسم النسا', value: 'obs_gyn' }
+                ];
+            } else if (grade === '4') {
+                buttons = [
+                    { label: 'الدفعة كاملة', value: 'all' },
+                    { label: 'إدارة التمريض', value: 'nursing_admin' },
+                    { label: 'قسم النفسية', value: 'psychiatric' }
+                ];
+            } else {
+                container.style.display = 'none';
+                return;
+            }
+
+            container.style.display = 'flex';
+            container.innerHTML = buttons.map(btn => `
+                <button class="filter-btn ${btn.value === currentFilterStream ? 'active' : ''}" 
+                        onclick="window.changeFilter('${btn.value}')">
+                    ${btn.label}
+                </button>
+            `).join('');
+        }
+
+        // Global function for onclick
+        window.changeFilter = (val) => {
+            currentFilterStream = val;
+
+            // Update UI
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.getAttribute('onclick').includes(`'${val}'`));
+            });
+
+            // Reload Data
+            loadLeaderboardData();
+        };
+
+        async function loadLeaderboardData() {
             const body = document.getElementById('leaderboardBody');
+            const user = currentUserInfo;
+
+            // Show Loading
+            body.innerHTML = `
+                <tr>
+                    <td colspan="3" style="text-align: center; padding: 4rem;">
+                        <i class="fas fa-spinner fa-spin fa-2x" style="color: var(--primary-color);"></i>
+                        <p style="margin-top: 1rem; color: var(--text-light);">جاري تحديث القائمة...</p>
+                    </td>
+                </tr>
+            `;
+
+            // Clear old motivation msg
+            const oldMsg = document.getElementById('motivationMsg');
+            if (oldMsg) oldMsg.remove();
 
             try {
-                // التحكم في العدد: غير الرقم (50) للعدد اللي تحبه
-                const { data, error } = await supabase
+                // Update Title Context
+                const headerP = document.querySelector('.leaderboard-hero p');
+                let contextText = gradeMap[user.grade] || '';
+
+                if (currentFilterStream === 'all') {
+                    contextText += " (الدفعة كاملة)";
+                } else if (streamMap[currentFilterStream]) {
+                    contextText += ` - ${streamMap[currentFilterStream]}`;
+                }
+                headerP.textContent = `قائمة المتصدرين لـ ${contextText}`;
+
+                // Build Query
+                let query = supabase
                     .from('profiles')
-                    .select('full_name, points, grade, role')
+                    .select('id, full_name, points, grade, stream, role')
+                    .eq('show_on_leaderboard', true)
+                    .eq('grade', user.grade)
                     .order('points', { ascending: false })
                     .limit(10);
 
+                // Filter by Term (Fair comparison within same term)
+                if (user.term) {
+                    query = query.eq('term', user.term);
+                }
+
+                // Filter by Stream (If not 'all')
+                if (currentFilterStream !== 'all') {
+                    query = query.eq('stream', currentFilterStream);
+                }
+
+                const { data, error } = await query;
                 if (error) throw error;
 
-                const gradeMap = { "1": "أولى ثانوي", "2": "تانية ثانوي", "3": "تالتة ثانوي" };
+                if (data.length === 0) {
+                    body.innerHTML = '<tr><td colspan="3" style="text-align:center; padding: 2rem;">لا يوجد متصدرين في هذا التصنيف.</td></tr>';
+                    return;
+                }
 
+                // Render
                 body.innerHTML = data.map((s, i) => {
                     const rank = i + 1;
                     let rankDisplay = rank;
                     let rankClass = `rank-${rank}`;
+                    let rowClass = s.id === user.id ? 'style="background-color: #f0f9ff;"' : '';
 
                     if (rank === 1) rankDisplay = '<i class="fas fa-crown medal-icon"></i>';
-                    else if (rank === 2) rankDisplay = '<i class="fas fa-medal medal-icon" style="color:#d97706"></i>'; // Gold
-                    else if (rank === 3) rankDisplay = '<i class="fas fa-medal medal-icon" style="color:#94a3b8"></i>'; // Silver
+                    else if (rank === 2) rankDisplay = '<i class="fas fa-medal medal-icon" style="color:#d97706"></i>';
+                    else if (rank === 3) rankDisplay = '<i class="fas fa-medal medal-icon" style="color:#94a3b8"></i>';
                     else rankClass = '';
 
+                    let displayStream = streamMap[s.stream] || '';
+                    if (!displayStream && s.stream) displayStream = s.stream;
+                    const subText = displayStream ? `<span style="font-size:0.8em; color:var(--primary-color);">(${displayStream})</span>` : (gradeMap[s.grade] || '-');
+
                     return `
-                        <tr>
+                        <tr ${rowClass}>
                             <td class="rank-cell ${rankClass}">${rankDisplay}</td>
                             <td>
                                 <div class="user-info-cell">
-                                    <div class="user-avatar">${s.full_name[0]}</div>
+                                    <div class="user-avatar">${s.full_name ? s.full_name[0] : '?'}</div>
                                     <div class="user-name-box">
-                                        <b>${s.full_name}</b>
-                                        <span>${gradeMap[s.grade] || '-'}</span>
+                                        <b>${s.full_name} ${s.id === user.id ? '(أنت)' : ''}</b>
+                                        <span>${subText}</span>
                                     </div>
                                 </div>
                             </td>
@@ -308,20 +546,42 @@
                     `;
                 }).join('');
 
+                // Motivation Msg Check
+                const belongsToFilter = (currentFilterStream === 'all') || (currentFilterStream === user.stream);
+                const isUserInTop10 = data.some(s => s.id === user.id);
+
+                if (belongsToFilter && !isUserInTop10 && data.length > 0) {
+                    const lastPersonPoints = data[data.length - 1].points || 0;
+                    const diff = lastPersonPoints - (user.points || 0);
+
+                    if (diff > 0) {
+                        const motivationMsg = document.createElement('div');
+                        motivationMsg.id = 'motivationMsg';
+                        motivationMsg.style.cssText = `
+                            background: white; 
+                            padding: 1rem; 
+                            margin-top: 1rem; 
+                            border-radius: 12px; 
+                            text-align: center; 
+                            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); 
+                            border: 1px dashed var(--primary-color);
+                            color: #475569;
+                            animation: fadeIn 0.5s ease-out;
+                        `;
+                        motivationMsg.innerHTML = `
+                            <i class="fas fa-rocket" style="color: var(--primary-color); font-size: 1.2rem;"></i>
+                            <span style="font-weight: bold; margin: 0 5px;">أنت بطل!</span>
+                            باقي لك <span style="color: var(--primary-color); font-weight: 900; font-size: 1.1rem;">${diff + 1}</span> نقطة وتدخل هذه القائمة!
+                        `;
+                        document.querySelector('.full-leaderboard-card').after(motivationMsg);
+                    }
+                }
+
             } catch (err) {
                 console.error(err);
-                body.innerHTML = '<tr><td colspan="3" style="text-align:center; color:red; padding: 2rem;">فشل في تحميل البيانات</td></tr>';
-            } finally {
-                // Safety: Ensure any global loading spinner is hidden
-                const globalLoading = document.getElementById('loading');
-                if (globalLoading) {
-                    globalLoading.style.opacity = '0';
-                    setTimeout(() => { if (globalLoading.parentNode) globalLoading.remove(); }, 500);
-                }
+                body.innerHTML = '<tr><td colspan="3" style="text-align:center; color:red; padding: 2rem;">خطأ في التحميل</td></tr>';
             }
         }
-
-        window.addEventListener('DOMContentLoaded', loadLeaderboardPage);
     </script>
 
 </body>

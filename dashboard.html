@@ -3,10 +3,14 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>الرئيسية | أكاديمية التمريض</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>الرئيسية | ثانوية.كوم</title>
     <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/bottom-nav.css">
+    <link rel="manifest" href="manifest.json">
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
     <style>
         .dashboard-header {
             background-color: var(--primary-color);
@@ -136,11 +140,16 @@
     <nav class="navbar">
         <div class="container">
             <a href="dashboard.html" class="logo">
-                <i class="fas fa-user-nurse"></i>&nbsp;أكاديمية<span>التمريض</span>
+                <img src="assets/images/logo-icon.webp" alt="Logo" class="brand-icon">
+                <span class="logo-text">ثانوية<span class="logo-accent">.كوم</span></span>
             </a>
 
             <div class="menu-toggle">
                 <i class="fas fa-bars"></i>
+            </div>
+
+            <div id="pwaLogoutBtn" class="pwa-logout-btn">
+                <i class="fas fa-sign-out-alt"></i>
             </div>
 
             <ul class="nav-links">
@@ -161,9 +170,12 @@
     <!-- Welcome Header -->
     <header class="dashboard-header">
         <div class="container">
+            <!-- Announcements Section -->
+            <div id="announcements-container"></div>
+
             <h1 class="welcome-text">أهلاً يا <span id="studentName">...</span> 👋</h1>
             <h1 style="display:none;" id="studentStatsHeader">...</h1>
-            <p>جاهز لمذاكرة المحاضرات النهاردة؟</p>
+            <p>جاهز تفرم شوية أسئلة النهاردة؟</p>
         </div>
     </header>
 
@@ -177,7 +189,7 @@
             </div>
             <div class="stat-card">
                 <span class="stat-number" id="stats-questions">0</span>
-                <span class="stat-label">أسئلة تم حلها</span>
+                <span class="stat-label">أسئلة حليتها</span>
             </div>
             <div class="stat-card">
                 <span class="stat-number" id="stats-exams">0</span>
@@ -192,15 +204,14 @@
 
 
         <div style="text-align: center; margin-bottom: 3rem;">
-            <a href="leaderboard.html" class="btn btn-secondary"
-                style="background: linear-gradient(135deg, #FF6F00 0%, #FF8F00 100%); padding: 1rem 2rem; border-radius: 50px; box-shadow: 0 4px 15px rgba(255, 111, 0, 0.3);">
+            <a href="leaderboard.html" class="btn btn-leaderboard">
                 <i class="fas fa-trophy"></i> عرض لوحة المتصدرين
             </a>
         </div>
 
         <!-- Subjects Section -->
         <h2 class="section-title" style="font-size: 1.8rem;">المواد الدراسية</h2>
-        <p class="section-subtitle" style="margin-bottom: 2rem;">اختار المادة وابدأ المذاكرة فوراً</p>
+        <p class="section-subtitle" style="margin-bottom: 2rem;">اختار المادة وابدأ حل فوراً</p>
 
         <div class="grid-3" id="subjectsGrid">
             <!-- Subjects will be loaded here -->
@@ -216,18 +227,54 @@
 
     </div>
 
+
     <!-- Footer -->
     <footer class="footer">
         <div class="container">
             <div class="copyright" style="border: none; padding-top: 0;">
-                <p>&copy; 2026 أكاديمية التمريض</p>
+                <p>&copy; 2026 ثانوية.كوم</p>
             </div>
         </div>
     </footer>
 
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+        <div class="bottom-nav-container">
+            <a href="dashboard.html" class="bottom-nav-item active">
+                <i class="fas fa-home"></i>
+                <span>الرئيسية</span>
+            </a>
+            <a href="todo.html" class="bottom-nav-item">
+                <i class="fas fa-tasks"></i>
+                <span>المهام</span>
+            </a>
+            <a href="leaderboard.html" class="bottom-nav-item">
+                <i class="fas fa-trophy"></i>
+                <span>الأوائل</span>
+            </a>
+            <a href="profile.html" class="bottom-nav-item">
+                <i class="fas fa-user"></i>
+                <span>البروفايل</span>
+            </a>
+            <!-- <a href="#" id="bottomLogoutBtn" class="bottom-nav-item">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>خروج</span>
+            </a> -->
+            <!-- Admin link - hidden by default, shown via JS -->
+            <a href="admin.html" id="bottomAdminBtn" class="bottom-nav-item admin-link" style="display: none;">
+                <i class="fas fa-shield-alt"></i>
+                <span>Admin</span>
+            </a>
+        </div>
+    </nav>
+
+
+
     <!-- Scripts -->
     <script src="assets/js/main.js"></script>
     <script type="module" src="assets/js/auth.js"></script>
+    <script type="module" src="assets/js/dashboard.js"></script>
+
 </body>
 
 </html>
