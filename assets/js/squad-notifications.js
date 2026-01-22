@@ -10,11 +10,14 @@ async function initSquadNotifications() {
     if (!user) return;
 
     // 2. Check Squad
-    const { data: membership } = await supabase
+    const { data: records } = await supabase
         .from('squad_members')
         .select('squad_id')
         .eq('profile_id', user.id)
-        .single();
+        .limit(1);
+
+    const membership = records && records.length > 0 ? records[0] : null;
+
 
     if (!membership) return;
 

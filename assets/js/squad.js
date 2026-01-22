@@ -45,16 +45,17 @@ async function initSquad() {
     // 3. Check for Squad Membership - Use Cache (1 min short cache)
     let memberRecord = getCache(`squad_member_${user.id}`);
     if (!memberRecord) {
-        const { data: fetchedRecord, error: memberError } = await supabase
+        const { data: records, error: memberError } = await supabase
             .from('squad_members')
             .select('squad_id, squads(*)')
             .eq('profile_id', user.id)
-            .maybeSingle();
+            .limit(1);
 
         if (memberError) console.error("Membership check error:", memberError);
-        memberRecord = fetchedRecord;
+        memberRecord = records && records.length > 0 ? records[0] : null;
         if (memberRecord) setCache(`squad_member_${user.id}`, memberRecord, 1);
     }
+
 
     if (memberRecord && memberRecord.squads) {
         currentSquad = memberRecord.squads;
@@ -95,7 +96,12 @@ async function setupSquadUI() {
 
 // --- Squad Actions (Create/Join) ---
 window.showCreateSquadModal = async () => {
+    if (currentSquad) {
+        Swal.fire('تنبيه', 'أنت بالفعل في شلة! اخرج منها أولاً لتتمكن من إنشاء واحدة جديدة.', 'warning');
+        return;
+    }
     const { value: name } = await Swal.fire({
+
         title: 'اسم شلتك الجديدة؟ 🚀',
         input: 'text',
         inputPlaceholder: 'ادخل اسم الشلة...',
@@ -134,7 +140,12 @@ window.showCreateSquadModal = async () => {
 };
 
 window.showJoinSquadModal = async () => {
+    if (currentSquad) {
+        Swal.fire('تنبيه', 'أنت بالفعل في شلة! اخرج منها أولاً لتتمكن من الانضمام لشلة أخرى.', 'warning');
+        return;
+    }
     const { value: code } = await Swal.fire({
+
         title: 'ادخل كود الشلة',
         input: 'text',
         inputPlaceholder: 'مثال: ABCD (أول 4 حروف من الآيدي)',

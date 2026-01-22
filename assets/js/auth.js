@@ -1,6 +1,6 @@
 import { supabase } from "./supabaseClient.js";
 import { showToast, showInputError, clearInputError, getCache, setCache, clearCache } from "./utils.js";
-import { APP_CONFIG } from "./constants.js";
+import { APP_CONFIG, STREAMS, GRADES, TERMS, GRADE_STREAMS } from "./constants.js";
 
 // ==========================
 // 1. Auth State Management
@@ -30,7 +30,10 @@ export async function checkAuth(options = { forceRefresh: false }) {
         let profile = options.forceRefresh ? null : getCache(`profile_${userId}`);
 
         // 2. Fallback to database
-        if (!profile) {
+        // BUG FIX: If profile is in cache but NOT active, force a fresh check to handle activation redirects
+        const shouldRefresh = !profile || (profile && !profile.is_active);
+
+        if (shouldRefresh) {
             const { data: fetchedProfile, error: profileError } = await supabase.from('profiles')
                 .select('*')
                 .eq('id', userId)
@@ -233,21 +236,15 @@ if (registerForm) {
             if (gradeNum >= 1 && gradeNum <= 4) {
                 termGroup.style.display = "block";
 
-                if (gradeNum === 3 || gradeNum === 4) {
+                const availableStreams = GRADE_STREAMS[grade];
+                if (availableStreams) {
                     streamGroup.style.display = "block";
-
-                    if (gradeNum === 3) {
-                        streamSelect.innerHTML += `
-                            <option value="pediatric">${STREAMS['pediatric']}</option>
-                            <option value="obs_gyn">${STREAMS['obs_gyn']}</option>
-                        `;
-                    } else if (gradeNum === 4) {
-                        streamSelect.innerHTML += `
-                            <option value="nursing_admin">${STREAMS['nursing_admin']}</option>
-                            <option value="psychiatric">${STREAMS['psychiatric']}</option>
-                        `;
-                    }
-
+                    availableStreams.forEach(sKey => {
+                        const option = document.createElement('option');
+                        option.value = sKey;
+                        option.textContent = STREAMS[sKey];
+                        streamSelect.appendChild(option);
+                    });
                 } else {
                     streamGroup.style.display = "none";
                 }
@@ -255,6 +252,7 @@ if (registerForm) {
                 termGroup.style.display = "none";
                 streamGroup.style.display = "none";
             }
+
         });
     }
 
@@ -307,6 +305,19 @@ if (registerForm) {
             // Validate Stream (Required for Year 3 & 4)
             if ((grade === "3" || grade === "4") && !stream) {
                 showInputError(stream_input, "اختار القسم");
+                isValid = false;
+            }
+        }
+
+        // Validate Password Confirmation
+        const confirm_password_input = document.getElementById("confirmPassword");
+        if (confirm_password_input) {
+            const confirm_password = confirm_password_input.value;
+            if (!confirm_password) {
+                showInputError(confirm_password_input, "أكد كلمة السر");
+                isValid = false;
+            } else if (confirm_password !== password) {
+                showInputError(confirm_password_input, "كلمة السر غير متطابقة");
                 isValid = false;
             }
         }
