@@ -453,9 +453,9 @@ async function renderChat(msgs) {
     const box = document.getElementById('chatBox');
     const myId = currentProfile.id;
 
-    // Fetch read markers for these messages
+    // Fetch read markers
     const msgIds = msgs.map(m => m.id);
-    const { data: allReads } = await supabase.from('squad_message_reads').select('message_id, profiles!profile_id(full_name)').in('message_id', msgIds);
+    const { data: allReads } = await supabase.from('squad_message_reads').select('message_id, profile_id, profiles!profile_id(full_name)').in('message_id', msgIds);
 
     box.innerHTML = msgs.map(m => {
         const time = new Date(m.created_at).toLocaleTimeString('ar-EG', {
@@ -464,20 +464,32 @@ async function renderChat(msgs) {
             hour12: true
         });
 
-        // Mark as read if not mine and not already marked
-        if (m.sender_id !== myId) {
+        // Check if I have already read this message
+        const isReadByMe = allReads?.some(r => r.message_id === m.id && r.profile_id === myId);
+
+        // Mark as read ONLY if not mine and I haven't read it yet
+        if (m.sender_id !== myId && !isReadByMe) {
             markAsRead(m.id);
         }
 
-        const readers = allReads?.filter(r => r.message_id === m.id).map(r => r.profiles.full_name.split(' ')[0]) || [];
-        const seenIcon = readers.length > 0 ? `<div class="msg-seen"><i class="fas fa-check-double"></i> شوهد: ${readers.join('، ')}</div>` : '';
+        const readers = allReads?.filter(r => r.message_id === m.id && r.profile_id !== m.sender_id) || [];
+        const isReadByOthers = readers.length > 0;
+        const readerNames = readers.map(r => r.profiles.full_name.split(' ')[0]).join('، ');
+
+        const ticks = m.sender_id === myId ? `
+            <div class="msg-seen-status ${isReadByOthers ? 'read' : 'sent'}" title="${isReadByOthers ? 'شوهد بواسطة: ' + readerNames : 'تم الإرسال'}">
+                <i class="fas fa-check-double"></i>
+            </div>
+        ` : '';
 
         return `
-            <div class="msg ${m.sender_id === myId ? 'sent' : 'received'}" data-msgid="${m.id}">
+            <div class="msg ${m.sender_id === myId ? 'sent' : 'received'}">
                 <span class="msg-sender">${m.profiles.full_name}</span>
                 <div class="msg-content">${m.text}</div>
-                <span class="msg-time">${time}</span>
-                ${m.sender_id === myId ? seenIcon : ''}
+                <div class="msg-footer">
+                    <span class="msg-time">${time}</span>
+                    ${ticks}
+                </div>
             </div>
         `;
     }).join('');
@@ -485,7 +497,14 @@ async function renderChat(msgs) {
 }
 
 async function markAsRead(msgId) {
-    await supabase.from('squad_message_reads').upsert({ message_id: msgId, profile_id: currentProfile.id }, { onConflict: 'message_id,profile_id' });
+    try {
+        await supabase.from('squad_message_reads').upsert({
+            message_id: msgId,
+            profile_id: currentProfile.id
+        }, { onConflict: 'message_id,profile_id' });
+    } catch (e) {
+        // Quietly fail to avoid console clutter
+    }
 }
 
 document.getElementById('chatForm').onsubmit = async (e) => {
