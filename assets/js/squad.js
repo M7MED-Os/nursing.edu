@@ -441,7 +441,7 @@ window.deleteSquadTask = async (id) => {
 async function loadChat() {
     const { data: msgs } = await supabase
         .from('squad_chat_messages')
-        .select('*, profiles(full_name)')
+        .select('*, profiles!sender_id(full_name)')
         .eq('squad_id', currentSquad.id)
         .order('created_at', { ascending: false })
         .limit(50);
@@ -449,15 +449,43 @@ async function loadChat() {
     renderChat(msgs.reverse());
 }
 
-function renderChat(msgs) {
+async function renderChat(msgs) {
     const box = document.getElementById('chatBox');
-    box.innerHTML = msgs.map(m => `
-        <div class="msg ${m.sender_id === currentProfile.id ? 'sent' : 'received'}">
-            <span class="msg-sender">${m.profiles.full_name}</span>
-            ${m.text}
-        </div>
-    `).join('');
+    const myId = currentProfile.id;
+
+    // Fetch read markers for these messages
+    const msgIds = msgs.map(m => m.id);
+    const { data: allReads } = await supabase.from('squad_message_reads').select('message_id, profiles!profile_id(full_name)').in('message_id', msgIds);
+
+    box.innerHTML = msgs.map(m => {
+        const time = new Date(m.created_at).toLocaleTimeString('ar-EG', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+        });
+
+        // Mark as read if not mine and not already marked
+        if (m.sender_id !== myId) {
+            markAsRead(m.id);
+        }
+
+        const readers = allReads?.filter(r => r.message_id === m.id).map(r => r.profiles.full_name.split(' ')[0]) || [];
+        const seenIcon = readers.length > 0 ? `<div class="msg-seen"><i class="fas fa-check-double"></i> شوهد: ${readers.join('، ')}</div>` : '';
+
+        return `
+            <div class="msg ${m.sender_id === myId ? 'sent' : 'received'}" data-msgid="${m.id}">
+                <span class="msg-sender">${m.profiles.full_name}</span>
+                <div class="msg-content">${m.text}</div>
+                <span class="msg-time">${time}</span>
+                ${m.sender_id === myId ? seenIcon : ''}
+            </div>
+        `;
+    }).join('');
     box.scrollTop = box.scrollHeight;
+}
+
+async function markAsRead(msgId) {
+    await supabase.from('squad_message_reads').upsert({ message_id: msgId, profile_id: currentProfile.id }, { onConflict: 'message_id,profile_id' });
 }
 
 document.getElementById('chatForm').onsubmit = async (e) => {

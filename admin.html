@@ -929,6 +929,9 @@
             <div class="nav-item" id="navBroadcast" onclick="showBroadcastView()">
                 <i class="fas fa-bullhorn"></i> مركز التنبيهات
             </div>
+            <div class="nav-item" id="navSquads" onclick="showSquadsView()">
+                <i class="fas fa-user-group"></i> إدارة الشلل
+            </div>
 
             <div class="nav-group-title">الفرقة الرابعة</div>
             <div class="nav-item" onclick="selectContext('4', '1')">
@@ -1005,6 +1008,29 @@
                 <div class="empty-state">
                     <i class="fas fa-mouse-pointer"></i>
                     <p>اختر قسماً من القائمة الجانبية للبدء</p>
+                </div>
+            </div>
+
+            <!-- Squads View -->
+            <div id="squadsView" class="view-section">
+                <div style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center;">
+                    <h2 style="margin: 0; font-weight: 800; color: #0f172a;">إدارة الشلل</h2>
+                </div>
+                <div class="table-responsive-wrapper">
+                    <table class="responsive-table">
+                        <thead>
+                            <tr>
+                                <th>اسم الشلة</th>
+                                <th>الفرقة</th>
+                                <th>القسم</th>
+                                <th>المالك</th>
+                                <th>النقاط</th>
+                                <th>الأعضاء</th>
+                                <th>إجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="squadsTableBody"></tbody>
+                    </table>
                 </div>
             </div>
 

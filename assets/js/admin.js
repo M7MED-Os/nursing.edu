@@ -1761,3 +1761,67 @@ window.cancelBroadcast = async (id) => {
     }
 };
 
+// ==========================================
+// 11. SQUADS MANAGEMENT
+// ==========================================
+
+window.showSquadsView = () => {
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+    document.getElementById('navSquads')?.classList.add('active');
+    document.getElementById('pageTitle').textContent = 'الرئيسية > إدارة الشلل';
+    showView('squadsView');
+    loadSquadsAdmin();
+};
+
+async function loadSquadsAdmin() {
+    const tbody = document.getElementById('squadsTableBody');
+    tbody.innerHTML = '<tr><td colspan="7"><div class="spinner"></div></td></tr>';
+
+    const { data: squads, error } = await supabase
+        .from('squads')
+        .select(`
+            *,
+            owner:owner_id (full_name),
+            members:squad_members (count)
+        `)
+        .order('total_points', { ascending: false });
+
+    if (error) return Swal.fire('Error', error.message, 'error');
+
+    tbody.innerHTML = squads.map(s => `
+        <tr>
+            <td data-label="اسم الشلة"><b>${s.name}</b></td>
+            <td data-label="الفرقة">${s.academic_year || 'غير محدد'}</td>
+            <td data-label="القسم">${s.department || 'عام'}</td>
+            <td data-label="المالك">${s.owner?.full_name || 'غير معروف'}</td>
+            <td data-label="النقاط">${s.total_points || 0}</td>
+            <td data-label="الأعضاء">${s.members[0]?.count || 0}</td>
+            <td data-label="إجراءات">
+                <button class="btn btn-sm" style="background:#fee2e2; color:#ef4444;" onclick="deleteSquad('${s.id}')">
+                    <i class="fas fa-trash"></i> حذف الشلة
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+window.deleteSquad = async (id) => {
+    const result = await Swal.fire({
+        title: 'هل أنت متأكد؟',
+        text: "حذف الشلة سيحذف كل الرسائل والمهام والأعضاء بداخلها!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'نعم، احذف',
+        cancelButtonText: 'إلغاء'
+    });
+
+    if (result.isConfirmed) {
+        const { error } = await supabase.from('squads').delete().eq('id', id);
+        if (error) Swal.fire('Error', error.message, 'error');
+        else {
+            Swal.fire('تم!', 'تم حذف الشلة بنجاح', 'success');
+            loadSquadsAdmin();
+        }
+    }
+};
+

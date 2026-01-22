@@ -79,6 +79,11 @@ async function checkAuth() {
         }
     }
 
+    // Update Last Seen (Online Status)
+    if (profile) {
+        supabase.from('profiles').update({ last_seen: new Date().toISOString() }).eq('id', session.user.id).then();
+    }
+
     return { ...session.user, profile };
 }
 
