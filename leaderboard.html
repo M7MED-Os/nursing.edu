@@ -255,6 +255,7 @@
 
             <ul class="nav-links">
                 <li><a href="dashboard.html">الرئيسية</a></li>
+                <li><a href="squad.html">الشلة</a></li>
                 <li><a href="todo.html">المهام</a></li>
                 <li><a href="leaderboard.html" class="active">المتصدرين</a></li>
                 <li id="adminNavBtn" style="display: none;">
@@ -278,8 +279,18 @@
 
     <!-- Leaderboard Table -->
     <div class="container leaderboard-container">
+        <!-- View Switcher -->
+        <div class="filter-container" style="margin-bottom: 30px;">
+            <button class="filter-btn active" id="tabStudents" onclick="window.switchView('students')">
+                <i class="fas fa-user-graduate"></i> أوائل الطلاب
+            </button>
+            <button class="filter-btn" id="tabSquads" onclick="window.switchView('squads')">
+                <i class="fas fa-users"></i> أوائل الشلل
+            </button>
+        </div>
+
         <!-- Filters (Dynamic) -->
-        <div id="filterContainer" class="filter-container" style="display: none;"></div>
+        <div id="filterContainer" class="filter-container" style="display: none; margin-top: -10px;"></div>
 
         <div class="full-leaderboard-card">
             <table class="leaderboard-table">
@@ -347,6 +358,7 @@
 
     <script src="assets/js/main.js"></script>
     <script type="module" src="assets/js/auth.js"></script>
+    <script type="module" src="assets/js/squad-notifications.js"></script>
 
     <script type="module">
         import { supabase } from "./assets/js/supabaseClient.js";
@@ -367,6 +379,7 @@
 
         // State
         let currentUserInfo = null;
+        let currentView = 'students'; // 'students' or 'squads'
         let currentFilterStream = 'all'; // 'all' or specific stream key
 
         // Init
@@ -452,12 +465,87 @@
 
             // Update UI
             document.querySelectorAll('.filter-btn').forEach(btn => {
-                btn.classList.toggle('active', btn.getAttribute('onclick').includes(`'${val}'`));
+                if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes(`window.changeFilter('${val}')`)) {
+                    btn.classList.add('active');
+                } else if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes('window.changeFilter')) {
+                    btn.classList.remove('active');
+                }
             });
 
             // Reload Data
-            loadLeaderboardData();
+            if (currentView === 'students') loadLeaderboardData();
+            else loadSquadLeaderboardData();
         };
+
+        window.switchView = (view) => {
+            currentView = view;
+
+            // Toggle Tab buttons
+            document.getElementById('tabStudents').classList.toggle('active', view === 'students');
+            document.getElementById('tabSquads').classList.toggle('active', view === 'squads');
+
+            // Refresh Header Title
+            const headerH1 = document.querySelector('.leaderboard-hero h1');
+            headerH1.textContent = view === 'students' ? '🏆 لوحة الشرف' : '🔥 قمة الشلل';
+
+            if (view === 'students') {
+                document.querySelector('thead tr th:nth-child(2)').textContent = 'الطالب';
+                loadLeaderboardData();
+            } else {
+                document.querySelector('thead tr th:nth-child(2)').textContent = 'الشلة';
+                loadSquadLeaderboardData();
+            }
+        };
+
+        async function loadSquadLeaderboardData() {
+            const body = document.getElementById('leaderboardBody');
+            const user = currentUserInfo;
+
+            body.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:4rem;"><i class="fas fa-spinner fa-spin fa-2x"></i></td></tr>';
+
+            try {
+                // Fetch Squads based on User's Grade
+                let query = supabase
+                    .from('squads')
+                    .select('*')
+                    .eq('academic_year', gradeMap[user.grade] || user.grade)
+                    .order('points', { ascending: false })
+                    .limit(10);
+
+                const { data: squads, error } = await query;
+                if (error) throw error;
+
+                if (squads.length === 0) {
+                    body.innerHTML = '<tr><td colspan="3" style="text-align:center; padding: 2rem;">مفيش شلل لسة في عيلتك.. ابدأ شلتك دلوقتي!</td></tr>';
+                    return;
+                }
+
+                body.innerHTML = squads.map((s, i) => `
+                    <tr>
+                        <td class="rank-cell ${i < 3 ? 'rank-' + (i + 1) : ''}">
+                            ${i === 0 ? '<i class="fas fa-crown medal-icon"></i>' : (i + 1)}
+                        </td>
+                        <td>
+                            <div class="user-info-cell">
+                                <div class="user-avatar" style="background: var(--secondary-color); color: white;">#</div>
+                                <div class="user-name-box">
+                                    <b>${s.name}</b>
+                                    <span>${s.department || 'عام'} - ${s.academic_year}</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="points-cell">
+                            ${s.points || 0}
+                            <span class="points-label">نقطة</span>
+                        </td>
+                    </tr>
+                `).join('');
+
+            } catch (err) {
+                console.error(err);
+                body.innerHTML = '<tr><td colspan="3" style="text-align:center; color:red;">خطأ في التحميل</td></tr>';
+            }
+        }
 
         async function loadLeaderboardData() {
             const body = document.getElementById('leaderboardBody');

@@ -12,6 +12,8 @@ let flaggedQuestions = new Set();
 let timerInterval = null;
 let timeElapsed = 0; // in seconds
 let totalTime = 0; // calculated based on questions
+let squadId = urlParams.get('squad_id');
+let squadSessionId = null;
 
 const loadingEl = document.getElementById("loading");
 const examView = document.getElementById("examView");
@@ -95,6 +97,12 @@ async function initExam() {
         showQuestion(0);
         startTimer();
 
+        if (squadId) {
+            setupSquadSession();
+            const badge = document.getElementById('squadModeBadge');
+            if (badge) badge.style.display = 'block';
+        }
+
         loadingEl.style.display = "none";
         examView.style.display = "block";
         if (examFooter) examFooter.style.display = "flex";
@@ -102,6 +110,77 @@ async function initExam() {
     } catch (err) {
         console.error("Error:", err);
         loadingEl.innerHTML = `<p style="color:red">حدث خطأ: ${err.message}</p>`;
+    }
+}
+
+// --- Squad Collaborative Functions ---
+async function setupSquadSession() {
+    // Check if session exists or create one
+    const { data: session } = await supabase
+        .from('squad_exam_sessions')
+        .select('*')
+        .eq('squad_id', squadId)
+        .eq('exam_id', examId)
+        .eq('status', 'active')
+        .single();
+
+    if (session) {
+        squadSessionId = session.id;
+        userAnswers = session.answers_json || {};
+        // Note: we'll render questions first, then initExam will call showQuestion
+    } else {
+        const { data: newSession } = await supabase
+            .from('squad_exam_sessions')
+            .insert({
+                squad_id: squadId,
+                exam_id: examId,
+                status: 'active',
+                answers_json: {}
+            })
+            .select()
+            .single();
+        squadSessionId = newSession.id;
+    }
+
+    // Subscribe to Realtime Session
+    supabase.channel(`exam_session_${squadSessionId}`)
+        .on('postgres_changes', {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'squad_exam_sessions',
+            filter: `id=eq.${squadSessionId}`
+        }, payload => {
+            const newAnswers = payload.new.answers_json;
+            syncAnswersFromSquad(newAnswers);
+        })
+        .subscribe();
+}
+
+function syncAnswersFromSquad(newAnswers) {
+    Object.keys(newAnswers).forEach(qId => {
+        if (newAnswers[qId] !== userAnswers[qId]) {
+            userAnswers[qId] = newAnswers[qId];
+            updateQuestionUI(qId, newAnswers[qId]);
+        }
+    });
+}
+
+function updateQuestionUI(qId, answer) {
+    const radio = document.querySelector(`input[name="q_${qId}"][value="${answer}"]`);
+    if (radio) {
+        radio.checked = true;
+        // UI highlight
+        const label = document.getElementById(`label-${qId}-${answer}`);
+        if (label) {
+            // Uncheck others first
+            document.querySelectorAll(`label[id^="label-${qId}-"]`).forEach(l => l.classList.remove('checked'));
+            label.classList.add('checked');
+        }
+
+        // Update dots
+        const index = currentQuestions.findIndex(q => q.id === qId);
+        const dots = document.querySelectorAll(`.nav-dot[data-qindex="${index}"]`);
+        dots.forEach(dot => dot.classList.add('answered'));
     }
 }
 
@@ -220,8 +299,14 @@ function showSaveIndicator() {
     setTimeout(() => badge.classList.remove('show'), 1500);
 }
 
-window.saveAnswer = (qId, answer) => {
+window.saveAnswer = async (qId, answer) => {
     userAnswers[qId] = answer;
+
+    if (squadSessionId) {
+        await supabase.from('squad_exam_sessions').update({
+            answers_json: userAnswers
+        }).eq('id', squadSessionId);
+    }
 };
 
 function showQuestion(index) {
@@ -402,13 +487,28 @@ async function calculateResult() {
                 const currentPoints = profile?.points || 0;
                 const newPoints = currentPoints + score;
 
-                // Update points
-                const { error: updateError } = await supabase
-                    .from('profiles')
-                    .update({ points: newPoints })
-                    .eq('id', user.id);
+                // Update points for user
+                await supabase.from('profiles').update({ points: newPoints }).eq('id', user.id);
 
-                if (updateError) throw updateError;
+                // SQUAD LOGIC: Award points to ALL squad members if in squad mode
+                if (squadSessionId) {
+                    const { data: members } = await supabase.from('squad_members').select('profile_id').eq('squad_id', squadId);
+
+                    for (const member of members) {
+                        if (member.profile_id === user.id) continue; // Already updated
+
+                        const { data: mProfile } = await supabase.from('profiles').select('points').eq('id', member.profile_id).single();
+                        const mPoints = (mProfile?.points || 0) + score;
+                        await supabase.from('profiles').update({ points: mPoints }).eq('id', member.profile_id);
+                    }
+
+                    // Update squad total points
+                    const { data: squad } = await supabase.from('squads').select('points').eq('id', squadId).single();
+                    await supabase.from('squads').update({ points: (squad?.points || 0) + score }).eq('id', squadId);
+
+                    // Close squad session
+                    await supabase.from('squad_exam_sessions').update({ status: 'finished' }).eq('id', squadSessionId);
+                }
 
                 console.log(`Points awarded: ${score}. First attempt detected.`);
 

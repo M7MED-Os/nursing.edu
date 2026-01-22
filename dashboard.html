@@ -160,6 +160,7 @@
 
             <ul class="nav-links">
                 <li><a href="dashboard.html" class="active">الرئيسية</a></li>
+                <li><a href="squad.html">الشلة</a></li>
                 <li><a href="todo.html">المهام</a></li>
                 <li><a href="leaderboard.html">المتصدرين</a></li>
                 <li id="adminNavBtn" style="display: none;">
@@ -205,6 +206,20 @@
                 <span class="stat-number" id="stats-accuracy">%0</span>
                 <span class="stat-label">مستوى الدقة</span>
             </div>
+        </div>
+
+        <!-- Squad Promo Card -->
+        <div class="squad-promo-card" onclick="location.href='squad.html'"
+            style="background: linear-gradient(135deg, #03A9F4 0%, #0288D1 100%); color: white; padding: 1.5rem; border-radius: var(--radius-lg); margin-bottom: 2rem; cursor: pointer; display: flex; align-items: center; justify-content: space-between; overflow: hidden; position: relative;">
+            <div style="z-index: 1;">
+                <h3 style="margin-bottom: 5px;">شلتك مستنياك! 👥</h3>
+                <p style="font-size: 0.9rem; opacity: 0.9;">ذاكر مع صحابك، حلوا امتحانات سوا، ونافسوا الشلل التانية.</p>
+            </div>
+            <i class="fas fa-users"
+                style="font-size: 4rem; opacity: 0.2; transform: rotate(-10deg); position: absolute; left: -10px; bottom: -10px;"></i>
+            <div
+                style="background: white; color: var(--primary-color); padding: 8px 20px; border-radius: 50px; font-weight: 800; font-size: 0.9rem; white-space: nowrap; margin-right: 15px;">
+                ادخل الآن</div>
         </div>
 
 
@@ -279,6 +294,7 @@
     <!-- Scripts -->
     <script src="assets/js/main.js"></script>
     <script type="module" src="assets/js/auth.js"></script>
+    <script type="module" src="assets/js/squad-notifications.js"></script>
     <script type="module" src="assets/js/dashboard.js"></script>
 
 </body>
