@@ -338,12 +338,24 @@ if (registerForm) {
                         grade,
                         term: term || null,
                         stream: stream || null,
-                        show_on_leaderboard: true, // Default to true
+                        show_on_leaderboard: true,
                     },
+                    emailRedirectTo: `${window.location.origin}/login.html`
                 },
             });
 
-            if (error) throw error;
+            if (error) {
+                if (error.message.includes("User already registered") || error.status === 422) {
+                    throw new Error("الإيميل ده متسجل عندنا قبل كده، جرب تسجل دخول");
+                }
+                throw error;
+            }
+
+            // Note: If email confirmation is ON, data.user might exist but data.session will be null
+            if (data?.user && data?.user?.identities?.length === 0) {
+                // This happens in some Supabase configs when user already exists but discovery is off
+                throw new Error("الإيميل ده متسجل عندنا قبل كده، جرب تسجل دخول");
+            }
 
             showToast("تم التسجيل بنجاح! تحقق من إيميلك لتفعيل الحساب.", "success");
             setTimeout(() => {
@@ -351,7 +363,10 @@ if (registerForm) {
             }, 2000);
         } catch (error) {
             console.error("Registration error:", error);
-            showToast(error.message || "حدث خطأ أثناء التسجيل", "error");
+            let userMsg = error.message;
+            if (userMsg.includes("rate limit")) userMsg = "حاولت كتير في وقت قصير، استنى دقايق وجرب تاني";
+
+            showToast(userMsg || "حدث خطأ أثناء التسجيل", "error");
         } finally {
             submitBtn.disabled = false;
             submitBtn.textContent = "تسجيل حساب جديد";
@@ -398,7 +413,15 @@ if (loginForm) {
 
             if (error) {
                 if (error.message.includes("Email not confirmed")) {
-                    throw new Error("لازم تفعل حسابك الأول من الإيميل اللي وصلك");
+                    // Show a specialized SweetAlert with a resend button
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'تفعيل الحساب',
+                        text: 'لازم تفعل حسابك الأول من الإيميل اللي وصلك.',
+                        footer: `<button class="btn btn-outline btn-sm" onclick="resendVerification('${email}')">إعادة إرسال إيميل التفعيل</button>`,
+                        confirmButtonText: 'حسناً'
+                    });
+                    return;
                 } else if (error.message.includes("Invalid login credentials")) {
                     throw new Error("الإيميل أو كلمة السر غلط");
                 }
@@ -411,13 +434,44 @@ if (loginForm) {
             }, 1000);
         } catch (error) {
             console.error("Login error:", error);
-            showToast(error.message || "حدث خطأ أثناء تسجيل الدخول", "error");
+            let userMsg = error.message;
+            if (userMsg.includes("rate limit")) userMsg = "براحة شوية! حاولت كتير في وقت قصير، استنى دقايق وجرب تاني";
+            showToast(userMsg || "حدث خطأ أثناء تسجيل الدخول", "error");
         } finally {
             submitBtn.disabled = false;
             submitBtn.textContent = "تسجيل الدخول";
         }
     });
 }
+
+/**
+ * Resend Verification Email
+ */
+window.resendVerification = async (email) => {
+    try {
+        const { error } = await supabase.auth.resend({
+            type: 'signup',
+            email: email,
+            options: {
+                emailRedirectTo: `${window.location.origin}/login.html`
+            }
+        });
+
+        if (error) throw error;
+
+        Swal.fire({
+            icon: 'success',
+            title: 'تم الإرسال',
+            text: 'تم إعادة إرسال رابط التفعيل لإيميلك بنجاح!',
+            confirmButtonText: 'ممتاز'
+        });
+    } catch (err) {
+        console.error("Resend error:", err);
+        let userMsg = err.message;
+        if (userMsg.includes("rate limit")) userMsg = "تم إرسال إيميلات كتير، استنى دقايق وجرب تاني";
+        showToast(userMsg || "فشل إعادة الإرسال", "error");
+    }
+};
 
 // ==========================
 // 7. Forgot Password (طلب استعادة)
@@ -440,7 +494,7 @@ if (forgotForm) {
 
         try {
             const { error } = await supabase.auth.resetPasswordForEmail(email, {
-                redirectTo: 'https://kaya-eduu.vercel.app/reset-password.html',
+                redirectTo: `${window.location.origin}/reset-password.html`,
             });
 
             if (error) throw error;
@@ -491,7 +545,16 @@ if (resetForm) {
             if (error) throw error;
 
             showToast("تم تحديث كلمة السر بنجاح!", "success");
-            setTimeout(() => window.location.href = "login.html", 2000);
+
+            // Check if user is logged in to decide where to redirect
+            const { data: { session } } = await supabase.auth.getSession();
+            setTimeout(() => {
+                if (session) {
+                    window.location.href = "profile.html";
+                } else {
+                    window.location.href = "login.html";
+                }
+            }, 2000);
         } catch (err) {
             console.error("Update password error:", err);
             showToast(err.message || "فشل تحديث كلمة السر", "error");
