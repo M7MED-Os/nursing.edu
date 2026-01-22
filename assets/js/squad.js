@@ -476,13 +476,22 @@ document.getElementById('chatForm').onsubmit = async (e) => {
 
 // --- Realtime ---
 function setupRealtime() {
-    // Chat & Tasks channels
+    // Squad Global Activity Channel
     supabase.channel('squad_activity')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'squad_chat_messages', filter: `squad_id=eq.${currentSquad.id}` }, () => loadChat())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'squad_chat_messages', filter: `squad_id=eq.${currentSquad.id}` }, () => {
+            console.log('New message received!');
+            loadChat();
+        })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'squad_tasks', filter: `squad_id=eq.${currentSquad.id}` }, () => loadTasks())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'squad_task_completions' }, () => {
+            console.log('Task completion updated!');
+            loadTasks();
+        })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'squad_members', filter: `squad_id=eq.${currentSquad.id}` }, () => loadMembers())
         .on('postgres_changes', { event: '*', schema: 'public', table: 'squad_pomodoro', filter: `squad_id=eq.${currentSquad.id}` }, () => loadPomodoro())
-        .subscribe();
+        .subscribe((status) => {
+            console.log('Realtime Status:', status);
+        });
 }
 
 // --- Pomodoro Logic ---
