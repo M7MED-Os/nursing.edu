@@ -1,6 +1,6 @@
 {
-    "name": "ثانوية.كوم",
-    "short_name": "ثانوية",
+    "name": "تمريض بنها",
+    "short_name": "تمريض بنها",
     "start_url": "./login.html",
     "display": "standalone",
     "background_color": "#F9FAFB",
