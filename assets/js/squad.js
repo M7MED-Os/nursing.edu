@@ -145,29 +145,43 @@ window.showJoinSquadModal = async () => {
         return;
     }
     const { value: code } = await Swal.fire({
-
         title: 'ادخل كود الشلة',
         input: 'text',
-        inputPlaceholder: 'مثال: ABCD (أول 4 حروف من الآيدي)',
+        inputPlaceholder: 'اكتب كود الشلة هنا...',
         showCancelButton: true
     });
 
-    if (code) {
-        // Search by prefix
-        const { data: squads } = await supabase.from('squads').select('*').ilike('id', `${code}%`);
+    if (code && code.trim()) {
+        const searchCode = code.trim().toLowerCase();
+
+        // Use RPC to search by prefix (Fixes UUID casting error)
+        const { data: squads, error } = await supabase.rpc('get_squad_by_prefix', { p_prefix: searchCode });
+
+        if (error) {
+
+            console.error("Search error:", error);
+            Swal.fire('خطأ', 'حدثت مشكلة أثناء البحث عن الشلة.', 'error');
+            return;
+        }
 
         if (squads && squads.length > 0) {
             const squad = squads[0];
-            await supabase.from('squad_members').insert({
+            const { error: joinError } = await supabase.from('squad_members').insert({
                 squad_id: squad.id,
                 profile_id: currentProfile.id
             });
-            location.reload();
+
+            if (joinError) {
+                Swal.fire('خطأ', 'مقدرناش نضيفك للشلة.. جرب تاني', 'error');
+            } else {
+                location.reload();
+            }
         } else {
-            Swal.fire('مش لاقيينها!', 'اتأكد من الكود يا بطل', 'warning');
+            Swal.fire('مش لاقيينها!', 'اتأكد من الكود يا بطل (اكتب الكود اللي ظهر لصاحبك)', 'warning');
         }
     }
 };
+
 
 // --- Realtime ---
 function setupRealtime() {
@@ -561,16 +575,19 @@ async function renderChat(msgs) {
 
 window.showReadBy = (names) => {
     Swal.fire({
-        title: '<span style="font-size: 1.2rem;">من شاهد الرسالة؟</span>',
-        html: `<div style="text-align: right; direction: rtl; font-size: 1rem; color: #475569;">${names}</div>`,
-        icon: 'info',
-        confirmButtonText: 'تمام',
-        confirmButtonColor: 'var(--primary-color)',
+        title: '<div style="font-size: 1.1rem; font-weight: 700; margin-bottom: 0px;">مين شاف الرساله</div>',
+        html: `<div style="text-align: right; direction: rtl; font-size: 0.9rem; margin-top: 10px; color: #64748b;">${names}</div>`,
+        confirmButtonText: 'إغلاق',
+        confirmButtonColor: '#64748b',
+        width: '280px',
+        padding: '1rem',
         customClass: {
-            popup: 'swal2-whatsapp-style'
+            title: 'swal-small-title',
+            confirmButton: 'swal-small-btn'
         }
     });
 };
+
 
 async function markAsRead(msgId) {
     if (!readQueue.includes(msgId)) {

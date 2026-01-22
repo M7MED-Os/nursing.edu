@@ -88,19 +88,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (grade === '3') {
             options += `
-                <option value="pediatric">تمريض الاطفال</option>
-                <option value="obs_gyn">تمريض نسا و التوليد</option>
+                <option value="pediatric">أطفال</option>
+                <option value="obs_gyn">نسا</option>
             `;
         } else if (grade === '4') {
             options += `
-                <option value="nursing_admin">اداره التمريض</option>
-                <option value="psychiatric">تمريض النفسيه</option>
+                <option value="nursing_admin">إدارة</option>
+                <option value="psychiatric">نفسية</option>
             `;
         } else {
             // Grade 1 & 2
             options += `
-                <option value="1">الترم الأول</option>
-                <option value="2">الترم الثاني</option>
+                <option value="1">الترم 1</option>
+                <option value="2">الترم 2</option>
             `;
         }
         select.innerHTML = options;
@@ -175,11 +175,11 @@ function showView(viewId) {
 }
 
 function getContextLabel(grade, val) {
-    const grades = { '1': 'الفرقة الأولى', '2': 'الفرقة الثانية', '3': 'الفرقة الثالثة', '4': 'الفرقة الرابعة' };
+    const grades = { '1': 'فرقة 1', '2': 'فرقة 2', '3': 'فرقة 3', '4': 'فرقة 4' };
     const vals = {
-        '1': 'الترم الأول', '2': 'الترم الثاني',
-        'pediatric': 'تمريض الاطفال', 'obs_gyn': 'تمريض نسا و التوليد',
-        'nursing_admin': 'اداره التمريض', 'psychiatric': 'تمريض النفسيه'
+        '1': 'الترم 1', '2': 'الترم 2',
+        'pediatric': 'أطفال', 'obs_gyn': 'نسا',
+        'nursing_admin': 'إدارة', 'psychiatric': 'نفسية'
     };
     return `${grades[grade]} - ${vals[val] || val}`;
 }
@@ -1032,33 +1032,33 @@ window.loadStudents = async () => {
         const roleStr = s.role === 'admin' ? 'آدمن' : 'طالب';
         const roleClass = s.role === 'admin' ? 'badge-info' : 'badge-gray';
 
-        // Translation Mapping for Nursing Academy
+        // Translation Mapping for Nursing Academy - Simplified
         const gradeMap = {
-            '1': 'الفرقة الأولى',
-            '2': 'الفرقة الثانية',
-            '3': 'الفرقة الثالثة',
-            '4': 'الفرقة الرابعة'
+            '1': '1',
+            '2': '2',
+            '3': '3',
+            '4': '4'
         };
 
         const streamMap = {
-            'pediatric': 'تمريض الأطفال',
-            'obs_gyn': 'تمريض نسا و التوليد',
-            'nursing_admin': 'إدارة التمريض',
-            'psychiatric': 'تمريض النفسية'
+            'pediatric': 'أطفال',
+            'obs_gyn': 'نسا',
+            'nursing_admin': 'إدارة',
+            'psychiatric': 'نفسية'
         };
 
         const termMap = {
-            '1': 'الترم الأول',
-            '2': 'الترم الثاني'
+            '1': '1',
+            '2': '2'
         };
 
         // Display logic: Show stream for years 3&4, term for all
         let displayInfo = [];
-        if (s.term) displayInfo.push(termMap[s.term] || s.term);
+        if (s.term) displayInfo.push(`${termMap[s.term] || s.term}`);
         if ((s.grade === '3' || s.grade === '4') && s.stream) {
             displayInfo.push(streamMap[s.stream] || s.stream);
         }
-        const displayStreamOrTerm = displayInfo.length > 0 ? displayInfo.join(' - ') : '-';
+        const displayStreamOrTerm = displayInfo.length > 0 ? displayInfo.join(' / ') : '-';
 
         // Status Logic
         const expiry = s.subscription_ends_at ? new Date(s.subscription_ends_at) : null;
@@ -1162,28 +1162,28 @@ window.openEditStudent = async (id) => {
             <div class="form-group">
                 <label>السنة الدراسية</label>
                 <select id="editGrade" class="form-control">
-                    <option value="1" ${student.grade === '1' ? 'selected' : ''}>الفرقة الأولى</option>
-                    <option value="2" ${student.grade === '2' ? 'selected' : ''}>الفرقة الثانية</option>
-                    <option value="3" ${student.grade === '3' ? 'selected' : ''}>الفرقة الثالثة</option>
-                    <option value="4" ${student.grade === '4' ? 'selected' : ''}>الفرقة الرابعة</option>
+                    <option value="1" ${student.grade === '1' ? 'selected' : ''}>فرقة 1</option>
+                    <option value="2" ${student.grade === '2' ? 'selected' : ''}>فرقة 2</option>
+                    <option value="3" ${student.grade === '3' ? 'selected' : ''}>فرقة 3</option>
+                    <option value="4" ${student.grade === '4' ? 'selected' : ''}>فرقة 4</option>
                 </select>
             </div>
             <div class="form-group">
                 <label>الترم</label>
                 <select id="editTerm" class="form-control">
                     <option value="" ${!student.term ? 'selected' : ''}>--</option>
-                    <option value="1" ${student.term === '1' ? 'selected' : ''}>الترم الأول</option>
-                    <option value="2" ${student.term === '2' ? 'selected' : ''}>الترم الثاني</option>
+                    <option value="1" ${student.term === '1' ? 'selected' : ''}>الترم 1</option>
+                    <option value="2" ${student.term === '2' ? 'selected' : ''}>الترم 2</option>
                 </select>
             </div>
             <div class="form-group">
                 <label>القسم (للفرقة 3 و 4)</label>
                 <select id="editStream" class="form-control">
                     <option value="" ${!student.stream ? 'selected' : ''}>-- بدون قسم --</option>
-                    <option value="pediatric" ${student.stream === 'pediatric' ? 'selected' : ''}>تمريض الأطفال (فرقة 3)</option>
-                    <option value="obs_gyn" ${student.stream === 'obs_gyn' ? 'selected' : ''}>تمريض نسا و التوليد (فرقة 3)</option>
-                    <option value="nursing_admin" ${student.stream === 'nursing_admin' ? 'selected' : ''}>إدارة التمريض (فرقة 4)</option>
-                    <option value="psychiatric" ${student.stream === 'psychiatric' ? 'selected' : ''}>تمريض النفسية (فرقة 4)</option>
+                    <option value="pediatric" ${student.stream === 'pediatric' ? 'selected' : ''}>أطفال (فرقة 3)</option>
+                    <option value="obs_gyn" ${student.stream === 'obs_gyn' ? 'selected' : ''}>نسا (فرقة 3)</option>
+                    <option value="nursing_admin" ${student.stream === 'nursing_admin' ? 'selected' : ''}>إدارة (فرقة 4)</option>
+                    <option value="psychiatric" ${student.stream === 'psychiatric' ? 'selected' : ''}>نفسية (فرقة 4)</option>
                 </select>
             </div>
             <div class="form-group">
@@ -1789,11 +1789,19 @@ async function loadSquadsAdmin() {
 
     if (error) return Swal.fire('Error', error.message, 'error');
 
-    tbody.innerHTML = squads.map(s => `
+    tbody.innerHTML = squads.map(s => {
+        const streamMap = {
+            'pediatric': 'أطفال',
+            'obs_gyn': 'نسا',
+            'nursing_admin': 'إدارة',
+            'psychiatric': 'نفسية'
+        };
+
+        return `
         <tr>
             <td data-label="اسم الشلة"><b style="color:var(--primary-color);">${s.name}</b></td>
-            <td data-label="الفرقة">${s.academic_year || 'غير محدد'}</td>
-            <td data-label="القسم">${s.department || 'عام'}</td>
+            <td data-label="الفرقة">${s.academic_year || '-'}</td>
+            <td data-label="القسم">${streamMap[s.department] || s.department || 'عام'}</td>
             <td data-label="المالك"><span class="badge bg-primary" style="font-size:0.8rem; background:#e0f2fe; color:#0369a1; padding: 4px 8px; border-radius: 6px;">${s.profiles?.full_name || 'غير معروف'}</span></td>
             <td data-label="النقاط"><b>${s.points || 0}</b></td>
             <td data-label="الأعضاء">
@@ -1812,7 +1820,8 @@ async function loadSquadsAdmin() {
                 </div>
             </td>
         </tr>
-    `).join('');
+    `;
+    }).join('');
 }
 
 window.deleteSquad = async (id) => {

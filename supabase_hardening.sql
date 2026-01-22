@@ -162,6 +162,20 @@ BEGIN
 END;
 $$;
 
+-- 2.2 Search Squad by Prefix (Fixes UUID casting error)
+CREATE OR REPLACE FUNCTION get_squad_by_prefix(p_prefix TEXT)
+RETURNS SETOF squads
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+    RETURN QUERY 
+    SELECT * FROM squads 
+    WHERE id::text ILIKE p_prefix || '%';
+END;
+$$;
+
+
 
 -- 3. Field Protection Trigger
 CREATE OR REPLACE FUNCTION protect_profile_fields()
