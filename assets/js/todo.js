@@ -370,6 +370,94 @@ document.addEventListener('DOMContentLoaded', async () => {
         return Math.random() * (max - min) + min;
     }
 
+
+    // --- Pomodoro Logic (Local) ---
+    let pomodoroInterval = null;
+    let pomodoroEndTime = null;
+
+    const initPomodoro = () => {
+        const btn = document.getElementById('startPomodoroBtn');
+        if (btn) btn.onclick = startPomodoroFlow;
+
+        // Check for running timer in localStorage
+        const savedEnd = localStorage.getItem('personal_pomodoro_end');
+        if (savedEnd) {
+            const now = Date.now();
+            if (parseInt(savedEnd) > now) {
+                pomodoroEndTime = parseInt(savedEnd);
+                startLocalTimerDisplay();
+                btn.textContent = 'إيقاف المذاكرة 🛑';
+                btn.onclick = stopPomodoro;
+            } else {
+                localStorage.removeItem('personal_pomodoro_end');
+            }
+        }
+    };
+
+    const startPomodoroFlow = async () => {
+        const { value: duration } = await Swal.fire({
+            title: 'مدة المذاكرة؟ ⏱️',
+            input: 'select',
+            inputOptions: {
+                '25': '25 دقيقة',
+                '50': '50 دقيقة',
+                '60': 'ساعة كاملة',
+                '90': 'ساعة ونصف'
+            },
+            inputPlaceholder: 'اختار الوقت...',
+            showCancelButton: true,
+            confirmButtonText: 'ابدأ',
+            cancelButtonText: 'إلغاء'
+        });
+
+        if (!duration) return;
+
+        const durationMs = parseInt(duration) * 60 * 1000;
+        pomodoroEndTime = Date.now() + durationMs;
+        localStorage.setItem('personal_pomodoro_end', pomodoroEndTime);
+
+        startLocalTimerDisplay();
+
+        const btn = document.getElementById('startPomodoroBtn');
+        btn.textContent = 'إيقاف المذاكرة 🛑';
+        btn.onclick = stopPomodoro;
+    };
+
+    const stopPomodoro = () => {
+        if (pomodoroInterval) clearInterval(pomodoroInterval);
+        pomodoroEndTime = null;
+        localStorage.removeItem('personal_pomodoro_end');
+        document.getElementById('pomodoroTimer').textContent = '25:00';
+
+        const btn = document.getElementById('startPomodoroBtn');
+        btn.textContent = 'ابدأ المذاكرة 🔥';
+        btn.onclick = startPomodoroFlow;
+    };
+
+    const startLocalTimerDisplay = () => {
+        if (pomodoroInterval) clearInterval(pomodoroInterval);
+
+        const tick = () => {
+            const now = Date.now();
+            const diff = pomodoroEndTime - now;
+
+            if (diff <= 0) {
+                stopPomodoro();
+                Swal.fire('عاش يا بطل! 🎉', 'خلصت جلسة المذاكرة.', 'success');
+                return;
+            }
+
+            const mins = Math.floor(diff / (1000 * 60));
+            const secs = Math.floor((diff / 1000) % 60);
+            document.getElementById('pomodoroTimer').textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        };
+
+        tick(); // Immediate update
+        pomodoroInterval = setInterval(tick, 1000);
+    };
+
+    initPomodoro();
+
     addTaskBtn.addEventListener('click', addTask);
     mainInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') addTask(); });
 

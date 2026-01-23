@@ -1463,14 +1463,192 @@ input:focus-visible {
   font-size: 1.1rem;
   opacity: 0.9;
 }
+
 .coming-soon-badge {
-    background: #FFC107;
-    color: #000;
-    padding: 0.2rem 0.8rem;
-    border-radius: 50px;
-    font-size: 0.8rem;
-    font-weight: 700;
-    margin-bottom: 0.5rem;
-    display: inline-block;
+  background: #FFC107;
+  color: #000;
+  padding: 0.2rem 0.8rem;
+  border-radius: 50px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  display: inline-block;
 }
 
+/* Pomodoro Widget */
+.pomodoro-box {
+  text-align: center;
+  padding: 2rem;
+  background: #fff5f5;
+  border: 2px dashed #feb2b2;
+  border-radius: 20px;
+  margin-bottom: 2rem;
+}
+
+.timer-display {
+  font-size: 3.5rem;
+  font-weight: 900;
+  color: #e53e3e;
+  font-family: monospace;
+  margin: 10px 0;
+}
+
+/* ==========================================
+   Unified Popup Theme (SweetAlert2 & Custom)
+   ========================================== */
+:root {
+  --popup-radius: 20px;
+  --popup-padding: 2rem;
+  --popup-backdrop: rgba(15, 23, 42, 0.4);
+  --popup-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  --popup-bg: #FFFFFF;
+}
+
+/* 1. SweetAlert2 Overrides */
+div:where(.swal2-container).swal2-center>.swal2-popup {
+  border-radius: var(--popup-radius);
+  padding: var(--popup-padding);
+  box-shadow: var(--popup-shadow);
+  background: var(--popup-bg);
+}
+
+div:where(.swal2-container).swal2-backdrop-show,
+div:where(.swal2-container).swal2-noanimation {
+  background: var(--popup-backdrop) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+div:where(.swal2-container) .swal2-title {
+  font-family: 'Cairo', sans-serif !important;
+  color: var(--text-main);
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+
+div:where(.swal2-container) .swal2-html-container {
+  font-family: 'Cairo', sans-serif !important;
+  color: #64748b;
+  font-size: 1.1rem;
+}
+
+div:where(.swal2-container) .swal2-actions {
+  gap: 12px;
+  margin-top: 1.5rem;
+}
+
+div:where(.swal2-container) button.swal2-styled {
+  border-radius: 12px !important;
+  font-weight: 700 !important;
+  padding: 12px 24px !important;
+  font-family: 'Cairo', sans-serif !important;
+  box-shadow: none !important;
+  transition: all 0.2s ease;
+}
+
+div:where(.swal2-container) button.swal2-styled:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* 2. Custom Modals Alignment (Used in Todo/Admin) */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--popup-backdrop);
+  backdrop-filter: blur(8px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: fadeIn 0.2s ease;
+}
+
+.modal-box,
+.modal-container {
+  background: var(--popup-bg);
+  padding: var(--popup-padding);
+  border-radius: var(--popup-radius);
+  width: 90%;
+  max-width: 400px;
+  text-align: center;
+  box-shadow: var(--popup-shadow);
+  transform: scale(0.9);
+  animation: modalPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modalPop {
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Modal Inner Structure (Admin/Todo Extended) */
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.modal-header h3 {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text-main, #1e293b);
+  line-height: 1.2;
+}
+
+.modal-body {
+  margin-bottom: 2rem;
+  text-align: right;
+}
+
+.modal-footer,
+.modal-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.btn-modal {
+  padding: 0.8rem 1.5rem;
+  border-radius: 12px;
+  border: none;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-modal.confirm {
+  background: var(--primary-color, #03A9F4);
+  color: white;
+}
+
+.btn-modal.confirm:hover {
+  filter: brightness(0.9);
+  transform: translateY(-1px);
+}
+
+.btn-modal.cancel {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.btn-modal.cancel:hover {
+  background: #e2e8f0;
+}

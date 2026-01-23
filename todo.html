@@ -23,6 +23,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
 
 <body>
@@ -74,6 +76,19 @@
 
     <div class="todo-page">
         <div class="todo-container">
+            <!-- Pomodoro Section -->
+            <div class="pomodoro-box">
+                <div
+                    style="display: flex; justify-content: center; align-items: center; gap: 10px; font-weight: 800; font-size: 1.2rem; color: #1e293b; margin-bottom: 1rem;">
+                    <i class="fas fa-clock" style="color: #e53e3e;"></i>
+                    بومودورو المهام
+                </div>
+                <div class="timer-display" id="pomodoroTimer">25:00</div>
+                <button id="startPomodoroBtn"
+                    style="width: 100%; padding: 0.8rem; font-weight: 700; background-color: #ef4444; color: white; border: none; border-radius: 8px; cursor: pointer; transition: all 0.3s ease;">ابدأ
+                    المذاكرة 🔥</button>
+            </div>
+
             <!-- Overall Progress Card -->
             <div class="global-progress-card" style="margin-bottom: 2rem;">
                 <div class="progress-header">
