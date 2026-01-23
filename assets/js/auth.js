@@ -636,7 +636,7 @@ async function loadUserDashboardData(userId) {
             stats = rpcData[0];
 
             if (stats) {
-                setCache(`user_stats_${userId}`, stats, 5); // Cache for 5 minutes
+                setCache(`user_stats_${userId}`, stats, 1440); // Cache for 24 hours (updated only after exams)
             }
         }
 

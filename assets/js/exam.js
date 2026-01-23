@@ -1,4 +1,5 @@
 import { supabase } from "./supabaseClient.js";
+import { clearCache } from "./utils.js";
 
 const urlParams = new URLSearchParams(window.location.search);
 const examId = urlParams.get('id');
@@ -495,11 +496,11 @@ async function calculateResult() {
                 showConfirmButton: false,
                 timer: 3000
             });
-            // Clear stats cache to force refresh on dashboard
-            localStorage.removeItem('user_stats');
         }
 
-        // 5. Clear Caches
+        // 5. Clear Caches to force refresh on dashboard and profile
+        clearCache(`user_stats_${user.id}`);
+        clearCache(`profile_${user.id}`);
         sessionStorage.removeItem(`exam_cache_${examId}`);
         localStorage.removeItem(`exam_progress_${examId}`);
 
