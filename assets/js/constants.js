@@ -23,7 +23,7 @@ export const GRADE_STREAMS = {
 };
 
 export const APP_CONFIG = {
-    CACHE_TIME_PROFILE: 10, // minutes
+    CACHE_TIME_PROFILE: 3, // 3 minutes for faster activation/expiry sync
     CACHE_TIME_STATS: 1440, // 24 hours
     ACTIVE_CHECK_INTERVAL: 60000, // 1 minute
 };

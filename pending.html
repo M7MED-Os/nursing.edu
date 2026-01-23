@@ -357,6 +357,7 @@
 
     <script type="module">
         import { supabase } from "./assets/js/supabaseClient.js";
+        import { clearCache } from "./assets/js/utils.js";
 
         // نسخ الرقم بسهولة
         window.copyNumber = (num, el) => {
@@ -392,9 +393,26 @@
                 .eq('id', user.id)
                 .single();
 
-            if (profile && isProfileValid(profile)) {
-                window.location.href = 'dashboard.html';
-                return;
+            if (profile) {
+                const now = new Date();
+                const expiry = profile.subscription_ends_at ? new Date(profile.subscription_ends_at) : null;
+                const isExpired = expiry && now > expiry;
+
+                if (profile.is_active && isExpired) {
+                    // Update UI for expired subscription
+                    const h1 = document.querySelector('h1');
+                    const subtitle = document.querySelector('.subtitle');
+                    const badgeText = document.querySelector('.status-badge span');
+                    if (h1) h1.textContent = "انتهى اشتراكك 🛑";
+                    if (subtitle) subtitle.textContent = "اشتراكك خلص يا بطل. جدد دلوقتي عشان تقدر تكمل مذاكرة وتحل امتحانات وتشوف ترتيبك.";
+                    if (badgeText) badgeText.textContent = "اشتراك منتهي";
+                }
+
+                if (isProfileValid(profile)) {
+                    clearCache(`profile_${user.id}`);
+                    window.location.href = 'dashboard.html';
+                    return;
+                }
             }
 
             // 2. Realtime Listener (Instant activation)
@@ -409,6 +427,7 @@
                 }, payload => {
                     console.log("Profile updated:", payload.new);
                     if (isProfileValid(payload.new)) {
+                        clearCache(`profile_${user.id}`);
                         window.location.href = 'dashboard.html';
                     }
                 })
@@ -419,15 +438,18 @@
             const now = new Date();
             const expiry = profile.subscription_ends_at ? new Date(profile.subscription_ends_at) : null;
             const isNotExpired = !expiry || expiry > now;
-            return profile.is_active && isNotExpired;
+            return profile && profile.is_active && isNotExpired;
         }
 
         // Fallback polling (less frequent because we have Realtime now)
         setInterval(async () => {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
-            const { data: profile } = await supabase.from('profiles').select('is_active').eq('id', user.id).single();
-            if (profile?.is_active) window.location.href = 'dashboard.html';
+            const { data: profile } = await supabase.from('profiles').select('is_active, subscription_ends_at').eq('id', user.id).single();
+            if (isProfileValid(profile)) {
+                clearCache(`profile_${user.id}`);
+                window.location.href = 'dashboard.html';
+            }
         }, 30000);
 
         checkActivation();

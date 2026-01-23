@@ -30,8 +30,11 @@ export async function checkAuth(options = { forceRefresh: false }) {
         let profile = options.forceRefresh ? null : getCache(`profile_${userId}`);
 
         // 2. Fallback to database
-        // BUG FIX: If profile is in cache but NOT active, force a fresh check to handle activation redirects
-        const shouldRefresh = !profile || (profile && !profile.is_active);
+        // BUG FIX: If profile is in cache but invalid (inactive or expired), 
+        // force a fresh check to handle instant activation/renewal.
+        const now = new Date();
+        const isCacheExpired = profile?.subscription_ends_at && new Date(profile.subscription_ends_at) < now;
+        const shouldRefresh = !profile || !profile.is_active || isCacheExpired;
 
         if (shouldRefresh) {
             const { data: fetchedProfile, error: profileError } = await supabase.from('profiles')
@@ -1047,6 +1050,24 @@ if (!currentPageName || currentPageName === "") {
 
 if (protectedPages.includes(currentPageName)) {
     loadUserProfile();
+    startSecurityMonitor();
 } else {
     checkAuth();
+}
+
+/**
+ * Background security monitor
+ * Handles real-time expiry and renewal synchronization
+ */
+function startSecurityMonitor() {
+    setInterval(async () => {
+        const protectedPages = ["dashboard.html", "subject.html", "leaderboard.html", "profile.html", "squad.html", "exam.html"];
+        const currentPage = window.location.pathname.split("/").pop() || "dashboard.html";
+
+        if (protectedPages.includes(currentPage)) {
+            // Re-check auth periodically. 
+            // This handles expiry (at the exact minute) and renewal (within 3 mins via cache rotation)
+            await checkAuth();
+        }
+    }, APP_CONFIG.ACTIVE_CHECK_INTERVAL || 60000);
 }
