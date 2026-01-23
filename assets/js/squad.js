@@ -202,10 +202,25 @@ function setupRealtime() {
 let onlineUsersSet = new Set();
 
 // --- Presence (نظام التواجد) ---
-// --- Presence (نظام التواجد) ---
 function setupPresence() {
-    // Logic removed as per request to restart feature from scratch.
     if (presenceChannel) supabase.removeChannel(presenceChannel);
+
+    presenceChannel = supabase.channel(`squad_presence_${currentSquad.id}`);
+    presenceChannel
+        .on('presence', { event: 'sync' }, () => {
+            const state = presenceChannel.presenceState();
+            updateMembersStatusUI(state);
+        })
+        .subscribe(async (status) => {
+            if (status === 'SUBSCRIBED') {
+                await presenceChannel.track({
+                    user_id: currentProfile.id,
+                    online_at: new Date().toISOString(),
+                });
+                // Update DB for "Last Active" persistence
+                await supabase.from('profiles').update({ updated_at: new Date().toISOString() }).eq('id', currentProfile.id);
+            }
+        });
 }
 
 function updateMembersStatusUI(presenceState) {

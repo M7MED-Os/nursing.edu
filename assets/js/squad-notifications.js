@@ -55,36 +55,6 @@ async function initSquadNotifications() {
             }
         })
         .subscribe();
-
-    // 4. Global Presence Tracking (Singleton Pattern)
-    if (!window.appPresenceChannel) {
-        console.log('[Presence] Initializing Global Tracker...');
-        window.appPresenceChannel = supabase.channel(`squad_presence_${squadId}`);
-
-        window.appPresenceChannel
-            .on('presence', { event: 'sync' }, () => {
-                const state = window.appPresenceChannel.presenceState();
-                window.currentPresenceState = state; // Store for immediate access
-
-                // Broadcast to local components (Viewer)
-                const event = new CustomEvent('squad-presence-updated', { detail: state });
-                window.dispatchEvent(event);
-            })
-            .subscribe(async (status) => {
-                if (status === 'SUBSCRIBED') {
-                    console.log('[Presence] Global Tracker Connected');
-                    await window.appPresenceChannel.track({
-                        user_id: user.id,
-                        online_at: new Date().toISOString(),
-                    });
-
-                    // Update DB for persistence
-                    await supabase.from('profiles').update({ updated_at: new Date().toISOString() }).eq('id', user.id);
-                }
-            });
-    } else {
-        console.log('[Presence] Tracker already running, reusing channel.');
-    }
 }
 
 
