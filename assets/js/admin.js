@@ -699,22 +699,12 @@ async function renderExamQuestions(exam) {
                         </div>
                     </div>
                     <div class="options-grid">
-                        <div class="option-item ${q.correct_answer === 'a' ? 'correct' : ''}">
-                            <span class="option-label">A</span>
-                             ${q.choice_a_image ? `<img src="${q.choice_a_image}" style="max-height:40px; vertical-align:middle;">` : ''} <span>${q.choice_a || ''}</span>
-                        </div>
-                        <div class="option-item ${q.correct_answer === 'b' ? 'correct' : ''}">
-                            <span class="option-label">B</span>
-                             ${q.choice_b_image ? `<img src="${q.choice_b_image}" style="max-height:40px; vertical-align:middle;">` : ''} <span>${q.choice_b || ''}</span>
-                        </div>
-                        <div class="option-item ${q.correct_answer === 'c' ? 'correct' : ''}">
-                            <span class="option-label">C</span>
-                             ${q.choice_c_image ? `<img src="${q.choice_c_image}" style="max-height:40px; vertical-align:middle;">` : ''} <span>${q.choice_c || ''}</span>
-                        </div>
-                        <div class="option-item ${q.correct_answer === 'd' ? 'correct' : ''}">
-                            <span class="option-label">D</span>
-                             ${q.choice_d_image ? `<img src="${q.choice_d_image}" style="max-height:40px; vertical-align:middle;">` : ''} <span>${q.choice_d || ''}</span>
-                        </div>
+                        ${['a', 'b', 'c', 'd'].filter(opt => q[`choice_${opt}`] || q[`choice_${opt}_image`]).map(opt => `
+                            <div class="option-item ${q.correct_answer === opt ? 'correct' : ''}">
+                                <span class="option-label">${opt.toUpperCase()}</span>
+                                 ${q[`choice_${opt}_image`] ? `<img src="${q[`choice_${opt}_image`]}" style="max-height:40px; vertical-align:middle;">` : ''} <span>${q[`choice_${opt}`] || ''}</span>
+                            </div>
+                        `).join('')}
                     </div>
                 </div>
             `).join('') : `
@@ -1269,7 +1259,8 @@ window.openBulkAddModal = (examId) => {
 ]'></textarea>
                 <small style="color:var(--text-light); display:block; margin-top:0.5rem;">
                     * تأكد أن التنسيق JSON صحيح. <br>
-                    * الحقول المطلوبة: question_text, choice_a, choice_b, choice_c, choice_d, correct_answer
+                    * الحقول المطلوبة: question_text, choice_a, choice_b, correct_answer <br>
+                    * الحقول الاختيارية: choice_c, choice_d (اتركها للأسئلة الصح والغلط)
                 </small>
             </div>
         `,
@@ -1281,9 +1272,14 @@ window.openBulkAddModal = (examId) => {
                 const questions = JSON.parse(input);
                 if (!Array.isArray(questions)) throw new Error("يجب أن يكون المدخل مصفوفة [ ]");
 
-                // Add exam_id to each question
+                // Add exam_id and ensure all choice fields exist for DB compatibility
                 const preparedQuestions = questions.map(q => ({
-                    ...q,
+                    question_text: q.question_text || "",
+                    choice_a: q.choice_a || "",
+                    choice_b: q.choice_b || "",
+                    choice_c: q.choice_c || "",
+                    choice_d: q.choice_d || "",
+                    correct_answer: q.correct_answer || "a",
                     exam_id: examId
                 }));
 

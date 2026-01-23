@@ -241,7 +241,7 @@ function renderQuestions() {
             <div class="question-text">${q.question_text || ''}</div>
             ${q.question_image ? `<img src="${q.question_image}" class="question-img" alt="سؤال" onclick="openLightbox(this.src)">` : ''}
             <div class="options-list">
-                ${['a', 'b', 'c', 'd'].map(opt => {
+                ${['a', 'b', 'c', 'd'].filter(opt => q[`choice_${opt}`] || q[`choice_${opt}_image`]).map(opt => {
             const isChecked = userAnswers[q.id] === opt;
             return `
                     <label class="option-label ${isChecked ? 'checked' : ''}" id="label-${q.id}-${opt}">
