@@ -1,8 +1,21 @@
 import { supabase } from "./supabaseClient.js";
-import { getCache } from "./utils.js";
+import { getCache, setCache } from "./utils.js";
+import { checkAuth } from "./auth.js";
+
+let currentUser = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
-    await loadAnnouncements();
+    // Check authentication first
+    const authData = await checkAuth();
+    if (authData) {
+        currentUser = authData.profile;
+        await Promise.all([
+            loadAnnouncements(),
+            loadSubjects(),
+            loadStats(),
+            loadRecentResults()
+        ]);
+    }
 });
 
 async function loadAnnouncements() {
