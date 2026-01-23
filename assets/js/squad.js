@@ -71,7 +71,7 @@ function showView(viewKey) {
 }
 
 async function setupSquadUI() {
-    document.getElementById('squadName').textContent = currentSquad.name;
+    document.getElementById('squadNameText').textContent = currentSquad.name;
     document.getElementById('squadInfo').textContent = `${currentSquad.academic_year || 'سنة غير محددة'} - ${currentSquad.department || 'عام'}`;
     document.getElementById('squadPoints').textContent = `رصيد الشلة: ${currentSquad.points || 0} نقطة 🔥`;
     document.getElementById('squadCode').textContent = currentSquad.id.split('-')[0].toUpperCase();
@@ -89,8 +89,12 @@ async function setupSquadUI() {
     const isAdmin = currentProfile.role === 'admin';
 
     if (isOwner || isAdmin) {
-        const btn = document.getElementById('clearChatBtn');
-        if (btn) btn.style.display = 'flex';
+        const clearBtn = document.getElementById('clearChatBtn');
+        if (clearBtn) clearBtn.style.display = 'flex';
+
+        // Show Edit Squad Name button
+        const editBtn = document.getElementById('editSquadNameBtn');
+        if (editBtn) editBtn.style.display = 'inline-block';
     }
 }
 
@@ -847,6 +851,55 @@ window.copySquadCode = () => {
         showConfirmButton: false,
         timer: 1500
     });
+};
+
+window.editSquadName = async () => {
+    const { value: newName } = await Swal.fire({
+        title: 'تغيير اسم الشلة',
+        input: 'text',
+        inputValue: currentSquad.name,
+        inputPlaceholder: 'اكتب الاسم الجديد...',
+        showCancelButton: true,
+        confirmButtonText: 'حفظ',
+        cancelButtonText: 'إلغاء',
+        inputValidator: (value) => {
+            if (!value || !value.trim()) {
+                return 'لازم تكتب اسم للشلة!';
+            }
+            if (value.trim().length < 3) {
+                return 'الاسم لازم يكون 3 حروف على الأقل';
+            }
+            if (value.trim().length > 50) {
+                return 'الاسم طويل أوي! (أقصى حد 50 حرف)';
+            }
+        }
+    });
+
+    if (newName && newName.trim() !== currentSquad.name) {
+        try {
+            const { error } = await supabase
+                .from('squads')
+                .update({ name: newName.trim() })
+                .eq('id', currentSquad.id);
+
+            if (error) throw error;
+
+            // Update local state
+            currentSquad.name = newName.trim();
+            document.getElementById('squadNameText').textContent = newName.trim();
+
+            Swal.fire({
+                icon: 'success',
+                title: 'تم التحديث!',
+                text: 'اسم الشلة اتغير بنجاح 🎉',
+                timer: 2000,
+                showConfirmButton: false
+            });
+        } catch (err) {
+            console.error('Error updating squad name:', err);
+            Swal.fire('خطأ', 'مقدرناش نغير الاسم.. جرب تاني', 'error');
+        }
+    }
 };
 
 window.shareSquadOnWhatsapp = () => {
