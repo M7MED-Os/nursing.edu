@@ -168,6 +168,24 @@ function renderContent(chapters, lessons, exams, container) {
             background: var(--primary-color);
             color: white;
         }
+        .lecture-btn-sm {
+            padding: 0.4rem 1.2rem;
+            font-size: 0.85rem;
+            background: var(--primary-color);
+            color: white;
+            border-radius: 20px;
+            text-decoration: none;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-weight: 700;
+        }
+        .lecture-btn-sm:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(30, 179, 245, 0.3);
+        }
         .chapter-exam-section {
             margin-top: 1.5rem;
             padding-top: 1.5rem;
@@ -209,6 +227,9 @@ function renderContent(chapters, lessons, exams, container) {
                             ${lesson.title}
                         </div>
                         <div class="exam-buttons">
+                            <a href="lecture.html?id=${lesson.id}" class="lecture-btn-sm">
+                                <i class="fas fa-graduation-cap"></i> عرض المحاضرة
+                            </a>
                             ${examsHtml}
                         </div>
                     </div>

@@ -375,7 +375,9 @@ async function loadContentTree() {
 
     // Fetch Exams related to this subject (via subject_id for speed)
     const { data: exams } = await supabase.from('exams')
-        .select('*').eq('subject_id', currentContext.subject.id);
+        .select('*')
+        .eq('subject_id', currentContext.subject.id)
+        .order('order_index', { ascending: true });
 
     // Build Map
     treeContainer.innerHTML = '';
@@ -499,8 +501,28 @@ function openEditor(type, data) {
     else if (type === 'lesson') {
         panel.innerHTML = `
             <h3>تعديل الدرس: ${data.title}</h3>
-            <div class="form-actions" style="margin-bottom:2rem;">
-                 <button class="btn btn-primary btn-sm" onclick="openAddExamModal('lesson', '${data.id}')">
+            
+            <div class="card mb-4 mt-3" style="padding: 1.5rem; border: 1px solid #e2e8f0; background: #fff;">
+                <h4 style="margin-bottom: 1rem;"><i class="fas fa-graduation-cap"></i> محتوى المحاضرة</h4>
+                
+                <div class="form-group mb-3">
+                    <label>رابط الفيديو (YouTube)</label>
+                    <input type="text" id="lessonVideoUrl" class="form-control" value="${data.video_url || ''}" placeholder="https://www.youtube.com/watch?v=...">
+                </div>
+
+                <div class="form-group mb-3">
+                    <label>نص المحاضرة (HTML المترجم)</label>
+                    <textarea id="lessonContent" class="form-control" rows="15" placeholder="الصق هنا كود الـ HTML الذي أخرجه الـ AI..." style="font-family: monospace; font-size: 0.9rem;">${data.content || ''}</textarea>
+                    <small class="text-muted">نصيحة: استخدم <div class="lecture-segment"> لكل جزئية.</small>
+                </div>
+
+                <button class="btn btn-primary w-100" onclick="saveLectureData('${data.id}')">
+                    <i class="fas fa-save"></i> حفظ المحتوى والفيديو
+                </button>
+            </div>
+
+            <div class="form-actions" style="margin-top:2rem; padding-top: 1rem; border-top: 1px solid #eee;">
+                 <button class="btn btn-outline btn-sm" onclick="openAddExamModal('lesson', '${data.id}')">
                     <i class="fas fa-plus"></i> إضافة امتحان
                 </button>
                  <button class="btn btn-outline btn-sm" style="color:red; float:left;" onclick="deleteItem('lessons', '${data.id}')">
@@ -603,6 +625,28 @@ window.openEditNodeModal = (type, data) => {
             }
         }
     });
+};
+
+window.saveLectureData = async (lessonId) => {
+    const content = document.getElementById('lessonContent').value;
+    const videoUrl = document.getElementById('lessonVideoUrl').value;
+
+    const { error } = await supabase.from('lessons').update({
+        content: content,
+        video_url: videoUrl
+    }).eq('id', lessonId);
+
+    if (error) {
+        Swal.fire('خطأ', 'تعذر حفظ البيانات: ' + error.message, 'error');
+    } else {
+        Swal.fire({
+            icon: 'success',
+            title: 'تم الحفظ',
+            text: 'تم تحديث محتوى المحاضرة والفيديو بنجاح',
+            timer: 1500,
+            showConfirmButton: false
+        });
+    }
 };
 
 // ==========================================

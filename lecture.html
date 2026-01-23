@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>المحاضرة المترجمة | Nursing Academy</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* Lecture Specific Styles */
+        .lecture-page {
+            background-color: #f8fafc;
+            min-height: 100vh;
+        }
+
+        .lecture-header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 4rem 0 2rem;
+            text-align: center;
+            border-radius: 0 0 2rem 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .lecture-title {
+            font-size: 2.2rem;
+            font-weight: 900;
+            margin-bottom: 1rem;
+        }
+
+        .breadcrumb {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .lecture-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 1.5rem 5rem;
+        }
+
+        .lecture-content-card {
+            background: white;
+            border-radius: 1.5rem;
+            padding: 2.5rem;
+            box-shadow: var(--shadow-md);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        /* The Segment Styling */
+        .lecture-segment {
+            margin-bottom: 2.5rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid #f1f5f9;
+            transition: var(--transition);
+        }
+
+        .lecture-segment:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        .en-text {
+            direction: ltr;
+            text-align: left;
+            font-family: 'Inter', sans-serif;
+            font-size: 1.25rem;
+            line-height: 1.6;
+            color: #1e293b;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            display: block;
+            border-left: 4px solid var(--primary-color);
+            padding-left: 1.25rem;
+        }
+
+        .ar-text {
+            direction: rtl;
+            text-align: right;
+            font-size: 1.15rem;
+            line-height: 1.8;
+            color: #475569;
+            padding-right: 0;
+            position: relative;
+        }
+
+        /* Removed the lightbulb icon pseudo-element */
+        .ar-text::before {
+            display: none;
+        }
+
+        /* Headers - set to LTR as requested for English medical titles */
+        .lecture-content-card h1 {
+            display: none !important;
+        }
+
+        .lecture-content-card h2,
+        .lecture-content-card h3 {
+            direction: ltr;
+            text-align: left;
+            border-left: 6px solid var(--secondary-color);
+            padding-left: 15px;
+            border-right: none;
+            padding-right: 0;
+        }
+
+        .lecture-content-card h2 {
+            color: var(--primary-dark);
+            margin: 2rem 0 1.5rem;
+            font-size: 1.6rem;
+        }
+
+        .lecture-content-card h3 {
+            color: var(--text-dark);
+            margin: 1.5rem 0 1rem;
+            font-size: 1.3rem;
+        }
+
+        .lecture-actions {
+            margin-top: 3rem;
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .video-box {
+            margin-bottom: 3rem;
+            border-radius: 1rem;
+            overflow: hidden;
+            box-shadow: var(--shadow-lg);
+            background: #000;
+            aspect-ratio: 16/9;
+        }
+
+        .video-box iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* Reading Progress */
+        .progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 4px;
+            background: var(--secondary-color);
+            z-index: 2000;
+            transition: width 0.1s ease;
+        }
+
+        /* Improved Table Styling with Scrolling */
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            /* Smooth scroll on mobile */
+            margin: 2rem 0;
+            border-radius: 12px;
+            box-shadow: var(--shadow-sm);
+            background: white;
+        }
+
+        .lecture-content-card table {
+            width: 100%;
+            min-width: 600px;
+            /* Forces scroll on small screens instead of squishing */
+            border-collapse: collapse;
+            border: 1px solid #e2e8f0;
+        }
+
+        .lecture-content-card th {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 1.2rem;
+            text-align: left;
+            font-weight: 700;
+        }
+
+        .lecture-content-card td {
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #f1f5f9;
+            vertical-align: top;
+        }
+
+        .lecture-content-card tr:nth-child(even) {
+            background-color: #f8fafc;
+        }
+
+        .lecture-content-card tr:hover {
+            background-color: #f1f5f9;
+        }
+
+        /* Simplified Lists - Removed checkmarks, using border-left for consistency */
+        .lecture-content-card ul,
+        .lecture-content-card ol {
+            padding-left: 0;
+            padding-right: 0;
+            margin: 1.5rem 0;
+            list-style: none;
+            /* Removed default bullets/numbers */
+        }
+
+        .lecture-content-card li {
+            margin-bottom: 0.75rem;
+            position: relative;
+            list-style: none;
+            /* padding-right: 1.5rem; */
+        }
+
+        /* 
+        .lecture-content-card ul li::before {
+            content: "\f058";
+            font-family: "Font Awesome 5 Free";
+            font-weight: 900;
+            position: absolute;
+            right: 0;
+            color: var(--secondary-color);
+            font-size: 0.9rem;
+        } */
+
+        @media (max-width: 768px) {
+            .lecture-header {
+                padding: 3rem 0 1.5rem;
+            }
+
+            .lecture-title {
+                font-size: 1.8rem;
+            }
+
+            .en-text {
+                font-size: 1.1rem;
+            }
+
+            .ar-text {
+                font-size: 1.05rem;
+            }
+
+            .lecture-content-card {
+                padding: 1.5rem;
+            }
+        }
+    </style>
+</head>
+
+<body class="lecture-page">
+    <div class="progress-bar" id="readingProgress"></div>
+
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="container">
+            <a href="dashboard.html" class="logo">
+                <img src="assets/images/logo-icon.webp" alt="Logo" class="brand-icon">
+                <span class="logo-text">تمريض <span class="logo-accent">بنها</span></span>
+            </a>
+
+            <div class="menu-toggle">
+                <i class="fas fa-bars"></i>
+            </div>
+
+            <ul class="nav-links">
+                <li><a href="dashboard.html">الرئيسية</a></li>
+                <li><a href="squad.html">الشلة</a></li>
+                <li><a href="todo.html">المهام</a></li>
+                <li><a href="leaderboard.html">المتصدرين</a></li>
+                <li><a href="profile.html">البروفايل</a></li>
+                <li><button id="logoutBtn" class="btn btn-outline" style="padding: 0.5rem 1rem;">خروج</button></li>
+            </ul>
+        </div>
+    </nav>
+
+    <header class="lecture-header">
+        <div class="container">
+            <h1 class="lecture-title" id="lectureTitle">جاري تحميل المحاضرة...</h1>
+            <div class="breadcrumb">
+                <span id="courseName">المادة</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="lecture-container">
+        <!-- Video if exists -->
+        <div id="videoContainer" style="display: none;">
+            <div class="video-box">
+                <iframe id="lectureVideo" src="" allowfullscreen></iframe>
+            </div>
+        </div>
+
+        <div class="lecture-content-card" id="lectureContent">
+            <!-- Content will be injected here -->
+            <div class="text-center py-5">
+                <div class="spinner"></div>
+                <p class="mt-3">نجهز لك أفضل تجربة قراءة...</p>
+            </div>
+        </div>
+
+        <div class="lecture-actions">
+            <button class="btn btn-outline" onclick="history.back()">
+                <i class="fas fa-arrow-right"></i> الرجوع للدروس
+            </button>
+            <a href="#" id="examLink" class="btn btn-primary btn-lg" style="display: none;">
+                <i class="fas fa-pen-nib"></i> ابدأ الاختبار الآن
+            </a>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="logo">
+                        <img src="assets/images/logo-icon.webp" alt="Logo" class="brand-icon">
+                        <span class="logo-text">تمريض <span class="logo-accent">بنها</span></span>
+                    </div>
+                    <p style="margin-top:1rem; opacity:0.8;">أقوى منصة تعليمية لطلاب تمريض بنها - شرح، امتحانات،
+                        ومتابعة.</p>
+                </div>
+            </div>
+            <div class="copyright">
+                <p>&copy; 2024 Nursing Academy. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script type="module" src="assets/js/auth.js"></script>
+    <script type="module" src="assets/js/lecture.js"></script>
+
+    <script>
+        // Reading progress logic
+        window.onscroll = function () {
+            let winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+            let height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            let scrolled = (winScroll / height) * 100;
+            document.getElementById("readingProgress").style.width = scrolled + "%";
+        };
+    </script>
+</body>
+
+</html>
