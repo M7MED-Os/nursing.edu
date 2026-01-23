@@ -770,7 +770,7 @@ window.startPomodoroFlow = async () => {
     await supabase.from('squad_chat_messages').insert({
         squad_id: currentSquad.id,
         sender_id: currentProfile.id,
-        text: `📢 بدأت جلسة مذاكرة بومودورو لمدة ${duration} دقيقة.. من سينضم؟`
+        text: `مين جاي ${duration} دقيقة مذاكرة؟ 📚`
     });
 };
 
