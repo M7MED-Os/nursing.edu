@@ -202,17 +202,10 @@ function setupRealtime() {
 let onlineUsersSet = new Set();
 
 // --- Presence (نظام التواجد) ---
-// --- Presence (Consumer) ---
+// --- Presence (نظام التواجد) ---
 function setupPresence() {
-    // 1. Check Initial State (if squad-notifications loaded first)
-    if (window.currentPresenceState) {
-        updateMembersStatusUI(window.currentPresenceState);
-    }
-
-    // 2. Listen for Updates
-    window.addEventListener('squad-presence-updated', (e) => {
-        updateMembersStatusUI(e.detail);
-    });
+    // Logic removed as per request to restart feature from scratch.
+    if (presenceChannel) supabase.removeChannel(presenceChannel);
 }
 
 function updateMembersStatusUI(presenceState) {
