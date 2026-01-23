@@ -198,6 +198,9 @@ function setupRealtime() {
         .subscribe();
 }
 
+// Global Set to track online users from Presence
+let onlineUsersSet = new Set();
+
 // --- Presence (نظام التواجد) ---
 function setupPresence() {
     if (presenceChannel) supabase.removeChannel(presenceChannel);
@@ -210,49 +213,59 @@ function setupPresence() {
         })
         .subscribe(async (status) => {
             if (status === 'SUBSCRIBED') {
+                // Update Updated_at in DB to mark true last active time
                 await presenceChannel.track({
                     user_id: currentProfile.id,
                     online_at: new Date().toISOString(),
                 });
+                // Also update persistent profile
+                await supabase.from('profiles').update({ updated_at: new Date().toISOString() }).eq('id', currentProfile.id);
             }
         });
 }
 
-// Power Saving Mode: Pause Real-time when tab is hidden
-document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') {
-        if (activityChannel) supabase.removeChannel(activityChannel);
-        if (presenceChannel) supabase.removeChannel(presenceChannel);
-    } else {
-        if (currentSquad) {
-            setupRealtime();
-            setupPresence();
-            loadChat();
-            loadTasks();
-            loadPomodoro();
-        }
-    }
-});
-
 function updateMembersStatusUI(presenceState) {
     const onlineUserIds = Object.values(presenceState).flat().map(p => p.user_id);
-    document.querySelectorAll('.member-item').forEach(item => {
-        const userId = item.dataset.userid;
-        const dot = item.querySelector('.status-dot');
-        if (onlineUserIds.includes(userId)) {
-            dot.classList.add('online');
-        } else {
-            dot.classList.remove('online');
-        }
-    });
+    onlineUsersSet = new Set(onlineUserIds);
+
+    // Refresh list to update UI text based on new online status
+    loadMembers();
+}
+
+// --- Time Ago Helper ---
+function timeAgo(dateString) {
+    if (!dateString) return 'غير معروف';
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffSeconds = Math.floor((now - date) / 1000);
+
+    if (diffSeconds < 60) return 'منذ لحظات';
+
+    const minutes = Math.floor(diffSeconds / 60);
+    if (minutes < 60) return `منذ ${minutes} دقيقة`;
+
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `منذ ${hours} ساعة`;
+
+    const days = Math.floor(hours / 24);
+    return `منذ ${days} يوم`;
 }
 
 // --- Members ---
 async function loadMembers() {
     const { data: members } = await supabase
         .from('squad_members')
-        .select('profile_id, profiles(full_name, points)')
+        .select('profile_id, profiles(full_name, points, updated_at)')
         .eq('squad_id', currentSquad.id);
+
+    // Sort: Online first, then by updated_at descending
+    members.sort((a, b) => {
+        const aOnline = onlineUsersSet.has(a.profile_id);
+        const bOnline = onlineUsersSet.has(b.profile_id);
+        if (aOnline && !bOnline) return -1;
+        if (!aOnline && bOnline) return 1;
+        return new Date(b.profiles.updated_at || 0) - new Date(a.profiles.updated_at || 0);
+    });
 
     const list = document.getElementById('memberList');
     document.getElementById('squadMemberCount').textContent = `${members.length} أعضاء`;
@@ -260,7 +273,9 @@ async function loadMembers() {
     const isOwner = currentSquad.owner_id === currentProfile.id;
 
     list.innerHTML = members.map(m => {
+        const isOnline = onlineUsersSet.has(m.profile_id);
         let actions = '';
+
         if (isOwner && m.profile_id !== currentProfile.id) {
             actions = `
                 <div class="member-actions" style="margin-right:auto; display:flex; gap:5px;">
@@ -272,18 +287,35 @@ async function loadMembers() {
             actions = '<span style="font-size:0.6rem; color:#f59e0b; margin-right:auto;">مالك الشلة ⭐</span>';
         }
 
+        // Logic: If Online (Presence) -> Show 'نشط الآن'
+        // Else -> Show timeAgo from updated_at
+        let activeText = 'غير نَشِط';
+        if (isOnline) {
+            activeText = 'نشط الآن';
+        } else if (m.profiles.updated_at) {
+            activeText = timeAgo(m.profiles.updated_at);
+        }
+
         return `
             <div class="member-item" data-userid="${m.profile_id}" style="display:flex; align-items:center; gap:10px;">
-                <div class="status-dot"></div>
+                <div class="status-dot ${isOnline ? 'online' : ''}"></div>
                 <div style="flex:1">
                     <div style="font-weight:700; font-size:0.9rem;">${m.profiles.full_name}</div>
-                    <div style="font-size:0.75rem; color:#64748b;">${m.profiles.points} نقطة</div>
+                    <div style="font-size:0.75rem; color:#64748b; display: flex; gap: 10px;">
+                        <span>${m.profiles.points} نقطة</span>
+                        <span class="active-status" style="font-size: 0.7rem; color: ${isOnline ? '#10b981' : '#94a3b8'};">
+                            • ${activeText}
+                        </span>
+                    </div>
                 </div>
                 ${actions}
             </div>
         `;
     }).join('');
 }
+
+// Auto-refresh members status every minute to update "Time Ago"
+setInterval(loadMembers, 60000);
 
 window.kickMember = async (userId) => {
     const { isConfirmed } = await Swal.fire({

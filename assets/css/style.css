@@ -227,6 +227,10 @@ img {
   display: none;
   font-size: 1.5rem;
   cursor: pointer;
+  color: var(--text-dark);
+  /* Ensure visible on white */
+  z-index: 1100;
+  /* Higher than content */
 }
 
 /* Bottom Navigation Bar (Mobile App Feel) */
@@ -1651,4 +1655,37 @@ div:where(.swal2-container) button.swal2-styled:hover {
 
 .btn-modal.cancel:hover {
   background: #e2e8f0;
+}
+
+/* Squad Notification Badge */
+.squad-badge-dot {
+  position: absolute;
+  top: -5px;
+  left: -8px;
+  /* Start from left */
+  width: 10px;
+  height: 10px;
+  background: #ef4444;
+  border-radius: 50%;
+  border: 2px solid white;
+  display: none;
+  /* JS toggles this */
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  }
+
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 6px rgba(239, 68, 68, 0);
+  }
+
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
 }

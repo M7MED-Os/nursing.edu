@@ -31,8 +31,11 @@ async function initSquadNotifications() {
             table: 'squad_chat_messages',
             filter: `squad_id=eq.${squadId}`
         }, payload => {
-            if (payload.new.sender_id !== user.id && !window.location.href.includes('squad.html')) {
-                showSquadAlert('رسالة جديدة من الشلة!', payload.new.text, 'squad.html');
+            const isSquadPage = window.location.href.includes('squad.html');
+            if (payload.new.sender_id !== user.id && !isSquadPage) {
+                // Show Red Badge
+                toggleSquadBadge(true);
+                // Optional: Play a subtle sound?
             }
         })
         .on('postgres_changes', {
@@ -43,6 +46,7 @@ async function initSquadNotifications() {
         }, payload => {
             if (payload.new && payload.new.status === 'running' && payload.new.started_by !== user.id) {
                 showSquadAlert('مذاكرة جماعية! 🔥', 'واحد من شلتك بدأ يذاكر دلوقتي.. انضم ليه؟', 'squad.html');
+                toggleSquadBadge(true);
             }
         })
         .on('postgres_changes', {
@@ -53,10 +57,53 @@ async function initSquadNotifications() {
         }, payload => {
             if (payload.new.status === 'active') {
                 showSquadAlert('تحدي امتحان! 📝', 'شلتك بدأت امتحان جماعي.. ادخل حل معاهم!', 'squad.html');
+                toggleSquadBadge(true);
             }
         })
         .subscribe();
+
+    // Clear badge if on squad page
+    if (window.location.href.includes('squad.html')) {
+        toggleSquadBadge(false);
+    }
 }
+
+function toggleSquadBadge(show) {
+    // Try to find the squad link in navbar
+    const navLinks = document.querySelectorAll('.nav-links a');
+    let squadLink = null;
+    navLinks.forEach(link => {
+        if (link.href && link.href.includes('squad.html')) {
+            squadLink = link;
+        }
+    });
+
+    if (!squadLink) return;
+
+    if (show) {
+        // Check if badge exists
+        let badge = squadLink.querySelector('.squad-badge-dot');
+        if (!badge) {
+            badge = document.createElement('span');
+            badge.className = 'squad-badge-dot';
+            squadLink.style.position = 'relative'; // Ensure relative positioning
+            squadLink.appendChild(badge);
+        }
+        badge.style.display = 'block';
+        localStorage.setItem('has_unread_squad_msg', 'true');
+    } else {
+        const badge = squadLink.querySelector('.squad-badge-dot');
+        if (badge) badge.style.display = 'none';
+        localStorage.removeItem('has_unread_squad_msg');
+    }
+}
+
+// Check saved state on load
+document.addEventListener('DOMContentLoaded', () => {
+    if (localStorage.getItem('has_unread_squad_msg') === 'true' && !window.location.href.includes('squad.html')) {
+        toggleSquadBadge(true);
+    }
+});
 
 function showSquadAlert(title, text, link) {
     Swal.fire({
