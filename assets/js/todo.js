@@ -35,8 +35,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     let addingSubTarget = null; // Track which task we are adding a subtask to (index)
 
     const init = async () => {
-        const greetings = ["صباح الخير يا بطل! 🌞", "جاهز لإنجاز أهدافك؟ ✨", "يوم جديد.. بداية قوية! 💪", "ركز على هدفك اليوم 🎯"];
-        greetingText.textContent = greetings[Math.floor(Math.random() * greetings.length)];
+        // Greeting logic removed as new header is used
+        // const greetings = ["صباح الخير يا بطل! 🌞", "جاهز لإنجاز أهدافك؟ ✨", "يوم جديد.. بداية قوية! 💪", "ركز على هدفك اليوم 🎯"];
+        // if (greetingText) greetingText.textContent = greetings[Math.floor(Math.random() * greetings.length)];
         await loadTasksFromDB();
     };
 
@@ -145,11 +146,67 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.toggleTask = async (index) => {
         const task = tasks[index];
         const newStatus = !task.completed;
-        const { error } = await supabase.from('todos').update({ completed: newStatus }).eq('id', task.id);
+
+        let subtasks = task.subtasks || [];
+        // If marking main task as completed, mark all subtasks as completed too
+        if (newStatus && subtasks.length > 0) {
+            subtasks = subtasks.map(s => ({ ...s, completed: true }));
+        }
+
+        const updates = { completed: newStatus, subtasks: subtasks };
+        const { error } = await supabase.from('todos').update(updates).eq('id', task.id);
+
         if (error) return console.error(error);
         task.completed = newStatus;
+        task.subtasks = subtasks;
+
         if (task.completed) triggerCelebration('main');
         renderTasks();
+    };
+
+    // ... (Rest of file)
+
+    const triggerCelebration = (type) => {
+        if (type === 'massive') {
+            // Massive Celebration: Even bigger and longer
+            var duration = 5 * 1000;
+            var animationEnd = Date.now() + duration;
+            var defaults = { startVelocity: 45, spread: 360, ticks: 100, zIndex: 9999 };
+
+            var interval = setInterval(function () {
+                var timeLeft = animationEnd - Date.now();
+
+                if (timeLeft <= 0) {
+                    return clearInterval(interval);
+                }
+
+                var particleCount = 100 * (timeLeft / duration);
+
+                confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } }));
+                confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } }));
+            }, 200);
+
+        } else if (type === 'main') {
+            // Increased main task celebration
+            confetti({
+                particleCount: 300,
+                spread: 120,
+                origin: { y: 0.6 },
+                gravity: 1,
+                scalar: 1.4,
+                ticks: 100,
+                colors: ['#03A9F4', '#FFC107', '#4CAF50', '#E91E63', '#9C27B0']
+            });
+        } else {
+            // Increased Subtask celebration
+            confetti({
+                particleCount: 80,
+                spread: 60,
+                origin: { y: 0.7 },
+                scalar: 1.1,
+                colors: ['#03A9F4', '#64B5F6']
+            });
+        }
     };
 
     // --- Edit Popup Logic ---
@@ -301,14 +358,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         const percentage = Math.round(totalProgress * 100);
         progressBar.style.width = `${percentage}%`;
         progressPercent.textContent = `${percentage}%`;
-        if (percentage === 100) summaryText.textContent = "عاش يا بطل! أنهيت مهامك بالكامل 🏆";
-        else summaryText.textContent = "خطوة بخطوة.. أنت بتقرب من النهاية! 🌟";
+        if (percentage === 100) {
+            summaryText.textContent = "عاش يا بطل! أنهيت مهامك بالكامل 🏆";
+            triggerCelebration('massive'); // Trigger custom massive celebration
+        } else {
+            summaryText.textContent = "خطوة بخطوة.. أنت بتقرب من النهاية! 🌟";
+        }
     };
 
-    const triggerCelebration = (type) => {
-        const count = type === 'main' ? 150 : 40;
-        confetti({ particleCount: count, spread: 70, origin: { y: 0.6 }, colors: ['#03A9F4', '#00bcd4', '#4DD0E1'] });
-    };
+    function randomInRange(min, max) {
+        return Math.random() * (max - min) + min;
+    }
 
     addTaskBtn.addEventListener('click', addTask);
     mainInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') addTask(); });

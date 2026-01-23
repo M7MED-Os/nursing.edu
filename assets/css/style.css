@@ -580,22 +580,33 @@ html[dir='rtl'] .step-item:not(:last-child)::after {
 }
 
 
-/* --- Page Header --- */
+/* --- Page Header (Premium Global Class) --- */
 .page-header {
-  background-color: var(--primary-color);
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
   color: white;
   padding: 6rem 0 3rem 0;
   text-align: center;
+  border-radius: 0 0 2rem 2rem;
+  margin-bottom: 3rem;
+  position: relative;
 }
 
 .page-header h1 {
-  font-size: 3rem;
+  font-size: clamp(2rem, 8vw, 3rem);
+  font-weight: 900;
   margin-bottom: 1rem;
+  color: white;
 }
 
 .page-header p {
-  font-size: 1.2rem;
-  opacity: 0.9;
+  font-size: 1.1rem;
+  opacity: 0.95;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.page-header .container {
+  position: relative;
+  z-index: 2;
 }
 
 /* --- About: Split Layout --- */

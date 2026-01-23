@@ -14,14 +14,7 @@
             min-height: 100vh;
         }
 
-        .lecture-header {
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
-            color: white;
-            padding: 4rem 0 2rem;
-            text-align: center;
-            border-radius: 0 0 2rem 2rem;
-            margin-bottom: 3rem;
-        }
+        /* Using global .page-header */
 
         .lecture-title {
             font-size: 2.2rem;
@@ -126,6 +119,18 @@
             justify-content: center;
             gap: 1.5rem;
             flex-wrap: wrap;
+        }
+
+        @media (max-width: 480px) {
+            .lecture-actions {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .lecture-actions .btn {
+                width: 100%;
+                justify-content: center;
+            }
         }
 
         .video-box {
@@ -267,14 +272,14 @@
                 <li><a href="dashboard.html">الرئيسية</a></li>
                 <li><a href="squad.html">الشلة</a></li>
                 <li><a href="todo.html">المهام</a></li>
-                <li><a href="leaderboard.html">المتصدرين</a></li>
+                <li><a href="leaderboard.html">الأوائل</a></li>
                 <li><a href="profile.html">البروفايل</a></li>
                 <li><button id="logoutBtn" class="btn btn-outline" style="padding: 0.5rem 1rem;">خروج</button></li>
             </ul>
         </div>
     </nav>
 
-    <header class="lecture-header">
+    <header class="page-header">
         <div class="container">
             <h1 class="lecture-title" id="lectureTitle">جاري تحميل المحاضرة...</h1>
             <div class="breadcrumb">
@@ -320,6 +325,21 @@
                     </div>
                     <p style="margin-top:1rem; opacity:0.8;">أقوى منصة تعليمية لطلاب تمريض بنها - شرح، امتحانات،
                         ومتابعة.</p>
+                </div>
+                <div class="footer-col">
+                    <h3>روابط هامة</h3>
+                    <ul class="footer-links">
+                        <li><a href="dashboard.html">الرئيسية</a></li>
+                        <li><a href="squad.html">الشلة</a></li>
+                        <li><a href="leaderboard.html">الأوائل</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h3>تواصل معنا</h3>
+                    <ul class="footer-links">
+                        <li><a href="#"><i class="fab fa-facebook"></i> فيسبوك</a></li>
+                        <li><a href="#"><i class="fab fa-whatsapp"></i> واتساب</a></li>
+                    </ul>
                 </div>
             </div>
             <div class="copyright">

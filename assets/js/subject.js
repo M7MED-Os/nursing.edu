@@ -150,6 +150,7 @@ function renderContent(chapters, lessons, exams, container) {
             display: flex;
             gap: 0.8rem;
             flex-wrap: wrap;
+            align-items: center;
         }
         .exam-btn-sm {
             padding: 0.4rem 1rem;
@@ -186,6 +187,15 @@ function renderContent(chapters, lessons, exams, container) {
             transform: translateY(-2px);
             box-shadow: 0 4px 8px rgba(30, 179, 245, 0.3);
         }
+        .lecture-btn-sm.disabled {
+            background: #e5e7eb;
+            color: #9ca3af;
+            border-color: #d1d5db;
+            cursor: not-allowed;
+            pointer-events: none;
+            box-shadow: none;
+            transform: none;
+        }
         .chapter-exam-section {
             margin-top: 1.5rem;
             padding-top: 1.5rem;
@@ -217,7 +227,7 @@ function renderContent(chapters, lessons, exams, container) {
                             </a>`;
                     });
                 } else {
-                    examsHtml = `<span style="font-size:0.8rem; color:#999;">لا توجد نماذج حالياً</span>`;
+                    examsHtml = `<span style="font-size:0.8rem; color:#999;">لا توجد اسئلة حالياً</span>`;
                 }
 
                 lessonsHtml += `
@@ -227,8 +237,9 @@ function renderContent(chapters, lessons, exams, container) {
                             ${lesson.title}
                         </div>
                         <div class="exam-buttons">
-                            <a href="lecture.html?id=${lesson.id}" class="lecture-btn-sm">
-                                <i class="fas fa-graduation-cap"></i> عرض المحاضرة
+                            <a href="${lesson.content ? `lecture.html?id=${lesson.id}` : '#'}" 
+                               class="lecture-btn-sm ${!lesson.content ? 'disabled' : ''}">
+                                ${lesson.content ? 'عرض المحاضرة' : 'المحاضرة قريباً'}
                             </a>
                             ${examsHtml}
                         </div>
@@ -242,7 +253,7 @@ function renderContent(chapters, lessons, exams, container) {
         // Generate HTML for Chapter-Level Exams
         let chapterExamsHtml = "";
         if (chapterExams.length > 0) {
-            chapterExamsHtml = `<div class="chapter-exam-section">
+            chapterExamsHtml = `<div class="chapter-exam-section" style="display: none;">
                 <h4 style="margin-bottom: 1rem; color: var(--primary-dark);">
                     <i class="fas fa-award"></i> امتحانات شاملة على الباب
                 </h4>

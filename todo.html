@@ -8,6 +8,8 @@
     <link rel="stylesheet" href="assets/css/style.css">
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="assets/css/todo.css">
+    <link rel="stylesheet" href="assets/css/todo-header.css">
+    <link rel="stylesheet" href="assets/css/todo-chips.css">
     <link rel="stylesheet" href="assets/css/bottom-nav.css">
 
     <!-- Favicons -->
@@ -45,7 +47,7 @@
                 <li><a href="dashboard.html">الرئيسية</a></li>
                 <li><a href="squad.html">الشلة</a></li>
                 <li><a href="todo.html" class="active">المهام</a></li>
-                <li><a href="leaderboard.html">المتصدرين</a></li>
+                <li><a href="leaderboard.html">الأوائل</a></li>
                 <li id="adminNavBtn" style="display: none;">
                     <a href="admin.html" style="color: var(--secondary-color); font-weight: bold;">
                         <i class="fas fa-shield-alt"></i> Admin
@@ -57,37 +59,45 @@
         </div>
     </nav>
 
+    <!-- Simple Personal Header -->
+    <header class="todo-simple-header">
+        <div class="container header-flex">
+            <div>
+                <h1 class="simple-title">مهامي اليومية 📝</h1>
+                <p class="simple-date" id="currentDateDisplay">...</p>
+            </div>
+            <div class="header-quote">
+                "إنجاز صغير كل يوم = نجاح كبير آخر السنة"
+            </div>
+        </div>
+    </header>
+
     <div class="todo-page">
         <div class="todo-container">
-            <!-- Header Section -->
-            <header class="todo-header">
-                <div class="header-content">
-                    <h1 id="greetingText">مرحباً بك يا بطل! 🚀</h1>
-                    <p id="motivationalMessage">كل خطوة صغيرة النهاردة بتقربك لحلمك الكبير بكرة.</p>
+            <!-- Overall Progress Card -->
+            <div class="global-progress-card" style="margin-bottom: 2rem;">
+                <div class="progress-header">
+                    <span>خلصت قد اي من اللي محدده؟</span>
+                    <span id="progressPercentage">0%</span>
                 </div>
-
-                <!-- Overall Progress Card -->
-                <div class="global-progress-card">
-                    <div class="progress-header">
-                        <span>إجمالي الإنجاز اليومي</span>
-                        <span id="progressPercentage">0%</span>
-                    </div>
-                    <div class="progress-bar-outer">
-                        <div id="progressBarFill" class="progress-bar-inner"></div>
-                    </div>
-                    <div id="taskCountSummary" class="task-summary">0 مهام منجزة</div>
+                <div class="progress-bar-outer">
+                    <div id="progressBarFill" class="progress-bar-inner"></div>
                 </div>
-            </header>
+                <div id="taskCountSummary" class="task-summary">0 مهام منجزة</div>
+            </div>
 
             <!-- Input Section -->
             <div class="task-input-section">
                 <div class="input-wrapper">
-                    <input type="text" id="mainTaskInput" placeholder="ماذا تريد أن تنجز الآن؟" autocomplete="off">
-                    <button id="addTaskBtn" class="btn-add-task" title="إضافة مهمة">
+                    <input type="text" id="mainTaskInput" placeholder="عاوز تخلص اي انهارده؟" autocomplete="off">
+                    <button id="addTaskBtn" class="btn-add-task" title="ضيف مهمة">
                         <i class="fas fa-plus"></i>
                     </button>
                 </div>
             </div>
+
+            <!-- Quick Add Tags -->
+            <!-- Quick Add Tags Removed -->
 
             <!-- List Section -->
             <div id="todoList" class="todo-list">
@@ -97,9 +107,10 @@
             <!-- Empty State -->
             <div id="emptyState" class="empty-state">
                 <h3><i class="fas fa-clipboard-list"
-                        style="display: block; margin-bottom: 1rem; font-size: 3rem; color: #E2E8F0;"></i>قائمة المهام
-                    فارغة</h3>
-                <p>ابدأ بإضافة أول هدف لك لهذا اليوم ودعنا نحتفل بإنجازك!</p>
+                        style="display: block; margin-bottom: 1rem; font-size: 3rem; color: #E2E8F0;"></i>
+                    مفيش مهمات
+                </h3>
+                <p>ضيف اول هدف ليك و ابدأ مذاكرة!</p>
             </div>
         </div>
     </div>
@@ -206,7 +217,27 @@
     <script type="module" src="assets/js/auth.js"></script>
     <script type="module" src="assets/js/squad-notifications.js"></script>
     <script type="module" src="assets/js/todo.js"></script>
+    <script>
+        // Inline script for date display and quick add
+        document.addEventListener('DOMContentLoaded', () => {
+            const dateEl = document.getElementById('currentDateDisplay');
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            dateEl.textContent = new Date().toLocaleDateString('ar-EG', options);
+        });
 
+        window.addQuickTask = (text, colorIndex) => {
+            const input = document.getElementById('mainTaskInput');
+            const addBtn = document.getElementById('addTaskBtn');
+            input.value = text;
+
+            // We need to trigger the add logic. Since todo.js is a module, we might not reach its internal functions directly if not exposed.
+            // But usually input value + click works if the event listener is set up.
+            // Let's try simulating a click or Enter.
+            input.focus();
+            // Optional: Auto submit? Maybe let user edit first.
+            // Let's just set focus for now so they can hit enter or edit.
+        };
+    </script>
 </body>
 
 </html>

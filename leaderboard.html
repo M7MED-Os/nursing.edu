@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>لوحة المتصدرين | تمريض بنها</title>
+    <title>الأوائل | تمريض بنها</title>
     <link rel="stylesheet" href="assets/css/style.css">
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="assets/css/bottom-nav.css">
@@ -18,15 +18,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
     <style>
-        .leaderboard-hero {
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
-            color: white;
-            padding: clamp(2rem, 8vw, 4rem) 0;
-            text-align: center;
-            margin-bottom: -3rem;
-            position: relative;
-            z-index: 1;
-        }
+        /* Use global .page-header */
 
         .leaderboard-hero h1 {
             font-size: clamp(1.8rem, 5vw, 3rem);
@@ -190,40 +182,41 @@
             }
         }
 
-        /* Filter Buttons Style */
-        .filter-container {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            overflow-x: auto;
-            padding-bottom: 5px;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-
+        /* Filter Buttons Simple Style */
         .filter-btn {
-            background: white;
-            border: 1px solid #e2e8f0;
+            background: transparent;
+            border: none;
             color: #64748b;
-            padding: 8px 16px;
+            padding: 8px 20px;
             border-radius: 50px;
-            font-size: 0.9rem;
+            font-size: 0.95rem;
             cursor: pointer;
-            transition: all 0.2s;
-            font-weight: 500;
+            transition: all 0.2s ease;
+            font-weight: 700;
             white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
 
         .filter-btn:hover {
-            background: #f8fafc;
-            border-color: #cbd5e1;
+            color: var(--primary-color);
+            background: rgba(3, 169, 244, 0.05);
         }
 
         .filter-btn.active {
             background: var(--primary-color);
             color: white;
-            border-color: var(--primary-color);
-            box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.2);
+            box-shadow: 0 4px 6px -1px rgba(3, 169, 244, 0.3);
+        }
+
+        .leaderboard-container {
+            max-width: 800px;
+            margin: -2.5rem auto 4rem auto;
+            position: relative;
+            z-index: 10;
+            padding: 0 1rem;
         }
     </style>
 </head>
@@ -257,7 +250,7 @@
                 <li><a href="dashboard.html">الرئيسية</a></li>
                 <li><a href="squad.html">الشلة</a></li>
                 <li><a href="todo.html">المهام</a></li>
-                <li><a href="leaderboard.html" class="active">المتصدرين</a></li>
+                <li><a href="leaderboard.html" class="active">الأوائل</a></li>
                 <li id="adminNavBtn" style="display: none;">
                     <a href="admin.html" style="color: var(--secondary-color); font-weight: bold;">
                         <i class="fas fa-shield-alt"></i> Admin
@@ -270,27 +263,37 @@
     </nav>
 
     <!-- Header Section -->
-    <header class="leaderboard-hero">
+    <header class="page-header">
         <div class="container">
-            <h1>🏆 لوحة الشرف</h1>
+            <h1>قايمة الاوائل</h1>
             <p>أفضل الطلاب على مستوى المنصة كفاحاً وتقديراً</p>
         </div>
     </header>
 
     <!-- Leaderboard Table -->
     <div class="container leaderboard-container">
-        <!-- View Switcher -->
-        <div class="filter-container" style="margin-bottom: 30px;">
-            <button class="filter-btn active" id="tabStudents" onclick="window.switchView('students')">
-                <i class="fas fa-user-graduate"></i> أوائل الطلاب
-            </button>
-            <button class="filter-btn" id="tabSquads" onclick="window.switchView('squads')">
-                <i class="fas fa-users"></i> أوائل الشلل
-            </button>
-        </div>
+        <!-- Leaderboard Controls -->
+        <div class="leaderboard-controls" style="text-align: center; margin-bottom: 2rem;">
 
-        <!-- Filters (Dynamic) -->
-        <div id="filterContainer" class="filter-container" style="display: none; margin-top: -10px;"></div>
+            <!-- Type Switcher (Students vs Squads) -->
+            <div
+                style="display: inline-flex; gap: 5px; background: rgba(0,0,0,0.05); padding: 5px; border-radius: 50px; margin-bottom: 1rem;">
+                <button class="filter-btn active" id="tabStudents" onclick="window.switchView('students')"
+                    style="border-radius: 50px; padding: 0.5rem 1.5rem; border: none;">
+                    <i class="fas fa-user-graduate"></i> الطلاب
+                </button>
+                <button class="filter-btn" id="tabSquads" onclick="window.switchView('squads')"
+                    style="border-radius: 50px; padding: 0.5rem 1.5rem; border: none;">
+                    <i class="fas fa-users"></i> الشلل
+                </button>
+            </div>
+
+            <!-- Stream Filters -->
+            <div id="filterContainer" style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
+                <!-- Injected via JS -->
+            </div>
+
+        </div>
 
         <div class="full-leaderboard-card">
             <table class="leaderboard-table">
@@ -343,10 +346,6 @@
                 <i class="fas fa-user"></i>
                 <span>البروفايل</span>
             </a>
-            <!-- <a href="#" id="bottomLogoutBtn" class="bottom-nav-item">
-                <i class="fas fa-sign-out-alt"></i>
-                <span>خروج</span>
-            </a> -->
             <a href="admin.html" id="bottomAdminBtn" class="bottom-nav-item admin-link" style="display: none;">
                 <i class="fas fa-shield-alt"></i>
                 <span>Admin</span>
@@ -404,15 +403,15 @@
 
             if (grade === '3') {
                 buttons = [
-                    { label: 'الدفعة كاملة', value: 'all' },
-                    { label: STREAMS['pediatric'], value: 'pediatric' },
-                    { label: STREAMS['obs_gyn'], value: 'obs_gyn' }
+                    { label: 'الكل', value: 'all' },
+                    { label: 'أطفال', value: 'pediatric' },
+                    { label: 'نسا', value: 'obs_gyn' }
                 ];
             } else if (grade === '4') {
                 buttons = [
-                    { label: 'الدفعة كاملة', value: 'all' },
-                    { label: STREAMS['nursing_admin'], value: 'nursing_admin' },
-                    { label: STREAMS['psychiatric'], value: 'psychiatric' }
+                    { label: 'الكل', value: 'all' },
+                    { label: 'إدارة', value: 'nursing_admin' },
+                    { label: 'نفسية', value: 'psychiatric' }
                 ];
             } else {
                 container.style.display = 'none';
@@ -448,21 +447,40 @@
             document.getElementById('tabStudents').classList.toggle('active', view === 'students');
             document.getElementById('tabSquads').classList.toggle('active', view === 'squads');
 
-            const headerH1 = document.querySelector('.leaderboard-hero h1');
-            headerH1.textContent = view === 'students' ? '🏆 لوحة الشرف' : '🔥 قمة الشلل';
+            const headerH1 = document.querySelector('.page-header h1');
+            const headerP = document.querySelector('.page-header p');
 
             if (view === 'students') {
+                headerH1.textContent = 'أوائل الطلاب';
                 document.querySelector('thead tr th:nth-child(2)').textContent = 'الطالب';
+
+                // Show stream filters if applicable
+                const filterContainer = document.getElementById('filterContainer');
+                if (filterContainer && (currentUserInfo.grade === '3' || currentUserInfo.grade === '4')) {
+                    filterContainer.style.display = 'flex';
+                }
+
                 loadLeaderboardData();
             } else {
+                headerH1.textContent = 'أوائل الشلل';
                 document.querySelector('thead tr th:nth-child(2)').textContent = 'الشلة';
+
+                // Hide stream filters for Squads
+                const filterContainer = document.getElementById('filterContainer');
+                if (filterContainer) filterContainer.style.display = 'none';
+
                 loadSquadLeaderboardData();
             }
         };
 
         async function loadSquadLeaderboardData() {
             const body = document.getElementById('leaderboardBody');
-            body.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:4rem;"><i class="fas fa-spinner fa-spin fa-2x"></i></td></tr>';
+            body.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:4rem;"><i class="fas fa-spinner fa-spin fa-2x" style="color: var(--primary-color);"></i></td></tr>';
+
+            // Update Text Context
+            const headerP = document.querySelector('.page-header p');
+            const contextText = GRADES[currentUserInfo.grade] || '';
+            headerP.textContent = `أقوى الشلل في ${contextText}`;
 
             const cacheKey = `squad_leaderboard_${currentUserInfo.grade}`;
             let squads = getCache(cacheKey);
@@ -532,11 +550,11 @@
                     setCache(cacheKey, data, 15);
                 }
 
-                const headerP = document.querySelector('.leaderboard-hero p');
+                const headerP = document.querySelector('.page-header p');
                 let contextText = GRADES[currentUserInfo.grade] || '';
                 if (currentFilterStream === 'all') contextText += " (الدفعة كاملة)";
                 else if (STREAMS[currentFilterStream]) contextText += ` - ${STREAMS[currentFilterStream]}`;
-                headerP.textContent = `قائمة المتصدرين لـ ${contextText}`;
+                headerP.textContent = `قائمة الأوائل لـ ${contextText}`;
 
                 if (!data || data.length === 0) {
                     body.innerHTML = '<tr><td colspan="3" style="text-align:center; padding: 2rem;">لا يوجد متصدرين في هذا التصنيف.</td></tr>';
