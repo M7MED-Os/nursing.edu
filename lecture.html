@@ -257,6 +257,61 @@
                 padding: 1.5rem;
             }
         }
+
+        /* Scroll to Top Button */
+        .scroll-to-top {
+            position: fixed;
+            bottom: 90px;
+            /* Above bottom nav */
+            right: 20px;
+            /* Changed from right to left for RTL */
+            width: 50px;
+            height: 50px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            box-shadow: 0 4px 12px rgba(3, 169, 244, 0.4);
+            transition: all 0.3s ease;
+            z-index: 999;
+        }
+
+        .scroll-to-top:hover {
+            background: var(--primary-dark);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 16px rgba(3, 169, 244, 0.5);
+        }
+
+        .scroll-to-top.show {
+            display: flex;
+            animation: fadeInUp 0.3s ease;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .scroll-to-top {
+                bottom: 50px;
+                width: 45px;
+                height: 45px;
+                font-size: 1rem;
+            }
+        }
     </style>
 </head>
 
@@ -321,6 +376,11 @@
         </div>
     </main>
 
+    <!-- Scroll to Top Button -->
+    <button class="scroll-to-top" id="scrollToTopBtn" title="العودة للأعلى">
+        <i class="fas fa-arrow-up"></i>
+    </button>
+
     <!-- Footer -->
     <footer class="footer">
         <div class="container">
@@ -368,7 +428,23 @@
             let height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
             let scrolled = (winScroll / height) * 100;
             document.getElementById("readingProgress").style.width = scrolled + "%";
+
+            // Scroll to top button visibility
+            const scrollToTopBtn = document.getElementById('scrollToTopBtn');
+            if (winScroll > 300) {
+                scrollToTopBtn.classList.add('show');
+            } else {
+                scrollToTopBtn.classList.remove('show');
+            }
         };
+
+        // Scroll to top functionality
+        document.getElementById('scrollToTopBtn').addEventListener('click', function () {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        });
     </script>
 </body>
 
