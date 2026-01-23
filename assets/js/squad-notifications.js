@@ -1,6 +1,16 @@
 import { supabase } from "./supabaseClient.js";
 
 document.addEventListener('DOMContentLoaded', async () => {
+    // Immediate check: If on Squad page, clear badge
+    if (window.location.href.includes('squad.html')) {
+        toggleSquadBadge(false);
+    } else {
+        // Check saved state
+        if (localStorage.getItem('has_unread_squad_msg') === 'true') {
+            toggleSquadBadge(true);
+        }
+    }
+
     initSquadNotifications();
 });
 
@@ -92,12 +102,7 @@ function toggleSquadBadge(show) {
     }
 }
 
-// Check saved state on load
-document.addEventListener('DOMContentLoaded', () => {
-    if (localStorage.getItem('has_unread_squad_msg') === 'true' && !window.location.href.includes('squad.html')) {
-        toggleSquadBadge(true);
-    }
-});
+
 
 function showSquadAlert(title, text, link) {
     Swal.fire({
