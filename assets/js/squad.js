@@ -202,7 +202,10 @@ function setupRealtime() {
 let onlineUsersSet = new Set();
 
 // --- Presence (نظام التواجد) ---
+// --- Presence (نظام التواجد UI Only) ---
 function setupPresence() {
+    // We don't track here anymore (handled globally in squad-notifications.js)
+    // We only listen to update the UI dots
     if (presenceChannel) supabase.removeChannel(presenceChannel);
 
     presenceChannel = supabase.channel(`squad_presence_${currentSquad.id}`);
@@ -211,17 +214,7 @@ function setupPresence() {
             const state = presenceChannel.presenceState();
             updateMembersStatusUI(state);
         })
-        .subscribe(async (status) => {
-            if (status === 'SUBSCRIBED') {
-                // Update Updated_at in DB to mark true last active time
-                await presenceChannel.track({
-                    user_id: currentProfile.id,
-                    online_at: new Date().toISOString(),
-                });
-                // Also update persistent profile
-                await supabase.from('profiles').update({ updated_at: new Date().toISOString() }).eq('id', currentProfile.id);
-            }
-        });
+        .subscribe();
 }
 
 function updateMembersStatusUI(presenceState) {

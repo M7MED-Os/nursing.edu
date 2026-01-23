@@ -55,6 +55,24 @@ async function initSquadNotifications() {
             }
         })
         .subscribe();
+
+    // 4. Global Presence Tracking (Visible on any page)
+    // We assign it to window so squad.js can reuse or check it if needed (optional)
+    window.globalPresenceChannel = supabase.channel(`squad_presence_${squadId}`);
+
+    window.globalPresenceChannel
+        .subscribe(async (status) => {
+            if (status === 'SUBSCRIBED') {
+                // Signal "I am Online"
+                await window.globalPresenceChannel.track({
+                    user_id: user.id,
+                    online_at: new Date().toISOString(),
+                });
+
+                // Update DB for "Last Active" persistence
+                await supabase.from('profiles').update({ updated_at: new Date().toISOString() }).eq('id', user.id);
+            }
+        });
 }
 
 
