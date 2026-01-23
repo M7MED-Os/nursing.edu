@@ -202,19 +202,17 @@ function setupRealtime() {
 let onlineUsersSet = new Set();
 
 // --- Presence (نظام التواجد) ---
-// --- Presence (نظام التواجد UI Only) ---
+// --- Presence (Consumer) ---
 function setupPresence() {
-    // We don't track here anymore (handled globally in squad-notifications.js)
-    // We only listen to update the UI dots
-    if (presenceChannel) supabase.removeChannel(presenceChannel);
+    // 1. Check Initial State (if squad-notifications loaded first)
+    if (window.currentPresenceState) {
+        updateMembersStatusUI(window.currentPresenceState);
+    }
 
-    presenceChannel = supabase.channel(`squad_presence_${currentSquad.id}`);
-    presenceChannel
-        .on('presence', { event: 'sync' }, () => {
-            const state = presenceChannel.presenceState();
-            updateMembersStatusUI(state);
-        })
-        .subscribe();
+    // 2. Listen for Updates
+    window.addEventListener('squad-presence-updated', (e) => {
+        updateMembersStatusUI(e.detail);
+    });
 }
 
 function updateMembersStatusUI(presenceState) {

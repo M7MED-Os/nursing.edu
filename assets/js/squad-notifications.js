@@ -60,7 +60,17 @@ async function initSquadNotifications() {
     // We assign it to window so squad.js can reuse or check it if needed (optional)
     window.globalPresenceChannel = supabase.channel(`squad_presence_${squadId}`);
 
+    window.globalPresenceChannel = supabase.channel(`squad_presence_${squadId}`);
+
     window.globalPresenceChannel
+        .on('presence', { event: 'sync' }, () => {
+            const state = window.globalPresenceChannel.presenceState();
+            window.currentPresenceState = state; // Store for immediate access
+
+            // Broadcast to other scripts (squad.js)
+            const event = new CustomEvent('squad-presence-updated', { detail: state });
+            window.dispatchEvent(event);
+        })
         .subscribe(async (status) => {
             if (status === 'SUBSCRIBED') {
                 // Signal "I am Online"
