@@ -60,7 +60,7 @@ async function loadSubjectContent() {
             .from('exams')
             .select('*')
             .or(`chapter_id.in.(${chapterIds.join(',')}),lesson_id.in.(${lessons.length ? lessons.map(l => l.id).join(',') : 'uuid_nil()'})`)
-            .order('created_at', { ascending: true });
+            .order('order_index', { ascending: true });
 
         if (lError || eError) throw new Error("Partial Load Error");
 
@@ -87,6 +87,8 @@ function renderContent(chapters, lessons, exams, container) {
             box-shadow: var(--shadow-sm);
             overflow: hidden;
             border: 1px solid #E5E7EB;
+            direction: ltr;
+            text-align: left;
         }
         .chapter-header {
             padding: 1.5rem;
@@ -97,6 +99,7 @@ function renderContent(chapters, lessons, exams, container) {
             align-items: center;
             border-bottom: 1px solid transparent;
             transition: all 0.3s ease;
+            direction: ltr;
         }
         .chapter-header:hover {
             background: #F9FAFB;
@@ -112,12 +115,15 @@ function renderContent(chapters, lessons, exams, container) {
             display: flex;
             align-items: center;
             gap: 10px;
+            flex-direction: row;
         }
         .chapter-body {
             display: none;
             padding: 1.5rem;
             background: white;
             animation: fadeIn 0.3s ease;
+            direction: ltr;
+            text-align: left;
         }
         .chapter-body.show {
             display: block;
@@ -189,7 +195,7 @@ function renderContent(chapters, lessons, exams, container) {
                     lessonExams.forEach((exam, idx) => {
                         examsHtml += `
                             <a href="exam.html?id=${exam.id}" class="exam-btn-sm">
-                                <i class="fas fa-pen"></i> نموذج أسئلة ${idx + 1}
+                                <i class="fas fa-pen"></i> ${exam.title || `نموذج أسئلة ${idx + 1}`}
                             </a>`;
                     });
                 } else {
