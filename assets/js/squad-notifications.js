@@ -69,14 +69,8 @@ async function initSquadNotifications() {
 }
 
 function toggleSquadBadge(show) {
-    // Try to find the squad link in navbar
-    const navLinks = document.querySelectorAll('.nav-links a');
-    let squadLink = null;
-    navLinks.forEach(link => {
-        if (link.href && link.href.includes('squad.html')) {
-            squadLink = link;
-        }
-    });
+    // Finds the squad link directly by ID (added to all pages)
+    const squadLink = document.getElementById('navLinkSquad');
 
     if (!squadLink) return;
 
