@@ -340,13 +340,6 @@ img {
   line-height: 1.2;
 }
 
-.hero-subtitle {
-  font-size: 1.25rem;
-  color: var(--text-light);
-  max-width: 700px;
-  margin: 0 auto 2.5rem auto;
-}
-
 .hero-cta {
   display: flex;
   gap: 1rem;
@@ -1377,6 +1370,7 @@ input:focus-visible {
   margin-bottom: 2.5rem;
   opacity: 0.95;
   line-height: 1.6;
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .hero-cta {
