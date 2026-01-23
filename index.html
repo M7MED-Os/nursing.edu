@@ -4,8 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>منصة تمريض بنها | تعليم متطور لمستقبل أفضل</title>
-    <!-- CSS -->
+    <title>منصة تمريض بنها | مذاكرة أسهل، نتائج أفضل</title>
     <link rel="stylesheet" href="assets/css/style.css">
     <link rel="manifest" href="manifest.json">
 
@@ -15,7 +14,6 @@
     <link rel="icon" type="image/png" sizes="48x48" href="assets/images/favicon-48x48.png">
     <link rel="apple-touch-icon" sizes="180x180" href="assets/images/apple-touch-icon.png">
 
-    <!-- Icons (FontAwesome CDN for example) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
     <!-- PWA Redirect -->
@@ -24,6 +22,8 @@
             window.location.href = "login.html";
         }
     </script>
+
+
 </head>
 
 <body>
@@ -40,7 +40,6 @@
             </div>
             <ul class="nav-links">
                 <li><a href="index.html" class="active">الرئيسية</a></li>
-                <li><a href="about.html">عن المنصة</a></li>
                 <li><a href="pricing.html">الأسعار</a></li>
                 <li><a href="contact.html">تواصل معنا</a></li>
                 <li><a href="login.html" class="btn btn-primary">تسجيل الدخول</a></li>
@@ -51,138 +50,119 @@
     <!-- Hero Section -->
     <header class="hero">
         <div class="container hero-content">
-            <h1 class="hero-title">مش محتاج شرح جديد.. أنت محتاج <span class="text-primary">تحل كتير!</span>
-            </h1>
-            <p class="hero-subtitle">أول منصة في مصر للحل والامتحانات بس. بنك أسئلة بيغطي كل تريكات المنهج و كل افكار
-                الكتب في مكان واحد</p>
-            <div class="hero-cta">
-                <a href="register.html" class="btn btn-primary btn-lg">جرب ببلاش</a>
-                <a href="pricing.html" class="btn btn-outline btn-lg">شوف الأسعار</a>
+            <div class="hero-badge">
+                <i class="fas fa-star"></i> المنصة الأولى لطلاب تمريض بنها
             </div>
-        </div>
-        <div class="hero-shape">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320">
-                <path fill="#ffffff" fill-opacity="1"
-                    d="M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,112C672,96,768,96,864,112C960,128,1056,160,1152,160C1248,160,1344,128,1392,112L1440,96L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z">
-                </path>
-            </svg>
+            <h1 class="hero-title">
+                مذاكرة أسهل، <span class="highlight">نتائج أحسن</span> 🎓
+            </h1>
+            <p class="hero-subtitle">
+                محاضرات مترجمة، امتحانات تفاعلية، ومتابعة مستمرة - كل اللي تحتاجه في مكان واحد
+            </p>
+            <div class="hero-cta">
+                <a href="register.html" class="btn btn-primary btn-lg">
+                    <i class="fas fa-rocket"></i> ابدأ ببلاش
+                </a>
+                <a href="pricing.html" class="btn btn-outline btn-lg">
+                    <i class="fas fa-tag"></i> شوف الأسعار
+                </a>
+            </div>
         </div>
     </header>
 
     <!-- Features Section -->
-    <section class="section features" id="features">
+    <section class="section features">
         <div class="container">
             <div class="text-center">
                 <h2 class="section-title">ليه تشترك معانا؟</h2>
-                <p class="section-subtitle">عشان الحل الكتير هو اللي بيثبت المعلومة.</p>
+                <p class="section-subtitle">كل اللي محتاجه للمذاكرة لوحدك او مع صحابك في مكان واحد</p>
             </div>
-            <div class="grid-3">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem;">
+
+                <!-- Lectures -->
                 <div class="card feature-card">
                     <div class="icon-box">
-                        <i class="fas fa-brain"></i>
+                        <i class="fas fa-book-medical"></i>
                     </div>
-                    <h3>أسئلة كتير</h3>
-                    <p>مش هنسيب فكرة إلا وهتلاقي عليها سؤال.</p>
+                    <h3>محاضرات مترجمة</h3>
+                    <p>كل محاضرة بالإنجليزي مع ترجمة عامية سهلة وواضحة</p>
                 </div>
+
+                <!-- Exams -->
                 <div class="card feature-card">
                     <div class="icon-box">
-                        <i class="fas fa-laptop-code"></i>
+                        <i class="fas fa-clipboard-check"></i>
                     </div>
-                    <h3>امتحان تفاعلي</h3>
-                    <p>مؤقت شغال و تقدر تتنقل بين الاسئلة و Ai مدمج.</p>
+                    <h3>اسئلة و امتحانات</h3>
+                    <p>لازم تحل بعد كل محاضرة، هتلاقي أسئلة قوية و تراجع غلطاتك بعد ما تخلص</p>
                 </div>
+
+                <!-- Progress Tracking -->
                 <div class="card feature-card">
                     <div class="icon-box">
                         <i class="fas fa-chart-line"></i>
                     </div>
-                    <h3>غلطت ليه؟</h3>
-                    <p>هتعرف إجابتك غلط ليه والصح إيه، عشان ميتكررش الغلط ده تاني.</p>
+                    <h3>تابع مستواك</h3>
+                    <p>شوف نتايجك في كل مادة وقارنها بالنتايج اللي فاتت</p>
                 </div>
-            </div>
-        </div>
-    </section>
 
-    <!-- How it Works -->
-    <section class="section bg-light">
-        <div class="container">
-            <div class="text-center">
-                <h2 class="section-title">هتبدأ ازاي؟</h2>
-                <p class="section-subtitle">الموضوع بسيط مش هياخد من وقتك</p>
-            </div>
-            <div class="steps-container">
-                <div class="step-item">
-                    <div class="step-number">1</div>
-                    <h3>اعمل حساب</h3>
-                    <p>سجل اسمك ورقمك واختر شعبتك.</p>
-                </div>
-                <div class="step-item">
-                    <div class="step-number">2</div>
-                    <h3>جرب الاول</h3>
-                    <p>هتحل اول درس من كل مادة ببلاش.</p>
-                </div>
-                <div class="step-item">
-                    <div class="step-number">3</div>
-                    <h3>اختر الباقة</h3>
-                    <p>شوف أنسب اشتراك ليك (شهري أو 3 شهور).</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Testimonials -->
-    <section class="section">
-        <div class="container">
-            <div class="text-center">
-                <h2 class="section-title">صحابك قالوا إيه؟</h2>
-                <p class="section-subtitle">رأي صحابك في المنصة</p>
-            </div>
-            <div class="grid-3">
-                <div class="card testimonial-card">
-                    <p class="testimonial-text">"كل افكار الاسئلة و الكتب الخارجيه في مكان واحد و ب 50 جنيه بس في الشهر
-                        عظمة الصراحة"</p>
-                    <div class="student-info">
-                        <h4>عمر خالد</h4>
-                        <span>3 ثانوي - علمي علوم</span>
+                <!-- To-Do List -->
+                <div class="card feature-card">
+                    <div class="icon-box">
+                        <i class="fas fa-tasks"></i>
                     </div>
+                    <h3>To-Do List</h3>
+                    <p>نظم مهامك اليومية واعمل checklist لكل اللي عايز تخلصه</p>
                 </div>
-                <div class="card testimonial-card">
-                    <p class="testimonial-text">"أحلى حاجة إني بقدر أحل في أي وقت. وفرت علي فلوس كتب خارجية كتير."</p>
-                    <div class="student-info">
-                        <h4>مريم أحمد</h4>
-                        <span>3 ثانوي - أدبي</span>
+
+                <!-- Pomodoro Timer -->
+                <div class="card feature-card">
+                    <div class="icon-box">
+                        <i class="fas fa-clock"></i>
                     </div>
+                    <h3>Pomodoro Timer</h3>
+                    <p>اظبط وقت مذاكرتك بتقنية البومودورو - 25 دقيقة تركيز و 5 دقايق راحة</p>
                 </div>
-                <div class="card testimonial-card">
-                    <p class="testimonial-text">"كنت بخاف من شكل الامتحان، بس كتر الحل هنا خلاني أدخل الامتحان التجريبي
-                        وأنا متعود."</p>
-                    <div class="student-info">
-                        <h4>يوسف مصطفى</h4>
-                        <span>3 ثانوي - علمي رياضة</span>
+
+                <!-- Study Squads -->
+                <div class="card feature-card">
+                    <div class="icon-box">
+                        <i class="fas fa-users"></i>
                     </div>
+                    <h3>شلل المذاكرة</h3>
+                    <p>جيب شلتك على المنصة، اعملوا مهام مشتركة وتنافسوا مع الشلل التانية</p>
                 </div>
+
+                <!-- Leaderboard -->
+                <div class="card feature-card">
+                    <div class="icon-box">
+                        <i class="fas fa-trophy"></i>
+                    </div>
+                    <h3>لوحة الأوائل</h3>
+                    <p>ركز وانت بتحل الامتحانات عشان تاخد النقط كاملة وتطلع في الأوائل</p>
+                </div>
+
+                <!-- Multi-Platform -->
+                <div class="card feature-card">
+                    <div class="icon-box">
+                        <i class="fas fa-mobile-alt"></i>
+                    </div>
+                    <h3>شغال على كل الأجهزة</h3>
+                    <p>ذاكر من الموبايل أو الكمبيوتر في أي وقت ومن أي مكان</p>
+                </div>
+
             </div>
         </div>
     </section>
 
-    <!-- Pricing Preview -->
-    <section class="section pricing-preview bg-light">
+    <!-- CTA Section -->
+    <section class="cta-section">
         <div class="container">
-            <div class="pricing-cta-wrapper">
-                <div>
-                    <h2 class="section-title">وفر فلوسك</h2>
-                    <p>باقات توفير معمولة عشانك، جرب بنفسك.</p>
-                </div>
-                <a href="pricing.html" class="btn btn-secondary btn-lg">شوف الباقات</a>
-            </div>
-        </div>
-    </section>
-
-    <!-- Final CTA -->
-    <section class="section cta-section text-center">
-        <div class="container">
-            <h2>جاهز تقفل الامتحان؟</h2>
-            <p>مضيعش وقت، ابدأ حل دلوقتي.</p>
-            <a href="pricing.html" class="btn btn-white btn-lg">يلا بينا</a>
+            <h2>جاهز تبدأ رحلتك؟</h2>
+            <p>جرب المنصة مجاناً لمدة أسبوع كامل</p>
+            <a href="register.html" class="btn btn-primary btn-lg">
+                <i class="fas fa-user-plus"></i> سجل دلوقتي
+            </a>
         </div>
     </section>
 
@@ -191,35 +171,35 @@
         <div class="container">
             <div class="footer-grid">
                 <div class="footer-col">
-                    <h3>عن تمريض بنها</h3>
-                    <p>منصة تعليمية للامتحانات متكاملة تهدف لتطوير مستوى طلاب تمريض بنها في مصر وتقديم تجربة
-                        تعليمية فريدة.
-                    </p>
+                    <div class="logo">
+                        <img src="assets/images/logo-icon.webp" alt="Logo" class="brand-icon">
+                        <span class="logo-text">تمريض <span class="logo-accent">بنها</span></span>
+                    </div>
+                    <p style="margin-top:1rem; opacity:0.8;">منصة تعليمية متكاملة لطلاب كلية التمريض جامعة بنها</p>
                 </div>
                 <div class="footer-col">
                     <h3>روابط سريعة</h3>
                     <ul class="footer-links">
-                        <li><a href="about.html">من نحن</a></li>
-                        <li><a href="pricing.html">خطط الاشتراك</a></li>
-                        <li><a href="contact.html">اتصل بنا</a></li>
+                        <li><a href="pricing.html">الأسعار</a></li>
+                        <li><a href="contact.html">تواصل معنا</a></li>
                     </ul>
                 </div>
                 <div class="footer-col">
                     <h3>تواصل معنا</h3>
                     <ul class="footer-links">
-                        <li><i class="fas fa-phone"></i> 01000000000</li>
-                        <li><i class="fas fa-envelope"></i> thanaweya@gmail.com</li>
-                        <li><i class="fas fa-map-marker-alt"></i> القليوبية، مصر</li>
+                        <li><a href="https://t.me/M7_KAYA" target="_blank"><i class="fab fa-telegram"></i> @M7_KAYA</a>
+                        </li>
+                        <li><a href="https://wa.me/201117691093" target="_blank"><i class="fab fa-whatsapp"></i>
+                                01117691093</a></li>
                     </ul>
                 </div>
             </div>
             <div class="copyright">
-                <p>&copy; 2026 تمريض بنها - جميع الحقوق محفوظة</p>
+                <p>&copy; 2026 تمريض بنها. جميع الحقوق محفوظة.</p>
             </div>
         </div>
     </footer>
 
-    <!-- JS -->
     <script src="assets/js/main.js"></script>
 </body>
 
