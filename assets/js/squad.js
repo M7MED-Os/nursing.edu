@@ -636,12 +636,31 @@ async function renderChat(msgs) {
             </div>
         ` : '';
 
+        let msgText = m.text;
+        // Detect Join Exam Pattern: #join_exam:UUID (Improved Regex)
+        const joinMatch = msgText.match(/#join_exam:([a-f0-9-]+)/i);
+
+        if (joinMatch) {
+            const examId = joinMatch[1];
+            // Remove the tag cleanly
+            msgText = msgText.replace(joinMatch[0], '').trim();
+
+            // Add Join Button
+            msgText += `
+                <div style="margin-top:10px; text-align:center;">
+                    <button onclick="joinSquadExam('${examId}')" class="btn btn-sm btn-primary" style="border-radius:20px; padding:8px 25px; font-weight:bold; box-shadow: 0 4px 10px rgba(30,179,245,0.3);">
+                        <i class="fas fa-rocket"></i> انضمام للتحدي
+                    </button>
+                </div>
+            `;
+        }
+
         return `
             <div class="msg ${m.sender_id === myId ? 'sent' : 'received'}" 
                  ${m.sender_id === myId ? `onclick="showReadBy('${fullReaderNames}')"` : ''} 
                  style="${m.sender_id === myId ? 'cursor:pointer;' : ''}">
                 <span class="msg-sender">${m.profiles ? m.profiles.full_name : 'مستخدم'}</span>
-                <div class="msg-content">${m.text}</div>
+                <div class="msg-content">${msgText}</div> <!-- Fixed: Using msgText -->
                 <div class="msg-footer">
                     <span class="msg-time">${time}</span>
                     ${ticks}
@@ -907,7 +926,7 @@ window.startSharedExam = async () => {
             .single();
 
 
-        // 4. Notify in chat with a link
+        // 4. Notify in chat
         const examName = exams.find(e => e.id == examId).title;
         await supabase.from('squad_chat_messages').insert({
             squad_id: currentSquad.id,
@@ -922,6 +941,20 @@ window.startSharedExam = async () => {
         console.error(err);
         Swal.fire('خطأ', 'فشل في بدء التحدي الجماعي.', 'error');
     }
+};
+
+window.joinSquadExam = async (examId) => {
+    // 1. Send "I joined" message
+    try {
+        await supabase.from('squad_chat_messages').insert({
+            squad_id: currentSquad.id,
+            sender_id: currentProfile.id,
+            text: 'دخلت معاكم! 🏃‍♂️'
+        });
+    } catch (e) { console.error(e); }
+
+    // 2. Redirect
+    window.location.href = `exam.html?id=${examId}&squad_id=${currentSquad.id}`;
 };
 
 // --- Utils ---
