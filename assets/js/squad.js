@@ -645,14 +645,38 @@ async function renderChat(msgs) {
             // Remove the tag cleanly
             msgText = msgText.replace(joinMatch[0], '').trim();
 
-            // Add Join Button
-            msgText += `
-                <div style="margin-top:10px; text-align:center;">
-                    <button onclick="joinSquadExam('${examId}')" class="btn btn-sm btn-primary" style="border-radius:20px; padding:8px 25px; font-weight:bold; box-shadow: 0 4px 10px rgba(30,179,245,0.3);">
-                        <i class="fas fa-rocket"></i> انضمام للتحدي
-                    </button>
-                </div>
-            `;
+            // Check time elapsed since message creation
+            const msgTime = new Date(m.created_at);
+            const now = new Date();
+            const diffMinutes = (now - msgTime) / 1000 / 60;
+            const isExpired = diffMinutes > 30;
+
+            if (isExpired) {
+                msgText += `
+                    <div style="margin-top:12px; text-align:center; padding-top:8px; border-top:1px dashed rgba(0,0,0,0.1);">
+                        <button disabled class="btn btn-sm" style="
+                            background: #e2e8f0; color: #94a3b8; border: none;
+                            border-radius: 50px; padding: 8px 24px; font-weight: 700; cursor: not-allowed;
+                        ">
+                            <i class="fas fa-hourglass-end" style="margin-left:5px;"></i> انتهى وقت الانضمام
+                        </button>
+                    </div>
+                `;
+            } else {
+                msgText += `
+                    <div style="margin-top:12px; text-align:center; padding-top:8px; border-top:1px dashed rgba(0,0,0,0.1);">
+                        <button onclick="event.stopPropagation(); joinSquadExam('${examId}')" class="btn btn-sm btn-primary" style="
+                            border-radius: 50px; 
+                            padding: 8px 24px; 
+                            font-weight: 800; 
+                            box-shadow: 0 4px 12px rgba(30,179,245,0.4); 
+                            transition: transform 0.2s;
+                        " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                            <i class="fas fa-rocket" style="margin-left:5px;"></i> انضمام للتحدي (${Math.round(30 - diffMinutes)} دقيقة متبقية)
+                        </button>
+                    </div>
+                `;
+            }
         }
 
         return `
