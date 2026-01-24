@@ -323,22 +323,34 @@ window.openEditSubjectModal = (sub) => {
 window.deleteSubject = async (id) => {
     const result = await Swal.fire({
         title: 'هل أنت متأكد؟',
-        text: "حذف المادة سيحذف كل المحتوى بداخلها!",
+        text: "حذف المادة سيحذف كل المحتوى بداخلها (أبواب، دروس، امتحانات، ونتائج الطلاب)!",
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#d33',
         cancelButtonColor: '#3085d6',
-        confirmButtonText: 'نعم، احذفها',
+        confirmButtonText: 'نعم، احذف الكل',
         cancelButtonText: 'إلغاء'
     });
 
     if (!result.isConfirmed) return;
 
-    const { error } = await supabase.from('subjects').delete().eq('id', id);
-    if (error) Swal.fire('خطأ', error.message, 'error');
-    else {
+    // Show loading state
+    Swal.fire({
+        title: 'جاري الحذف...',
+        allowOutsideClick: false,
+        didOpen: () => { Swal.showLoading(); }
+    });
+
+    try {
+        const { error } = await supabase.rpc('admin_delete_subject', { p_subject_id: id });
+
+        if (error) throw error;
+
         loadSubjects();
-        Swal.fire('تم الحذف!', 'تم حذف المادة بنجاح.', 'success');
+        Swal.fire('تم الحذف!', 'تم حذف المادة وكل محتوياتها بنجاح.', 'success');
+    } catch (err) {
+        console.error("Delete failed:", err);
+        Swal.fire('خطأ', 'حدثت مشكلة أثناء الحذف: ' + err.message, 'error');
     }
 };
 
