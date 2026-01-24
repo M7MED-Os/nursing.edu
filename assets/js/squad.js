@@ -394,7 +394,51 @@ function updateProgressBar(tasks) {
     const finalPercent = Math.min(100, Math.round(totalProgress));
     document.getElementById('squadProgressBar').style.width = `${finalPercent}%`;
     document.getElementById('squadProgressPercent').textContent = `${finalPercent}%`;
+
+    // Massive Celebration trigger when reaching 100%
+    if (finalPercent === 100) {
+        const lastCelebration = sessionStorage.getItem('squad_100_celebration');
+        if (lastCelebration !== 'true') {
+            triggerCelebration('massive');
+            sessionStorage.setItem('squad_100_celebration', 'true');
+        }
+    } else {
+        sessionStorage.removeItem('squad_100_celebration');
+    }
 }
+
+const triggerCelebration = (type) => {
+    if (type === 'massive') {
+        // Massive Celebration (Side Bursts) - Matches Todo
+        var duration = 5 * 1000;
+        var end = Date.now() + duration;
+        (function frame() {
+            confetti({ particleCount: 7, angle: 60, spread: 55, origin: { x: 0 }, colors: ['#03A9F4', '#10b981'] });
+            confetti({ particleCount: 7, angle: 120, spread: 55, origin: { x: 1 }, colors: ['#03A9F4', '#10b981'] });
+            if (Date.now() < end) requestAnimationFrame(frame);
+        }());
+    } else if (type === 'main') {
+        // Matches Todo Main Task
+        confetti({
+            particleCount: 300,
+            spread: 120,
+            origin: { y: 0.6 },
+            gravity: 1,
+            scalar: 1.4,
+            ticks: 100,
+            colors: ['#03A9F4', '#FFC107', '#4CAF50', '#E91E63', '#9C27B0']
+        });
+    } else {
+        // Matches Todo Subtask
+        confetti({
+            particleCount: 80,
+            spread: 60,
+            origin: { y: 0.7 },
+            scalar: 1.1,
+            colors: ['#03A9F4', '#64B5F6']
+        });
+    }
+};
 
 function renderTasks(mainTasks, subTasks) {
     const list = document.getElementById('squadTaskList');
@@ -519,9 +563,9 @@ window.toggleSquadTask = async (id, isDone, isMain = false) => {
     // 3. Execution of Celebration
     if (isDone) {
         if (triggerBigConfetti) {
-            confetti({ particleCount: 150, spread: 100, origin: { y: 0.6 }, colors: ['#03A9F4', '#10b981', '#f59e0b'] });
+            triggerCelebration('main');
         } else {
-            confetti({ particleCount: 40, spread: 50, origin: { y: 0.7 } });
+            triggerCelebration('sub');
         }
     }
 
@@ -910,7 +954,7 @@ window.editSquadName = async () => {
 
 window.shareSquadOnWhatsapp = () => {
     const code = document.getElementById('squadCode').textContent;
-    const text = `يا بطل! تعال انضم لشلتي في "تمريض بنها" ونذاكر مع بعض.. كود الشلة: ${code}`;
+    const text = `كود الشلة: ${code}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`);
 };
 

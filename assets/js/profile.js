@@ -53,7 +53,7 @@ async function loadProfile() {
     const stream = profile?.stream || meta.stream || "";
 
     // Check if Admin
-    const isAdmin = meta.role === "admin" || meta.is_admin === true;
+    const isAdmin = profile?.role === "admin" || meta.role === "admin";
 
     // 3. Populate Form Inputs (Hidden or editable)
     document.getElementById("fullname").value = fullName;
@@ -147,8 +147,13 @@ async function loadProfile() {
         if (adminNotice) adminNotice.innerHTML = "<i class='fas fa-info-circle'></i> أنت تمتلك صلاحيات أدمن. الحقول مخفية للتبسيط.";
 
         if (adminBtn) adminBtn.style.display = 'block';
+
+        const bottomAdminBtn = document.getElementById("bottomAdminBtn");
+        if (bottomAdminBtn) bottomAdminBtn.style.display = 'flex';
     } else {
         if (adminBtn) adminBtn.remove();
+        const bottomAdminBtn = document.getElementById("bottomAdminBtn");
+        if (bottomAdminBtn) bottomAdminBtn.remove();
     }
 }
 

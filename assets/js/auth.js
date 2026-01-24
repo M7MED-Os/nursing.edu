@@ -1040,7 +1040,7 @@ async function renderResultsList(examGroups) {
 // 12. Initialize
 // ==========================
 
-const protectedPages = ["dashboard.html", "subject.html", "leaderboard.html", "profile.html", "todo.html"];
+const protectedPages = ["dashboard.html", "subject.html", "leaderboard.html", "profile.html", "todo.html", "squad.html", "exam.html"];
 let currentPageName = window.location.pathname.split("/").pop();
 
 // Handle empty path (which usually loads dashboard.html)

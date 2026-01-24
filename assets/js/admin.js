@@ -15,6 +15,19 @@ let currentContext = {
 let editingQuestionId = null;
 let existingQuestionImages = {}; // { qId: { q: url, a: url, ... } }
 
+const triggerCelebration = (type = 'main') => {
+    if (type === 'main') {
+        confetti({
+            particleCount: 200,
+            spread: 100,
+            origin: { y: 0.6 },
+            gravity: 1,
+            scalar: 1,
+            colors: ['#03A9F4', '#FFC107', '#4CAF50', '#E91E63']
+        });
+    }
+};
+
 document.addEventListener('DOMContentLoaded', async () => {
     await checkAdminAuth();
     setupModalListeners();
@@ -1470,6 +1483,7 @@ window.toggleStudentStatus = async (id, currentStatus) => {
                         timer: 2000,
                         showConfirmButton: false
                     });
+                    triggerCelebration('main');
                     closeModal();
                     loadStudents();
                 }

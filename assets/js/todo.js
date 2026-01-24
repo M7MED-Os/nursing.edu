@@ -168,24 +168,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const triggerCelebration = (type) => {
         if (type === 'massive') {
-            // Massive Celebration: Even bigger and longer
+            // Massive Celebration (Side Bursts)
             var duration = 5 * 1000;
-            var animationEnd = Date.now() + duration;
-            var defaults = { startVelocity: 45, spread: 360, ticks: 100, zIndex: 9999 };
-
-            var interval = setInterval(function () {
-                var timeLeft = animationEnd - Date.now();
-
-                if (timeLeft <= 0) {
-                    return clearInterval(interval);
-                }
-
-                var particleCount = 100 * (timeLeft / duration);
-
-                confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } }));
-                confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } }));
-            }, 200);
-
+            var end = Date.now() + duration;
+            (function frame() {
+                confetti({ particleCount: 7, angle: 60, spread: 55, origin: { x: 0 }, colors: ['#03A9F4', '#10b981'] });
+                confetti({ particleCount: 7, angle: 120, spread: 55, origin: { x: 1 }, colors: ['#03A9F4', '#10b981'] });
+                if (Date.now() < end) requestAnimationFrame(frame);
+            }());
         } else if (type === 'main') {
             // Increased main task celebration
             confetti({
@@ -360,9 +350,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         progressPercent.textContent = `${percentage}%`;
         if (percentage === 100) {
             summaryText.textContent = "عاش يا بطل! خلصت كل اللي عليك🏆";
-            triggerCelebration('massive'); // Trigger custom massive celebration
+            // Trigger custom massive celebration once per session
+            if (sessionStorage.getItem('todo_100_celebration') !== 'true') {
+                triggerCelebration('massive');
+                sessionStorage.setItem('todo_100_celebration', 'true');
+            }
         } else {
             summaryText.textContent = "ذاكر و خلص اللي وراك🌟";
+            sessionStorage.removeItem('todo_100_celebration');
         }
     };
 

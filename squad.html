@@ -393,11 +393,25 @@
                 <img src="assets/images/logo-icon.webp" alt="Logo" class="brand-icon">
                 <span class="logo-text">تمريض <span class="logo-accent">بنها</span></span>
             </a>
+
+            <div class="menu-toggle">
+                <i class="fas fa-bars"></i>
+            </div>
+
+            <div id="pwaLogoutBtn" class="pwa-logout-btn">
+                <i class="fas fa-sign-out-alt"></i>
+            </div>
+
             <ul class="nav-links">
                 <li><a href="dashboard.html">الرئيسية</a></li>
                 <li><a href="squad.html" class="active">الشلة</a></li>
                 <li><a href="todo.html">المهام</a></li>
                 <li><a href="leaderboard.html">الأوائل</a></li>
+                <li id="adminNavBtn" style="display: none;">
+                    <a href="admin.html" style="color: var(--secondary-color); font-weight: bold;">
+                        <i class="fas fa-shield-alt"></i> Admin
+                    </a>
+                </li>
                 <li><a href="profile.html">البروفايل</a></li>
                 <li><button id="logoutBtn" class="btn btn-outline" style="padding: 0.5rem 1rem;">خروج</button></li>
             </ul>
@@ -598,6 +612,10 @@
             <a href="profile.html" class="bottom-nav-item">
                 <i class="fas fa-user"></i>
                 <span>بروفايلي</span>
+            </a>
+            <a href="admin.html" id="bottomAdminBtn" class="bottom-nav-item admin-link" style="display: none;">
+                <i class="fas fa-shield-alt"></i>
+                <span>Admin</span>
             </a>
         </div>
     </nav>
