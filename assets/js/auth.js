@@ -1040,7 +1040,7 @@ async function renderResultsList(examGroups) {
 // 12. Initialize
 // ==========================
 
-const protectedPages = ["dashboard.html", "subject.html", "leaderboard.html", "profile.html", "todo.html", "squad.html", "exam.html"];
+const protectedPages = ["dashboard.html", "subject.html", "leaderboard.html", "profile.html", "todo.html", "squad.html", "exam.html", "lecture.html"];
 let currentPageName = window.location.pathname.split("/").pop();
 
 // Handle empty path (which usually loads dashboard.html)
@@ -1061,7 +1061,7 @@ if (protectedPages.includes(currentPageName)) {
  */
 function startSecurityMonitor() {
     setInterval(async () => {
-        const protectedPages = ["dashboard.html", "subject.html", "leaderboard.html", "profile.html", "squad.html", "exam.html"];
+        const protectedPages = ["dashboard.html", "subject.html", "leaderboard.html", "profile.html", "squad.html", "exam.html", "lecture.html"];
         const currentPage = window.location.pathname.split("/").pop() || "dashboard.html";
 
         if (protectedPages.includes(currentPage)) {
