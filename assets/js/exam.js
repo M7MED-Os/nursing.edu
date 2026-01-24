@@ -490,7 +490,10 @@ async function calculateResult() {
 
         const score = resultData.score;
         const totalQuestions = resultData.total;
-        const pointsAwarded = resultData.points_awarded;
+        const pointsBase = resultData.points_awarded || 0;
+        const bonusPoints = resultData.bonus_points || 0;
+        const totalPoints = resultData.total_points || 0;
+        const bonuses = resultData.bonuses || [];
         const percentage = totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0;
 
         // 3. UI Updates
@@ -498,15 +501,27 @@ async function calculateResult() {
         const scoreSub = document.getElementById("scoreSubtext");
         if (scoreSub) scoreSub.textContent = `حللت ${score} من ${totalQuestions} أسئلة`;
 
-        // 4. Show Points Toast if awarded
-        if (pointsAwarded > 0) {
+        // 4. Show Points & Bonuses
+        if (totalPoints > 0) {
+            let bonusHtml = '';
+            if (bonuses.length > 0) {
+                bonusHtml = `<div style="margin-top:10px; font-size:0.9rem; color:#10B981; direction:rtl; text-align:right;">
+                    <strong>مكافآت إضافية:</strong><br>
+                    ${bonuses.map(b => `✨ ${b}`).join('<br>')}
+                </div>`;
+            }
+
             Swal.fire({
-                toast: true,
-                position: 'top-end',
+                title: `مبروك! كسبت ${totalPoints} نقطة 🌟`,
+                html: `
+                    <div style="font-size:1.1rem; line-height:1.6;">
+                        <div>نقاط أساسية: <b>${pointsBase}</b></div>
+                        ${bonusPoints > 0 ? `<div>بونص إضافي: <b>+${bonusPoints}</b></div>` : ''}
+                        ${bonusHtml}
+                    </div>
+                `,
                 icon: 'success',
-                title: `مبروك! كسبت ${pointsAwarded} نقطة 🎉`,
-                showConfirmButton: false,
-                timer: 3000
+                confirmButtonText: 'عاش يا بطل! 💪'
             });
         }
 

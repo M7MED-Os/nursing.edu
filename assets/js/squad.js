@@ -829,15 +829,27 @@ document.getElementById('startPomodoroBtn').onclick = startPomodoroFlow;
 // --- Collaborative Exams ---
 window.startSharedExam = async () => {
     try {
-        // 1. Fetch Subjects
-        const { data: subjects } = await supabase.from('subjects').select('*');
+        // 1. Fetch Subjects for user's grade
+        const { data: subjects } = await supabase
+            .from('subjects')
+            .select('*')
+            .eq('grade', currentProfile.grade)
+            .eq('is_active', true)
+            .order('order_index');
+
+        if (!subjects || subjects.length === 0) {
+            Swal.fire('تنبيه', 'مفيش مواد متاحة حالياً.', 'info');
+            return;
+        }
 
         const { value: subjId } = await Swal.fire({
             title: 'اختار المادة 📚',
             input: 'select',
-            inputOptions: Object.fromEntries(subjects.map(s => [s.id, s.title])),
+            inputOptions: Object.fromEntries(subjects.map(s => [s.id, s.name_ar || s.title])),
             inputPlaceholder: 'اختار المادة...',
-            showCancelButton: true
+            showCancelButton: true,
+            confirmButtonText: 'التالي',
+            cancelButtonText: 'إلغاء'
         });
 
         if (!subjId) return;
