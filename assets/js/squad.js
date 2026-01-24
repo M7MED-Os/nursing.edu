@@ -10,7 +10,7 @@ let activityChannel = null;
 let presenceChannel = null;
 let pomodoroInterval = null;
 let pomodoroEnd = null;
-let completedExamIds = new Set(); // Store completed exams
+let completedExamIds = new Map(); // Store completed exams (id -> date)
 
 // DOM Elements
 const views = {
@@ -80,11 +80,11 @@ async function setupSquadUI() {
     // Fetch Completed Exams (For UI state in chat)
     const { data: results } = await supabase
         .from('results')
-        .select('exam_id')
+        .select('exam_id, created_at')
         .eq('user_id', currentProfile.id);
 
     if (results) {
-        completedExamIds = new Set(results.map(r => r.exam_id));
+        completedExamIds = new Map(results.map(r => [r.exam_id, new Date(r.created_at)]));
     }
 
     // Load Sub-components
@@ -656,16 +656,24 @@ async function renderChat(msgs) {
             // Remove the tag cleanly
             msgText = msgText.replace(joinMatch[0], '').trim();
 
-            // Check if already completed by me
-            const isCompleted = completedExamIds.has(examId);
-
-            // Check time elapsed since message creation
+            // Check if already completed by me and WHEN
+            const completedAt = completedExamIds.get(examId); // Date object or undefined
             const msgTime = new Date(m.created_at);
+
+            // Logic:
+            // If completedAt exists:
+            //    If completedAt > msgTime => Solved THIS challenge (Green Check)
+            //    If completedAt < msgTime => Solved BEFORE challenge (Yellow/Orange Info)
+
+            const isSolvedThisTime = completedAt && completedAt > msgTime;
+            const isSolvedBefore = completedAt && completedAt <= msgTime;
+
             const now = new Date();
             const diffMinutes = (now - msgTime) / 1000 / 60;
             const isExpired = diffMinutes > 30;
 
-            if (isCompleted) {
+            if (isSolvedThisTime) {
+                // Scenario 1: Solved as part of this challenge
                 msgText += `
                     <div style="margin-top:12px; text-align:center; padding-top:8px; border-top:1px dashed rgba(0,0,0,0.1);">
                         <button disabled class="btn btn-sm" style="
@@ -676,6 +684,23 @@ async function renderChat(msgs) {
                         </button>
                     </div>
                 `;
+            } else if (isSolvedBefore) {
+                // Scenario 2: Solved historically before this challenge
+                // Still allow re-joining? Or just show status? Usually re-joining won't give points.
+                // Let's disable for now to avoid confusion, or allow re-entry for revision without points.
+                // User request: "يظهر في الزرار انت حليته قبل كده"
+                msgText += `
+                    <div style="margin-top:12px; text-align:center; padding-top:8px; border-top:1px dashed rgba(0,0,0,0.1);">
+                        <button disabled class="btn btn-sm" style="
+                            background: #fff7ed; color: #ea580c; border: 1px solid #fed7aa;
+                            border-radius: 50px; padding: 8px 24px; font-weight: 700; cursor: default;
+                        ">
+                            <i class="fas fa-history" style="margin-left:5px;"></i> حليته قبل كده
+                        </button>
+                        <div style="font-size:0.75rem; color:#94a3b8; margin-top:4px;">(لن يتم احتساب نقاط إضافية)</div>
+                    </div>
+                `;
+            } else if (isExpired) {
             } else if (isExpired) {
                 msgText += `
                     <div style="margin-top:12px; text-align:center; padding-top:8px; border-top:1px dashed rgba(0,0,0,0.1);">
