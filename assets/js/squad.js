@@ -657,11 +657,17 @@ document.getElementById('chatForm').onsubmit = async (e) => {
     if (!text) return;
 
     input.value = '';
-    await supabase.from('squad_chat_messages').insert({
+    const { error } = await supabase.from('squad_chat_messages').insert({
         squad_id: currentSquad.id,
         sender_id: currentProfile.id,
         text
     });
+
+    if (error) {
+        console.error("Msg send error:", error);
+    } else {
+        await loadChat(); // Immediate update after sending
+    }
 };
 
 // --- Pomodoro Logic ---
