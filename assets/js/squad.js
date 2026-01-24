@@ -636,27 +636,12 @@ async function renderChat(msgs) {
             </div>
         ` : '';
 
-        let msgText = m.text;
-        // Detect Join Exam Pattern: #join_exam:UUID
-        const joinMatch = msgText.match(/#join_exam:([a-f0-9-]+)/);
-        if (joinMatch) {
-            const examId = joinMatch[1];
-            msgText = msgText.replace(`#join_exam:${examId}`, ''); // Remove tag
-            msgText += `
-                <div style="margin-top:10px; text-align:center;">
-                    <button onclick="joinSquadExam('${examId}')" class="btn btn-sm btn-primary" style="border-radius:20px; padding:6px 20px;">
-                        <i class="fas fa-sign-in-alt"></i> انضمام الآن
-                    </button>
-                </div>
-            `;
-        }
-
         return `
             <div class="msg ${m.sender_id === myId ? 'sent' : 'received'}" 
                  ${m.sender_id === myId ? `onclick="showReadBy('${fullReaderNames}')"` : ''} 
                  style="${m.sender_id === myId ? 'cursor:pointer;' : ''}">
                 <span class="msg-sender">${m.profiles ? m.profiles.full_name : 'مستخدم'}</span>
-                <div class="msg-content">${msgText}</div>
+                <div class="msg-content">${m.text}</div>
                 <div class="msg-footer">
                     <span class="msg-time">${time}</span>
                     ${ticks}
@@ -842,27 +827,43 @@ window.startPomodoroFlow = async () => {
 document.getElementById('startPomodoroBtn').onclick = startPomodoroFlow;
 
 // --- Collaborative Exams ---
-// --- Collaborative Exams ---
 window.startSharedExam = async () => {
     try {
-        // 1. Fetch Subjects for user's grade/term (More accurate filtering)
-        // Note: Assuming 'term' is stored in profile or determinable
-        let query = supabase
+        // 1. Fetch Subjects with smart filtering (Grade > Term > Stream)
+        // 1. Fetch ALL Active Subjects for Grade (Fast & Simple)
+        const { data: allSubjects } = await supabase
             .from('subjects')
             .select('*')
             .eq('grade', currentProfile.grade)
             .eq('is_active', true)
             .order('order_index');
 
-        // If profile has term, filter by it too
-        if (currentProfile.term) {
-            query = query.eq('semester', currentProfile.term);
+        if (!allSubjects || allSubjects.length === 0) {
+            Swal.fire('تنبيه', `مفيش مواد متاحة للفرقة ${currentProfile.grade} حالياً.`, 'info');
+            return;
         }
 
-        const { data: subjects } = await query;
+        // 2. Local Filtering (Smart & Fast)
+        // Matches user's exact profile: Grade + Term + Stream
+        let subjects = allSubjects;
+
+        // Filter by Term if present (e.g. "1" or "2")
+        if (currentProfile.term) {
+            subjects = subjects.filter(s => !s.term || s.term == currentProfile.term);
+        }
+
+        // Filter by Stream if present (e.g. "pediatric")
+        if (currentProfile.stream && currentProfile.stream !== 'general') {
+            subjects = subjects.filter(s => !s.stream || s.stream == currentProfile.stream);
+        }
+
+        // If local filter removed everything (edge case), fallback to all subjects for grade
+        if (subjects.length === 0) {
+            subjects = allSubjects;
+        }
 
         if (!subjects || subjects.length === 0) {
-            Swal.fire('تنبيه', 'مفيش مواد متاحة ليك حالياً.', 'info');
+            Swal.fire('تنبيه', `مفيش مواد متاحة للفرقة ${currentProfile.grade} حالياً.`, 'info');
             return;
         }
 
@@ -878,38 +879,21 @@ window.startSharedExam = async () => {
 
         if (!subjId) return;
 
+        // 2. Redirect to Subject Page for Exam Selection
+        // We pass a special flag so subject.js knows we are in "Selection Mode"
         const selectedSubject = subjects.find(s => s.id === subjId);
 
-        // 2. Fetch Exams for this Subject with Lesson Details
-        // We join with lessons to show hierarchy
-        const { data: exams, error: examError } = await supabase
-            .from('exams')
-            .select(`
-                id, 
-                title, 
-                lessons (title)
-            `)
-            .eq('subject_id', subjId)
-            .order('created_at', { ascending: false });
-
-        if (!exams || exams.length === 0) {
-            Swal.fire('تنبيه', 'المادة دي مفيش فيها امتحانات لسة.', 'info');
-            return;
-        }
-
-        const { value: examId } = await Swal.fire({
-            title: 'اختار الامتحان 📝',
-            input: 'select',
-            inputOptions: Object.fromEntries(exams.map(e => {
-                const lessonTitle = e.lessons?.title ? ` (${e.lessons.title})` : '';
-                return [e.id, `${e.title}${lessonTitle}`];
-            })),
-            inputPlaceholder: 'اختار الامتحان...',
-            showCancelButton: true,
-            confirmButtonText: 'بدء التحدي!'
+        Swal.fire({
+            title: 'جاري التحويل...',
+            text: `رايحين لصفحة ${selectedSubject.name_ar || selectedSubject.title} عشان تختار الامتحان`,
+            icon: 'info',
+            timer: 1500,
+            showConfirmButton: false
+        }).then(() => {
+            window.location.href = `subject.html?id=${subjId}&mode=select_squad_exam&squad_id=${currentSquad.id}`;
         });
 
-        if (!examId) return;
+        return; // Stop here, subject.js will handle the rest
 
         // 3. Create Session
         const { data: session } = await supabase
@@ -923,39 +907,12 @@ window.startSharedExam = async () => {
             .single();
 
 
-        // 4. Notify in chat with Detailed Message & Join Button
-        const selectedExam = exams.find(e => e.id == examId);
-        const subjName = selectedSubject.name_ar || selectedSubject.title;
-        const lessonName = selectedExam.lessons?.title || 'عام';
-        const examName = selectedExam.title;
-
-        // Special format for Join Button (handled by rendering logic)
-        // We use a custom separating character or JSON structure if possible, 
-        // but here we'll use a specific marker string for the renderer to detect
-        const joinPayload = JSON.stringify({
-            action: 'join_exam',
-            examId: examId,
-            squadId: currentSquad.id,
-            text: `أنا بدأت امتحان جماعي 🚀\n📌 المادة: ${subjName}\n📖 المحاضرة: ${lessonName}\n📝 الامتحان: ${examName}\n\nيلا خشوا معايا! 👇`
-        });
-
+        // 4. Notify in chat with a link
+        const examName = exams.find(e => e.id == examId).title;
         await supabase.from('squad_chat_messages').insert({
             squad_id: currentSquad.id,
             sender_id: currentProfile.id,
-            text: joinPayload, // Storing payload as text to interpret later
-            type: 'system_action' // New column or type convention? 
-            // Since we might not have a 'type' column, let's keep it simple string detection.
-            // Text: `!!!JOIN_EXAM!!!|${examId}|${subjName} - ${lessonName} - ${examName}`
-        });
-
-        // Let's use a simpler text approach that works with existing schema
-        // We will update the chat renderer to look for this specific pattern
-        const messageText = `⚡ تحدي جماعي: ${subjName} - ${lessonName} - ${examName} #join_exam:${examId}`;
-
-        await supabase.from('squad_chat_messages').insert({
-            squad_id: currentSquad.id,
-            sender_id: currentProfile.id,
-            text: messageText
+            text: `🎯 أطلق تحدي جماعي جديد في امتحان: [${examName}]! يلا ادخلوا وحلوا سوا.`
         });
 
         // 5. Redirect starter
@@ -965,20 +922,6 @@ window.startSharedExam = async () => {
         console.error(err);
         Swal.fire('خطأ', 'فشل في بدء التحدي الجماعي.', 'error');
     }
-};
-
-window.joinSquadExam = async (examId) => {
-    // 1. Send "I joined" message
-    try {
-        await supabase.from('squad_chat_messages').insert({
-            squad_id: currentSquad.id,
-            sender_id: currentProfile.id,
-            text: 'دخلت معاكم! 🏃‍♂️'
-        });
-    } catch (e) { console.error(e); }
-
-    // 2. Redirect
-    window.location.href = `exam.html?id=${examId}&squad_id=${currentSquad.id}`;
 };
 
 // --- Utils ---
