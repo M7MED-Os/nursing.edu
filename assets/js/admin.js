@@ -1993,3 +1993,66 @@ window.resetSquadPoints = async (id) => {
         }
     }
 };
+window.showLeaderboardMgmtView = async () => {
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+    document.getElementById('navLeaderboard')?.classList.add('active');
+
+    document.getElementById('pageTitle').textContent = 'الرئيسية > إدارة الأوائل';
+    showView('leaderboardMgmtView');
+
+    // Load current settings
+    await loadLeaderboardSettings();
+};
+
+async function loadLeaderboardSettings() {
+    try {
+        const { data, error } = await supabase
+            .from('app_configs')
+            .select('value')
+            .eq('key', 'leaderboard_settings')
+            .maybeSingle();
+
+        if (error) throw error;
+
+        if (data && data.value) {
+            document.getElementById('settingTopStudents').value = data.value.top_students || 50;
+            document.getElementById('settingTopSquads').value = data.value.top_squads || 10;
+        }
+    } catch (err) {
+        console.error("Error loading settings:", err);
+        // Fallback to defaults already in HTML
+    }
+}
+
+window.saveLeaderboardSettings = async () => {
+    const topStudents = parseInt(document.getElementById('settingTopStudents').value);
+    const topSquads = parseInt(document.getElementById('settingTopSquads').value);
+
+    if (isNaN(topStudents) || topStudents < 1 || isNaN(topSquads) || topSquads < 1) {
+        return Swal.fire('خطأ', 'يرجى إدخال أرقام صحيحة', 'error');
+    }
+
+    Swal.fire({
+        title: 'جاري الحفظ...',
+        allowOutsideClick: false,
+        didOpen: () => { Swal.showLoading(); }
+    });
+
+    try {
+        // Use upsert to save settings
+        const { error } = await supabase
+            .from('app_configs')
+            .upsert({
+                key: 'leaderboard_settings',
+                value: { top_students: topStudents, top_squads: topSquads },
+                updated_at: new Date().toISOString()
+            });
+
+        if (error) throw error;
+
+        Swal.fire('تم الحفظ!', 'تم تحديث إعدادات قائمة الأوائل بنجاح.', 'success');
+    } catch (err) {
+        console.error("Save failed:", err);
+        Swal.fire('خطأ', 'حدثت مشكلة أثناء الحفظ: ' + err.message, 'error');
+    }
+};

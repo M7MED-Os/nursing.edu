@@ -969,6 +969,9 @@
             <div class="nav-item" id="navSquads" onclick="showSquadsView()">
                 <i class="fas fa-user-group"></i> إدارة الشلل
             </div>
+            <div class="nav-item" id="navLeaderboard" onclick="showLeaderboardMgmtView()">
+                <i class="fas fa-trophy"></i> إدارة الأوائل
+            </div>
 
             <div class="nav-group-title">فرقة 4</div>
             <div class="nav-item" onclick="selectContext('4', '1')">
@@ -1068,6 +1071,48 @@
                         </thead>
                         <tbody id="squadsTableBody"></tbody>
                     </table>
+                </div>
+            </div>
+
+            <!-- Leaderboard Management View -->
+            <div id="leaderboardMgmtView" class="view-section">
+                <div style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center;">
+                    <h2 style="margin: 0; font-weight: 800; color: #0f172a;">إدارة قائمة الأوائل</h2>
+                </div>
+
+                <div class="card card-admin"
+                    style="max-width: 600px; margin: 0 auto; padding: 2rem; background: white; border-radius: 16px; border: 1px solid var(--border-color);">
+                    <p style="color: var(--secondary-color); margin-bottom: 2rem; text-align: center;">تحكم في عدد
+                        الطلاب والشلل الذين يظهرون في قائمة الأوائل العامة.</p>
+
+                    <div class="form-group mb-4">
+                        <label style="font-weight: 700; display: block; margin-bottom: 10px;">عدد الطلاب
+                            الظهرين:</label>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <input type="number" id="settingTopStudents" class="form-control" value="50" min="1"
+                                max="200" style="flex: 1;">
+                            <span style="color: #64748b;">طالب</span>
+                        </div>
+                        <small style="color: #94a3b8;">العدد الافتراضي: 50</small>
+                    </div>
+
+                    <div class="form-group mb-4">
+                        <label style="font-weight: 700; display: block; margin-bottom: 10px;">عدد الشلل الظهرة:</label>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <input type="number" id="settingTopSquads" class="form-control" value="10" min="1" max="50"
+                                style="flex: 1;">
+                            <span style="color: #64748b;">شلة</span>
+                        </div>
+                        <small style="color: #94a3b8;">العدد الافتراضي: 10</small>
+                    </div>
+
+                    <div
+                        style="margin-top: 2rem; border-top: 1px solid #f1f5f9; padding-top: 2rem; text-align: center;">
+                        <button class="btn btn-primary" onclick="saveLeaderboardSettings()"
+                            style="padding: 0.8rem 2.5rem; font-weight: 700; border-radius: 12px;">
+                            <i class="fas fa-save" style="margin-left: 8px;"></i> حفظ الإعدادات
+                        </button>
+                    </div>
                 </div>
             </div>
 

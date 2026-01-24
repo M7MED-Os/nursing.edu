@@ -369,12 +369,36 @@
         let currentUserInfo = null;
         let currentView = 'students'; // 'students' or 'squads'
         let currentFilterStream = 'all'; // 'all' or specific stream key
+        let settings = { top_students: 50, top_squads: 10 };
+
+        async function getLeaderboardSettings() {
+            try {
+                // Return cached settings if available for performance
+                let cached = getCache('app_leaderboard_settings');
+                if (cached) return cached;
+
+                const { data, error } = await supabase
+                    .from('app_configs')
+                    .select('value')
+                    .eq('key', 'leaderboard_settings')
+                    .maybeSingle();
+
+                const val = data?.value || { top_students: 50, top_squads: 10 };
+                setCache('app_leaderboard_settings', val, 10); // cache for 10 mins
+                return val;
+            } catch (e) {
+                return { top_students: 50, top_squads: 10 };
+            }
+        }
 
         // Init
         document.addEventListener('DOMContentLoaded', async () => {
             const authData = await checkAuth();
             if (authData) {
                 currentUserInfo = authData.profile;
+
+                // Fetch settings first
+                settings = await getLeaderboardSettings();
 
                 // Default filter: User's stream (if year 3/4), else 'all'
                 if ((currentUserInfo.grade === '3' || currentUserInfo.grade === '4') && currentUserInfo.stream) {
@@ -488,7 +512,7 @@
             try {
                 if (!squads) {
                     const { data, error } = await supabase.rpc('get_top_squads', {
-                        p_limit: 10,
+                        p_limit: settings.top_squads || 10,
                         p_academic_year: GRADES[currentUserInfo.grade] || currentUserInfo.grade
                     });
                     if (error) throw error;
@@ -540,7 +564,7 @@
             try {
                 if (!data) {
                     const { data: rpcData, error } = await supabase.rpc('get_top_students', {
-                        p_limit: 50,
+                        p_limit: settings.top_students || 50,
                         p_grade: currentUserInfo.grade,
                         p_term: currentUserInfo.term,
                         p_stream: currentFilterStream === 'all' ? null : currentFilterStream
@@ -586,7 +610,7 @@
                         const motivationMsg = document.createElement('div');
                         motivationMsg.id = 'motivationMsg';
                         motivationMsg.style.cssText = `background: white; padding: 1rem; margin-top: 1rem; border-radius: 12px; text-align: center; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); border: 1px dashed var(--primary-color); color: #475569;`;
-                        motivationMsg.innerHTML = `<i class="fas fa-rocket" style="color: var(--primary-color); font-size: 1.2rem;"></i><span style="font-weight: bold; margin: 0 5px;">أنت بطل!</span>باقي لك <span style="color: var(--primary-color); font-weight: 900; font-size: 1.1rem;">${diff + 1}</span> نقطة وتدخل هذه القائمة!`;
+                        motivationMsg.innerHTML = `<i class="fas fa-rocket" style="color: var(--primary-color); font-size: 1.2rem;"></i><span style="font-weight: bold; margin: 0 5px;"></span>باقي لك <span style="color: var(--primary-color); font-weight: 900; font-size: 1.1rem;">${diff + 1}</span> نقطة وتبقى من الاوائل!`;
                         document.querySelector('.full-leaderboard-card').after(motivationMsg);
                     }
                 }
