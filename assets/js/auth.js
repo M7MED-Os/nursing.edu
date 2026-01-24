@@ -639,7 +639,7 @@ async function loadUserDashboardData(userId) {
             stats = rpcData[0];
 
             if (stats) {
-                setCache(`user_stats_${userId}`, stats, 1440); // Cache for 24 hours (updated only after exams)
+                setCache(`user_stats_${userId}`, stats, APP_CONFIG.CACHE_TIME_STATS); // Cache for 6 hours
             }
         }
 
@@ -739,7 +739,7 @@ async function loadSubjectsFromDB(grade) {
         return [];
     }
 
-    setCache(cacheKey, subjects, 60); // Cache subjects for 1 hour
+    setCache(cacheKey, subjects, APP_CONFIG.CACHE_TIME_SUBJECTS); // Cache subjects for 24 hours
     return subjects;
 }
 

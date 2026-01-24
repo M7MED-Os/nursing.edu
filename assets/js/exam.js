@@ -1,5 +1,6 @@
 import { supabase } from "./supabaseClient.js";
 import { clearCache } from "./utils.js";
+import { APP_CONFIG } from "./constants.js";
 
 const urlParams = new URLSearchParams(window.location.search);
 const examId = urlParams.get('id');
@@ -50,24 +51,34 @@ if (!examId) {
 
 async function initExam() {
     try {
-        // 0. Check SessionStorage Cache for Questions
+        // 0. Check SessionStorage Cache for Questions (with 3-minute expiration)
         const cacheKey = `exam_cache_${examId}`;
         const cachedData = sessionStorage.getItem(cacheKey);
 
         if (cachedData) {
             const parsed = JSON.parse(cachedData);
-            currentQuestions = parsed.questions;
-            examTitle = parsed.title;
-            hierarchyInfo = parsed.hierarchy;
+            const cacheAge = Date.now() - (parsed.timestamp || 0);
+            const cacheExpired = cacheAge > (APP_CONFIG.CACHE_TIME_QUESTIONS * 60 * 1000); // 3 minutes
 
-            // Restore answers from local storage to keep progress on refresh
-            const savedAnswers = localStorage.getItem(`exam_progress_${examId}`);
-            if (savedAnswers) {
-                userAnswers = JSON.parse(savedAnswers);
+            if (!cacheExpired) {
+                currentQuestions = parsed.questions;
+                examTitle = parsed.title;
+                hierarchyInfo = parsed.hierarchy;
+
+                // Restore answers from local storage to keep progress on refresh
+                const savedAnswers = localStorage.getItem(`exam_progress_${examId}`);
+                if (savedAnswers) {
+                    userAnswers = JSON.parse(savedAnswers);
+                }
+
+                console.log("Exam loaded from cache");
+            } else {
+                console.log("Exam cache expired, fetching fresh data");
+                sessionStorage.removeItem(cacheKey); // Clear expired cache
             }
+        }
 
-            console.log("Exam loaded from cache");
-        } else {
+        if (!currentQuestions || currentQuestions.length === 0) {
             // 1. Fetch Exam Details
             const { data: exam, error: examError } = await supabase
                 .from('exams')
@@ -105,11 +116,12 @@ async function initExam() {
 
             currentQuestions = shuffleArray(questions);
 
-            // Save to sessionStorage
+            // Save to sessionStorage with timestamp
             sessionStorage.setItem(cacheKey, JSON.stringify({
                 questions: currentQuestions,
                 title: examTitle,
-                hierarchy: hierarchyInfo
+                hierarchy: hierarchyInfo,
+                timestamp: Date.now()
             }));
         }
 

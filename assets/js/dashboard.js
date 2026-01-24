@@ -1,5 +1,6 @@
 import { supabase } from "./supabaseClient.js";
-import { getCache } from "./utils.js";
+import { getCache, setCache } from "./utils.js";
+import { APP_CONFIG } from "./constants.js";
 
 document.addEventListener('DOMContentLoaded', async () => {
     await loadAnnouncements();
@@ -25,27 +26,37 @@ async function loadAnnouncements() {
 
     if (!profile) return;
 
-    // 2. Fetch Active Announcements
-    // Filter: 
-    // - targeting user
-    // - is_active = true
-    // - scheduled_for <= now (published)
-    // - expires_at > now OR null
+    // 2. Check cache for announcements (3 minutes)
+    const cacheKey = `announcements_${profile.grade}`;
+    let announcements = getCache(cacheKey);
 
-    const gradeTarget = `grade_${profile.grade}`;
-    const nowISO = new Date().toISOString();
+    if (!announcements) {
+        // Fetch Active Announcements
+        // Filter: 
+        // - targeting user
+        // - is_active = true
+        // - scheduled_for <= now (published)
+        // - expires_at > now OR null
 
-    const { data: announcements, error } = await supabase
-        .from('announcements')
-        .select('*')
-        .eq('is_active', true)
-        .or(`target.eq.all,target.eq.${gradeTarget}`)
-        .lte('scheduled_for', nowISO)
-        .order('created_at', { ascending: false });
+        const gradeTarget = `grade_${profile.grade}`;
+        const nowISO = new Date().toISOString();
 
-    if (error) {
-        console.error("Error loading announcements:", error);
-        return;
+        const { data, error } = await supabase
+            .from('announcements')
+            .select('*')
+            .eq('is_active', true)
+            .or(`target.eq.all,target.eq.${gradeTarget}`)
+            .lte('scheduled_for', nowISO)
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            console.error("Error loading announcements:", error);
+            return;
+        }
+
+        announcements = data;
+        // Cache for 3 minutes
+        setCache(cacheKey, announcements, APP_CONFIG.CACHE_TIME_ANNOUNCEMENTS);
     }
 
     if (!announcements || announcements.length === 0) return;

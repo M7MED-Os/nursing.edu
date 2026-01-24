@@ -1,5 +1,7 @@
 import { supabase } from "./supabaseClient.js";
 import { checkAuth } from "./auth.js";
+import { APP_CONFIG } from "./constants.js";
+import { getCache, setCache } from "./utils.js";
 
 document.addEventListener('DOMContentLoaded', async () => {
     // Check Auth
@@ -27,21 +29,31 @@ async function loadLecture(lessonId) {
     const lectureVideo = document.getElementById('lectureVideo');
 
     try {
-        // Fetch lesson details with join to chapter and subject
-        const { data: lesson, error } = await supabase
-            .from('lessons')
-            .select(`
-                *,
-                chapters (
-                    title,
-                    subjects (name_ar)
-                ),
-                exams (id)
-            `)
-            .eq('id', lessonId)
-            .single();
+        // Check cache first (1 hour cache)
+        const cacheKey = `lecture_${lessonId}`;
+        let lesson = getCache(cacheKey);
 
-        if (error || !lesson) throw error;
+        if (!lesson) {
+            // Fetch lesson details with join to chapter and subject
+            const { data, error } = await supabase
+                .from('lessons')
+                .select(`
+                    *,
+                    chapters (
+                        title,
+                        subjects (name_ar)
+                    ),
+                    exams (id)
+                `)
+                .eq('id', lessonId)
+                .single();
+
+            if (error || !data) throw error;
+            lesson = data;
+
+            // Cache for 1 hour
+            setCache(cacheKey, lesson, APP_CONFIG.CACHE_TIME_LECTURES);
+        }
 
         // Update UI
         lectureTitle.textContent = lesson.title;
