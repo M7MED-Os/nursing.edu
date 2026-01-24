@@ -944,3 +944,66 @@ window.clearSquadChat = async () => {
         }
     }
 };
+
+// --- Smart Refresh System ---
+const REFRESH_CONFIG = {
+    todo: { duration: 10 * 60 * 1000, btnId: 'refreshTodoBtn', loadFn: () => loadTasks() },
+    chat: { duration: 3 * 60 * 1000, btnId: 'refreshChatBtn', loadFn: () => loadChat() }
+};
+
+window.smartRefresh = async (type) => {
+    const config = REFRESH_CONFIG[type];
+    const btn = document.getElementById(config.btnId);
+    if (!btn || btn.classList.contains('cooldown')) return;
+
+    // 1. Perform Refresh
+    try {
+        btn.querySelector('i').classList.add('fa-spin');
+        await config.loadFn();
+
+        // 2. Set Cooldown
+        const expireAt = Date.now() + config.duration;
+        localStorage.setItem(`refresh_cooldown_${type}`, expireAt);
+        startCooldownUI(type, expireAt);
+
+    } catch (err) {
+        console.error("Refresh failed", err);
+    } finally {
+        setTimeout(() => btn.querySelector('i').classList.remove('fa-spin'), 500);
+    }
+};
+
+function startCooldownUI(type, expireAt) {
+    const config = REFRESH_CONFIG[type];
+    const btn = document.getElementById(config.btnId);
+    if (!btn) return;
+
+    btn.classList.add('cooldown');
+
+    const interval = setInterval(() => {
+        const remaining = expireAt - Date.now();
+        if (remaining <= 0) {
+            clearInterval(interval);
+            btn.classList.remove('cooldown');
+            btn.style.setProperty('--p', '0%');
+            return;
+        }
+
+        const percent = (remaining / config.duration) * 100;
+        btn.style.setProperty('--p', `${percent}%`);
+    }, 1000);
+}
+
+// Restore active cooldowns on load
+function restoreCooldowns() {
+    ['todo', 'chat'].forEach(type => {
+        const expireAt = parseInt(localStorage.getItem(`refresh_cooldown_${type}`));
+        if (expireAt && expireAt > Date.now()) {
+            startCooldownUI(type, expireAt);
+        }
+    });
+}
+
+// Add to DOMContentLoaded
+document.addEventListener('DOMContentLoaded', restoreCooldowns);
+
