@@ -204,7 +204,7 @@ function renderContent(chapters, lessons, exams, container) {
     `;
     document.head.appendChild(accordionStyle);
 
-    chapters.forEach(chapter => {
+    chapters.forEach((chapter, index) => {
         const chapterLessons = lessons.filter(l => l.chapter_id === chapter.id);
         const chapterExams = exams.filter(e => e.chapter_id === chapter.id); // Exams directly on chapter
 
@@ -253,7 +253,7 @@ function renderContent(chapters, lessons, exams, container) {
         // Generate HTML for Chapter-Level Exams
         let chapterExamsHtml = "";
         if (chapterExams.length > 0) {
-            chapterExamsHtml = `<div class="chapter-exam-section" style="display: none;">
+            chapterExamsHtml = `<div class="chapter-exam-section">
                 <h4 style="margin-bottom: 1rem; color: var(--primary-dark);">
                     <i class="fas fa-award"></i> امتحانات شاملة على الباب
                 </h4>
@@ -273,7 +273,7 @@ function renderContent(chapters, lessons, exams, container) {
             <div class="chapter-header" onclick="this.classList.toggle('active'); this.nextElementSibling.classList.toggle('show');">
                 <h2>
                     <span style="background: var(--primary-color); color: white; width: 35px; height: 35px; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-size: 1rem;">
-                        ${chapter.order_index || '#'}
+                        ${index + 1}
                     </span>
                     ${chapter.title}
                 </h2>
