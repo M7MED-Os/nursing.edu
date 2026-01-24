@@ -2017,6 +2017,7 @@ async function loadLeaderboardSettings() {
         if (data && data.value) {
             document.getElementById('settingTopStudents').value = data.value.top_students || 50;
             document.getElementById('settingTopSquads').value = data.value.top_squads || 10;
+            document.getElementById('settingRefreshInterval').value = data.value.refresh_interval || 10;
         }
     } catch (err) {
         console.error("Error loading settings:", err);
@@ -2027,8 +2028,9 @@ async function loadLeaderboardSettings() {
 window.saveLeaderboardSettings = async () => {
     const topStudents = parseInt(document.getElementById('settingTopStudents').value);
     const topSquads = parseInt(document.getElementById('settingTopSquads').value);
+    const refreshInterval = parseInt(document.getElementById('settingRefreshInterval').value);
 
-    if (isNaN(topStudents) || topStudents < 1 || isNaN(topSquads) || topSquads < 1) {
+    if (isNaN(topStudents) || topStudents < 1 || isNaN(topSquads) || topSquads < 1 || isNaN(refreshInterval) || refreshInterval < 1) {
         return Swal.fire('خطأ', 'يرجى إدخال أرقام صحيحة', 'error');
     }
 
@@ -2044,7 +2046,11 @@ window.saveLeaderboardSettings = async () => {
             .from('app_configs')
             .upsert({
                 key: 'leaderboard_settings',
-                value: { top_students: topStudents, top_squads: topSquads },
+                value: {
+                    top_students: topStudents,
+                    top_squads: topSquads,
+                    refresh_interval: refreshInterval
+                },
                 updated_at: new Date().toISOString()
             });
 

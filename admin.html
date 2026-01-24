@@ -1106,6 +1106,17 @@
                         <small style="color: #94a3b8;">العدد الافتراضي: 10</small>
                     </div>
 
+                    <div class="form-group mb-4">
+                        <label style="font-weight: 700; display: block; margin-bottom: 10px;">مدة تحديث البيانات
+                            تلقائياً:</label>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <input type="number" id="settingRefreshInterval" class="form-control" value="10" min="1"
+                                max="60" style="flex: 1;">
+                            <span style="color: #64748b;">دقيقة</span>
+                        </div>
+                        <small style="color: #94a3b8;">سيتم تحديث القائمة تلقائياً كل (X) دقائق داخل الصفحة</small>
+                    </div>
+
                     <div
                         style="margin-top: 2rem; border-top: 1px solid #f1f5f9; padding-top: 2rem; text-align: center;">
                         <button class="btn btn-primary" onclick="saveLeaderboardSettings()"

@@ -369,7 +369,7 @@
         let currentUserInfo = null;
         let currentView = 'students'; // 'students' or 'squads'
         let currentFilterStream = 'all'; // 'all' or specific stream key
-        let settings = { top_students: 50, top_squads: 10 };
+        let settings = { top_students: 50, top_squads: 10, refresh_interval: 10 };
 
         async function getLeaderboardSettings() {
             try {
@@ -383,11 +383,12 @@
                     .eq('key', 'leaderboard_settings')
                     .maybeSingle();
 
-                const val = data?.value || { top_students: 50, top_squads: 10 };
-                setCache('app_leaderboard_settings', val, 10); // cache for 10 mins
+                const val = data?.value || { top_students: 50, top_squads: 10, refresh_interval: 10 };
+                // Cache the settings themselves for 30 mins to avoid frequent settings lookups
+                setCache('app_leaderboard_settings', val, 30);
                 return val;
             } catch (e) {
-                return { top_students: 50, top_squads: 10 };
+                return { top_students: 50, top_squads: 10, refresh_interval: 10 };
             }
         }
 
@@ -409,6 +410,15 @@
 
                 setupFilters();
                 await loadLeaderboardData();
+
+                // 4. Setup Auto Refresh Interval
+                const intervalMs = (settings.refresh_interval || 10) * 60000;
+                setInterval(() => {
+                    console.log("Auto-refreshing leaderboard data...");
+                    // Force skip cache on auto-refresh for fresh data
+                    if (currentView === 'students') loadLeaderboardData(true);
+                    else loadSquadLeaderboardData(true);
+                }, intervalMs);
             }
 
             const loadingGlobal = document.getElementById('loading');
@@ -497,9 +507,13 @@
             }
         };
 
-        async function loadSquadLeaderboardData() {
+        async function loadSquadLeaderboardData(skipCache = false) {
             const body = document.getElementById('leaderboardBody');
-            body.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:4rem;"><i class="fas fa-spinner fa-spin fa-2x" style="color: var(--primary-color);"></i></td></tr>';
+
+            // Only show loader if it's the first load or explicit refresh
+            if (body.innerHTML.includes('rank-cell') === false) {
+                body.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:4rem;"><i class="fas fa-spinner fa-spin fa-2x" style="color: var(--primary-color);"></i></td></tr>';
+            }
 
             // Update Text Context
             const headerP = document.querySelector('.page-header p');
@@ -507,7 +521,7 @@
             headerP.textContent = `أقوى الشلل في ${contextText}`;
 
             const cacheKey = `squad_leaderboard_${currentUserInfo.grade}`;
-            let squads = getCache(cacheKey);
+            let squads = skipCache ? null : getCache(cacheKey);
 
             try {
                 if (!squads) {
@@ -517,7 +531,8 @@
                     });
                     if (error) throw error;
                     squads = data;
-                    setCache(cacheKey, squads, 15);
+                    // Cache duration matches the admin refresh_interval
+                    setCache(cacheKey, squads, settings.refresh_interval || 10);
                 }
 
                 if (!squads || squads.length === 0) {
@@ -551,15 +566,19 @@
             }
         }
 
-        async function loadLeaderboardData() {
+        async function loadLeaderboardData(skipCache = false) {
             const body = document.getElementById('leaderboardBody');
-            body.innerHTML = `<tr><td colspan="3" style="text-align: center; padding: 4rem;"><i class="fas fa-spinner fa-spin fa-2x" style="color: var(--primary-color);"></i><p style="margin-top: 1rem; color: var(--text-light);">جاري تحديث القائمة...</p></td></tr>`;
+
+            // Only show spinner if the table is empty or first load
+            if (body.innerHTML.includes('rank-cell') === false) {
+                body.innerHTML = `<tr><td colspan="3" style="text-align: center; padding: 4rem;"><i class="fas fa-spinner fa-spin fa-2x" style="color: var(--primary-color);"></i><p style="margin-top: 1rem; color: var(--text-light);">جاري تحديث القائمة...</p></td></tr>`;
+            }
 
             const oldMsg = document.getElementById('motivationMsg');
             if (oldMsg) oldMsg.remove();
 
             const cacheKey = `leaderboard_${currentUserInfo.grade}_${currentUserInfo.term}_${currentFilterStream}`;
-            let data = getCache(cacheKey);
+            let data = skipCache ? null : getCache(cacheKey);
 
             try {
                 if (!data) {
@@ -571,7 +590,8 @@
                     });
                     if (error) throw error;
                     data = rpcData;
-                    setCache(cacheKey, data, 15);
+                    // Cache duration matches the admin refresh_interval
+                    setCache(cacheKey, data, settings.refresh_interval || 10);
                 }
 
                 const headerP = document.querySelector('.page-header p');

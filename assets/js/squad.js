@@ -115,9 +115,9 @@ window.showCreateSquadModal = async () => {
 
     if (name) {
         try {
-            // Mapping grade to Arabic name
-            const gradeLabel = { '1': 'الأولى', '2': 'الثانية', '3': 'الثالثة', '4': 'الرابعة' };
-            const streamLabel = { 'pediatric': 'أطفال', 'obs_gyn': 'نسا', 'nursing_admin': 'إدارة', 'psychiatric': 'نفسية' };
+            // Mapping grade to Arabic name (Matching constants.js for Leaderboard consistency)
+            const gradeLabel = { '1': 'الفرقة الأولى', '2': 'الفرقة الثانية', '3': 'الفرقة الثالثة', '4': 'الفرقة الرابعة' };
+            const streamLabel = { 'pediatric': 'تمريض الأطفال', 'obs_gyn': 'تمريض نسا و التوليد', 'nursing_admin': 'إدارة التمريض', 'psychiatric': 'تمريض النفسية' };
 
             const academicYear = gradeLabel[currentProfile.grade] || currentProfile.grade;
             const department = streamLabel[currentProfile.stream] || currentProfile.stream || 'عام';
