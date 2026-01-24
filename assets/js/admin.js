@@ -502,7 +502,7 @@ function openEditor(type, data) {
         panel.innerHTML = `
             <h3>تعديل الدرس: ${data.title}</h3>
             
-            <div class="card mb-4 mt-3" style="padding: 1.5rem; border: 1px solid #e2e8f0; background: #fff;">
+            <div class="card card-admin mb-4 mt-3" style="padding: 1.5rem; border: 1px solid #e2e8f0; background: #fff;">
                 <h4 style="margin-bottom: 1rem;"><i class="fas fa-graduation-cap"></i> محتوى المحاضرة</h4>
                 
                 <div class="form-group mb-3">
@@ -512,8 +512,7 @@ function openEditor(type, data) {
 
                 <div class="form-group mb-3">
                     <label>نص المحاضرة (HTML المترجم)</label>
-                    <textarea id="lessonContent" class="form-control" rows="15" placeholder="الصق هنا كود الـ HTML الذي أخرجه الـ AI..." style="font-family: monospace; font-size: 0.9rem;">${data.content || ''}</textarea>
-                    <small class="text-muted">نصيحة: استخدم <div class="lecture-segment"> لكل جزئية.</small>
+                    <textarea id="lessonContent" class="form-control" rows="15" placeholder="" style="font-family: monospace; font-size: 0.9rem;">${data.content || ''}</textarea>
                 </div>
 
                 <button class="btn btn-primary w-100" onclick="saveLectureData('${data.id}')">

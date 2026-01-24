@@ -381,7 +381,7 @@ img {
   border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
-.card:hover {
+.card:not(.card-admin):hover {
   transform: translateY(-5px);
   box-shadow: var(--shadow-lg);
 }
@@ -1119,7 +1119,7 @@ body {
 }
 
 /* Enhanced Card Hover */
-.card:hover,
+.card:not(.card-admin):hover,
 .subject-card:hover {
   transform: translateY(-8px) scale(1.02);
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
