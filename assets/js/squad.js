@@ -10,6 +10,7 @@ let activityChannel = null;
 let presenceChannel = null;
 let pomodoroInterval = null;
 let pomodoroEnd = null;
+let completedExamIds = new Set(); // Store completed exams
 
 // DOM Elements
 const views = {
@@ -75,6 +76,16 @@ async function setupSquadUI() {
     document.getElementById('squadInfo').textContent = `${currentSquad.academic_year || 'سنة غير محددة'} - ${currentSquad.department || 'عام'}`;
     document.getElementById('squadPoints').textContent = `رصيد الشلة: ${currentSquad.points || 0} نقطة 🔥`;
     document.getElementById('squadCode').textContent = currentSquad.id.split('-')[0].toUpperCase();
+
+    // Fetch Completed Exams (For UI state in chat)
+    const { data: results } = await supabase
+        .from('results')
+        .select('exam_id')
+        .eq('user_id', currentProfile.id);
+
+    if (results) {
+        completedExamIds = new Set(results.map(r => r.exam_id));
+    }
 
     // Load Sub-components
     loadMembers();
@@ -645,13 +656,27 @@ async function renderChat(msgs) {
             // Remove the tag cleanly
             msgText = msgText.replace(joinMatch[0], '').trim();
 
+            // Check if already completed by me
+            const isCompleted = completedExamIds.has(examId);
+
             // Check time elapsed since message creation
             const msgTime = new Date(m.created_at);
             const now = new Date();
             const diffMinutes = (now - msgTime) / 1000 / 60;
             const isExpired = diffMinutes > 30;
 
-            if (isExpired) {
+            if (isCompleted) {
+                msgText += `
+                    <div style="margin-top:12px; text-align:center; padding-top:8px; border-top:1px dashed rgba(0,0,0,0.1);">
+                        <button disabled class="btn btn-sm" style="
+                            background: #d1fae5; color: #059669; border: none;
+                            border-radius: 50px; padding: 8px 24px; font-weight: 800; cursor: default;
+                        ">
+                            <i class="fas fa-check-circle" style="margin-left:5px;"></i> تم الحل بنجاح
+                        </button>
+                    </div>
+                `;
+            } else if (isExpired) {
                 msgText += `
                     <div style="margin-top:12px; text-align:center; padding-top:8px; border-top:1px dashed rgba(0,0,0,0.1);">
                         <button disabled class="btn btn-sm" style="
