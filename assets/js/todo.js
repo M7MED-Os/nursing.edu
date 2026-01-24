@@ -359,10 +359,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         progressBar.style.width = `${percentage}%`;
         progressPercent.textContent = `${percentage}%`;
         if (percentage === 100) {
-            summaryText.textContent = "عاش يا بطل! أنهيت مهامك بالكامل 🏆";
+            summaryText.textContent = "عاش يا بطل! خلصت كل اللي عليك🏆";
             triggerCelebration('massive'); // Trigger custom massive celebration
         } else {
-            summaryText.textContent = "خطوة بخطوة.. أنت بتقرب من النهاية! 🌟";
+            summaryText.textContent = "ذاكر و خلص اللي وراك🌟";
         }
     };
 
