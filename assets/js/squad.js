@@ -641,7 +641,12 @@ async function renderChat(msgs) {
                  ${m.sender_id === myId ? `onclick="showReadBy('${fullReaderNames}')"` : ''} 
                  style="${m.sender_id === myId ? 'cursor:pointer;' : ''}">
                 <span class="msg-sender">${m.profiles ? m.profiles.full_name : 'مستخدم'}</span>
-                <div class="msg-content">${m.text}</div>
+                <div class="msg-content">
+                    ${m.text.replace(/\[SQUAD_EXAM:([a-z0-9-]+)\]/gi, (match, examId) => {
+            return `<button class="btn btn-primary" style="padding: 4px 12px; font-size: 0.8rem; margin-top: 5px; display: block;" 
+                                onclick="window.joinSquadExamMessenger('${examId}', '${currentSquad.id}')">خش دلوقتي</button>`;
+        })}
+                </div>
                 <div class="msg-footer">
                     <span class="msg-time">${time}</span>
                     ${ticks}
@@ -1066,6 +1071,25 @@ function restoreCooldowns() {
         }
     });
 }
+
+// Handler for joining squad exams via chat
+window.joinSquadExamMessenger = async (examId, squadId) => {
+    try {
+        // 1. Send Message "انا دخلت"
+        await supabase.from('squad_chat_messages').insert({
+            squad_id: squadId,
+            sender_id: currentProfile.id,
+            text: `انا دخلت 📝`
+        });
+
+        // 2. Redirect to exam
+        window.location.href = `exam.html?id=${examId}&squad_id=${squadId}`;
+    } catch (err) {
+        console.error("Error joining exam via messenger:", err);
+        // Fallback redirect even if message fails
+        window.location.href = `exam.html?id=${examId}&squad_id=${squadId}`;
+    }
+};
 
 // Add to DOMContentLoaded
 document.addEventListener('DOMContentLoaded', restoreCooldowns);

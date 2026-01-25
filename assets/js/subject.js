@@ -354,7 +354,7 @@ window.selectSquadExam = async (examId, examTitle, squadId) => {
         await supabase.from('squad_chat_messages').insert({
             squad_id: squadId,
             sender_id: user.id,
-            text: `🎯 أطلق تحدي جماعي جديد في امتحان: [${examTitle}]! يلا ادخلوا وحلوا سوا.`
+            text: `انا بدأت امتحان مين هيحل معايا؟ [SQUAD_EXAM:${examId}]`
         });
 
         // 4. Success & Redirect

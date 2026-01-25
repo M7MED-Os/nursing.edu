@@ -44,16 +44,6 @@ async function initSquadNotifications() {
                 showSquadAlert('مذاكرة جماعية! 🔥', 'واحد من شلتك بدأ يذاكر دلوقتي.. انضم ليه؟', 'squad.html');
             }
         })
-        .on('postgres_changes', {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'squad_exam_sessions',
-            filter: `squad_id=eq.${squadId}`
-        }, payload => {
-            if (payload.new.status === 'active') {
-                showSquadAlert('تحدي امتحان! 📝', 'شلتك بدأت امتحان جماعي.. ادخل حل معاهم!', 'squad.html');
-            }
-        })
         .subscribe();
 }
 
