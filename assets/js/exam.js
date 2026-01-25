@@ -15,7 +15,7 @@ let timerInterval = null;
 let timeElapsed = 0; // in seconds
 let totalTime = 0; // calculated based on questions
 let squadId = urlParams.get('squad_id');
-let squadSessionId = null;
+let challengeId = urlParams.get('challenge_id');
 
 const loadingEl = document.getElementById("loading");
 const examView = document.getElementById("examView");
@@ -134,7 +134,6 @@ async function initExam() {
         startTimer();
 
         if (squadId) {
-            setupSquadSession();
             const badge = document.getElementById('squadModeBadge');
             if (badge) badge.style.display = 'block';
         }
@@ -150,56 +149,7 @@ async function initExam() {
 }
 
 // --- Squad Collaborative Functions ---
-async function setupSquadSession() {
-    // Check if session exists or create one
-    const { data: session } = await supabase
-        .from('squad_exam_sessions')
-        .select('*')
-        .eq('squad_id', squadId)
-        .eq('exam_id', examId)
-        .eq('status', 'active')
-        .single();
-
-    if (session) {
-        squadSessionId = session.id;
-        userAnswers = session.answers_json || {};
-        // Note: we'll render questions first, then initExam will call showQuestion
-    } else {
-        const { data: newSession } = await supabase
-            .from('squad_exam_sessions')
-            .insert({
-                squad_id: squadId,
-                exam_id: examId,
-                status: 'active',
-                answers_json: {}
-            })
-            .select()
-            .single();
-        squadSessionId = newSession.id;
-    }
-
-    // Subscribe to Realtime Session
-    supabase.channel(`exam_session_${squadSessionId}`)
-        .on('postgres_changes', {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'squad_exam_sessions',
-            filter: `id=eq.${squadSessionId}`
-        }, payload => {
-            const newAnswers = payload.new.answers_json;
-            syncAnswersFromSquad(newAnswers);
-        })
-        .subscribe();
-}
-
-function syncAnswersFromSquad(newAnswers) {
-    Object.keys(newAnswers).forEach(qId => {
-        if (newAnswers[qId] !== userAnswers[qId]) {
-            userAnswers[qId] = newAnswers[qId];
-            updateQuestionUI(qId, newAnswers[qId]);
-        }
-    });
-}
+// Old Sync Logic Removed for Clean Code (Individual solving in challenges)
 
 function updateQuestionUI(qId, answer) {
     const radio = document.querySelector(`input[name="q_${qId}"][value="${answer}"]`);
@@ -342,15 +292,7 @@ function showSaveIndicator() {
 
 window.saveAnswer = async (qId, answer) => {
     userAnswers[qId] = answer;
-
-    // Save to progress cache
     localStorage.setItem(`exam_progress_${examId}`, JSON.stringify(userAnswers));
-
-    if (squadSessionId) {
-        await supabase.from('squad_exam_sessions').update({
-            answers_json: userAnswers
-        }).eq('id', squadSessionId);
-    }
 };
 
 function showQuestion(index) {
@@ -479,18 +421,20 @@ async function calculateResult() {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error("User not authenticated");
 
-        // 2. Submit Result via Server-Side RPC (Secure calculation)
-        const { data: resultData, error: rpcError } = await supabase.rpc('submit_exam_result', {
+        // 2. Submit Result via New Complex RPC
+        const { data: resultData, error: rpcError } = await supabase.rpc('submit_exam_complex', {
             p_exam_id: examId,
             p_answers: userAnswers,
-            p_time_spent: timeElapsed
+            p_time_spent: timeElapsed,
+            p_challenge_id: challengeId
         });
 
         if (rpcError) throw rpcError;
 
         const score = resultData.score;
         const totalQuestions = resultData.total;
-        const pointsAwarded = resultData.points_awarded;
+        const pointsEarned = resultData.points_earned;
+        const bonusEarned = resultData.bonus_earned;
         const percentage = totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0;
 
         // 3. UI Updates
@@ -498,15 +442,21 @@ async function calculateResult() {
         const scoreSub = document.getElementById("scoreSubtext");
         if (scoreSub) scoreSub.textContent = `حللت ${score} من ${totalQuestions} أسئلة`;
 
-        // 4. Show Points Toast if awarded
-        if (pointsAwarded > 0) {
+        // 4. Show Rewards Feedback
+        if (pointsEarned > 0 || bonusEarned > 0) {
+            let msg = '';
+            if (pointsEarned > 0) msg += `كسبت ${pointsEarned} نقطة 🎯 `;
+            if (bonusEarned > 0) msg += `+ ${bonusEarned} بونص إضافي! 🔥`;
+            if (resultData.is_perfect) msg = "كفو! قفلت الامتحان وأخدت بونص +10 🏆";
+            if (resultData.streak_reached % 3 === 0 && resultData.bonus_earned > 0) msg += "\n استمرارية 3 أيام! ⚡";
+
             Swal.fire({
                 toast: true,
                 position: 'top-end',
                 icon: 'success',
-                title: `مبروك! كسبت ${pointsAwarded} نقطة 🎉`,
+                title: msg,
                 showConfirmButton: false,
-                timer: 3000
+                timer: 4000
             });
         }
 
@@ -610,6 +560,7 @@ async function shareResultInSquadChat(text) {
         await supabase.from('squad_chat_messages').insert({
             squad_id: squadId,
             sender_id: user.id,
+            challenge_id: challengeId,
             text: text
         });
 

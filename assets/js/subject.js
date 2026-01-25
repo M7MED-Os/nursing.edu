@@ -337,24 +337,28 @@ window.selectSquadExam = async (examId, examTitle, squadId) => {
         // 1. Get User
         const { data: { user } } = await supabase.auth.getUser();
 
-        // 2. Create Session
-        const { data: session, error: sessError } = await supabase
-            .from('squad_exam_sessions')
+        // 2. Create Challenge (New System)
+        const expiresAt = new Date(Date.now() + (60 * 60 * 1000)).toISOString(); // 1 Hour
+        const { data: challenge, error: challError } = await supabase
+            .from('squad_exam_challenges')
             .insert({
                 squad_id: squadId,
                 exam_id: examId,
+                created_by: user.id,
+                expires_at: expiresAt,
                 status: 'active'
             })
             .select()
             .single();
 
-        if (sessError) throw sessError;
+        if (challError) throw challError;
 
-        // 3. Notify in chat
+        // 3. Notify in chat with Challenge ID
         await supabase.from('squad_chat_messages').insert({
             squad_id: squadId,
             sender_id: user.id,
-            text: `انا بدأت امتحان مين هيحل معايا؟ [SQUAD_EXAM:${examId}]`
+            challenge_id: challenge.id,
+            text: `انا بدأت امتحان مين هيحل معايا؟ [SQUAD_EXAM:${examId}:${challenge.id}]`
         });
 
         // 4. Success & Redirect

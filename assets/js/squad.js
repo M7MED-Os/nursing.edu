@@ -12,6 +12,7 @@ let pomodoroInterval = null;
 let pomodoroEnd = null;
 let userResults = []; // Store user's completed exams for dynamic buttons
 let examTimers = {}; // Store intervals for active exam cards
+let sentReminders = {}; // Track which 10-min marks have been messaged for each challenge
 
 // DOM Elements
 const views = {
@@ -594,10 +595,16 @@ async function loadChat() {
     // 1. Clear existing exam timers before reload
     Object.values(examTimers).forEach(t => clearInterval(t));
     examTimers = {};
+    sentReminders = {};
 
-    // 2. Fetch user scores to determine exam status
-    const { data: results } = await supabase.from('results').select('exam_id, created_at').eq('user_id', currentProfile.id);
+    // 2. Fetch user scores and active challenges status
+    const [{ data: results }, { data: challenges }] = await Promise.all([
+        supabase.from('results').select('exam_id, created_at').eq('user_id', currentProfile.id),
+        supabase.from('squad_exam_challenges').select('id, status, squad_points_awarded').eq('squad_id', currentSquad.id)
+    ]);
+
     userResults = results || [];
+    window.currentChallenges = challenges || []; // Store for access during render
 
     const { data: msgs } = await supabase
         .from('squad_chat_messages')
@@ -665,12 +672,16 @@ async function renderChat(msgs) {
 }
 
 function renderMessageContent(m, myId) {
-    const examMatch = m.text.match(/\[SQUAD_EXAM:([a-z0-9-]+)\]/i);
+    const examMatch = m.text.match(/\[SQUAD_EXAM:([a-z0-9-]+):?([a-z0-9-]+)?\]/i);
     if (examMatch) {
         const examId = examMatch[1];
+        const challengeId = examMatch[2] || null;
         const textPart = m.text.split('[')[0].trim();
 
         const resultsForThisExam = userResults.filter(r => r.exam_id === examId);
+        const challengeData = window.currentChallenges?.find(c => c.id === challengeId);
+        const isCompleted = challengeData?.status === 'completed' || challengeData?.squad_points_awarded > 0;
+
         const msgAt = new Date(m.created_at);
         const expiresAt = msgAt.getTime() + (60 * 60 * 1000); // 1 Hour limit
         const isExpired = Date.now() > expiresAt;
@@ -688,29 +699,40 @@ function renderMessageContent(m, myId) {
         }
 
         const btnConfigs = {
-            'fresh': { text: 'خش دلوقتي 🚀', class: 'btn-primary', onclick: `window.joinSquadExamMessenger(event, '${examId}', '${currentSquad.id}', 'fresh', ${expiresAt})`, notice: '' },
-            'help': { text: 'خش ساعد 🤝', class: 'btn-secondary', onclick: `window.joinSquadExamMessenger(event, '${examId}', '${currentSquad.id}', 'help', ${expiresAt})`, notice: '<div style="font-size: 0.7rem; color: #64748b; margin-top: 6px; text-align: center;">مش هتاخد النقط كامله هتاخد البونص بس</div>' },
+            'fresh': { text: 'خش دلوقتي 🚀', class: 'btn-primary', onclick: `window.joinSquadExamMessenger(event, '${examId}', '${currentSquad.id}', 'fresh', ${expiresAt}, '${challengeId}')`, notice: '' },
+            'help': { text: 'خش ساعد 🤝', class: 'btn-secondary', onclick: `window.joinSquadExamMessenger(event, '${examId}', '${currentSquad.id}', 'help', ${expiresAt}, '${challengeId}')`, notice: '<div style="font-size: 0.7rem; color: #64748b; margin-top: 6px; text-align: center;">مش هتاخد النقط كامله هتاخد البونص بس</div>' },
             'completed': { text: 'انت حليت الامتحان ✅', class: 'btn-outline', onclick: 'void(0)', disabled: true, notice: '' },
             'expired': { text: 'انتهى وقت التحدي ⏱️', class: 'btn-outline', onclick: 'void(0)', disabled: true, notice: '<div style="font-size: 0.7rem; color: #ef4444; margin-top: 6px; text-align: center;">الجلسة خلصت (مدتها ساعة)</div>' }
         };
 
         const config = btnConfigs[btnState];
 
-        if (!isExpired && btnState !== 'completed') {
-            setTimeout(() => startExamCardTimer(m.id, expiresAt), 10);
+        // Timer runs until expired - Runs for everyone to track progress and send reminders
+        if (!isExpired && !isCompleted) {
+            setTimeout(() => startExamCardTimer(m.id, expiresAt, challengeId), 10);
         }
 
-        const countdownHtml = !isExpired && btnState !== 'completed' ? `
-            <div id="countdown-${m.id}" style="font-size:0.75rem; color:#f59e0b; margin-bottom:8px; font-weight:700;">
-                <i class="fas fa-clock"></i> ينتهي التحدي خلال: <span class="timer-val">..:..</span>
-            </div>
-        ` : '';
+        let statusHtml = isCompleted ? `
+            <div style="font-size:0.75rem; color:#10b981; margin-bottom:8px; font-weight:700;">
+                <i class="fas fa-check-circle"></i> تم تحقيق الهدف لشلتكم! 🎉
+            </div>` : '';
+
+        let countdownHtml = '';
+        if (isExpired) {
+            countdownHtml = `<div style="font-size:0.75rem; color:#ef4444; margin-bottom:8px; font-weight:700;"><i class="fas fa-hourglass-end"></i> انتهى الوقت</div>`;
+        } else if (!isCompleted) {
+            countdownHtml = `
+                <div id="countdown-${m.id}" style="font-size:0.75rem; color:#f59e0b; margin-bottom:8px; font-weight:700;">
+                    <i class="fas fa-clock"></i> ينتهي التحدي خلال: <span class="timer-val">..:..</span>
+                </div>`;
+        }
 
         return `
             <div class="msg-exam-card" style="background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:12px; margin-top:8px; box-shadow:0 2px 4px rgba(0,0,0,0.05);">
                 <div style="color:var(--primary-color); font-weight:700; font-size:0.85rem; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
                     <i class="fas fa-graduation-cap"></i> تحدي جماعي
                 </div>
+                ${statusHtml}
                 ${countdownHtml}
                 <div style="font-size:0.9rem; color:#1e293b; line-height:1.5; margin-bottom:12px;">${textPart}</div>
                 <button class="btn ${config.class}" id="btn-exam-${m.id}" style="width:100%; padding:8px; font-size:0.85rem;" 
@@ -726,7 +748,7 @@ function renderMessageContent(m, myId) {
     return m.text;
 }
 
-function startExamCardTimer(msgId, expiresAt) {
+function startExamCardTimer(msgId, expiresAt, challengeId) {
     if (examTimers[msgId]) clearInterval(examTimers[msgId]);
 
     const updateTimer = () => {
@@ -739,7 +761,13 @@ function startExamCardTimer(msgId, expiresAt) {
         const diff = expiresAt - Date.now();
         if (diff <= 0) {
             clearInterval(examTimers[msgId]);
-            el.innerHTML = '<span style="color:#ef4444;">انتهى وقت التحدي</span>';
+
+            // Finalize Challenge (Indempotent: DB will handle logic)
+            if (challengeId) {
+                supabase.rpc('finalize_squad_challenge', { p_challenge_id: challengeId });
+            }
+
+            el.innerHTML = '<span style="color:#ef4444;">انتهى الوقت</span>';
             const btn = document.getElementById(`btn-exam-${msgId}`);
             if (btn) {
                 btn.disabled = true;
@@ -751,12 +779,53 @@ function startExamCardTimer(msgId, expiresAt) {
 
         const mins = Math.floor(diff / (1000 * 60));
         const secs = Math.floor((diff / 1000) % 60);
+
+        // --- Reminder Logic every 10 minutes ---
+        if (challengeId && mins % 10 === 0 && secs === 0 && mins < 60) {
+            const reminderKey = `${challengeId}_${mins}`;
+            if (!sentReminders[reminderKey]) {
+                sentReminders[reminderKey] = true;
+                sendSquadReminder(challengeId);
+            }
+        }
+
         const timerVal = el.querySelector('.timer-val');
         if (timerVal) timerVal.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     };
 
     updateTimer();
     examTimers[msgId] = setInterval(updateTimer, 1000);
+}
+
+async function sendSquadReminder(challengeId) {
+    try {
+        // --- ADMIN ONLY SECURITY ---
+        // Only the squad owner is allowed to trigger the automated 10-min reminder messages
+        if (currentProfile.id !== currentSquad.owner_id) return;
+
+        // Fetch current participation and member count
+        const [{ count: solvedCount }, { count: memberCount }, { data: challenge }] = await Promise.all([
+            supabase.from('challenge_participations').select('*', { count: 'exact', head: true }).eq('challenge_id', challengeId),
+            supabase.from('squad_members').select('*', { count: 'exact', head: true }).eq('squad_id', currentSquad.id),
+            supabase.from('squad_exam_challenges').select('status').eq('id', challengeId).single()
+        ]);
+
+        if (challenge?.status === 'completed') return;
+
+        const target = Math.ceil(memberCount * 0.8);
+        const remaining = target - solvedCount;
+
+        if (remaining > 0) {
+            await supabase.from('squad_chat_messages').insert({
+                squad_id: currentSquad.id,
+                challenge_id: challengeId,
+                sender_id: currentProfile.id,
+                text: `⏰ تنبيه: باقي ${remaining} أشخاص يحلوا عشان النقط تتضاف للشلة! الهمة يا أبطال.`
+            });
+        }
+    } catch (e) {
+        console.error("Reminder error", e);
+    }
 }
 
 window.showReadBy = (names) => {
@@ -1175,7 +1244,7 @@ function restoreCooldowns() {
 }
 
 // Handler for joining squad exams via chat
-window.joinSquadExamMessenger = async (event, examId, squadId, state = 'fresh', expiresAt) => {
+window.joinSquadExamMessenger = async (event, examId, squadId, state = 'fresh', expiresAt, challengeId) => {
     if (event) event.stopPropagation();
 
     // Safety check for expiration
@@ -1189,11 +1258,14 @@ window.joinSquadExamMessenger = async (event, examId, squadId, state = 'fresh', 
         await supabase.from('squad_chat_messages').insert({
             squad_id: squadId,
             sender_id: currentProfile.id,
+            challenge_id: (challengeId && challengeId !== 'null' && challengeId !== 'undefined') ? challengeId : null,
             text: `انا دخلت`
         });
 
         // 2. Redirect to exam
-        window.location.href = `exam.html?id=${examId}&squad_id=${squadId}`;
+        let url = `exam.html?id=${examId}&squad_id=${squadId}`;
+        if (challengeId && challengeId !== 'null' && challengeId !== 'undefined') url += `&challenge_id=${challengeId}`;
+        window.location.href = url;
     } catch (err) {
         console.error("Error joining exam via messenger:", err);
         window.location.href = `exam.html?id=${examId}&squad_id=${squadId}`;
