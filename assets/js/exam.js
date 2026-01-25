@@ -571,6 +571,25 @@ async function calculateResult() {
             resultMsg.textContent = `جبت ${score} من ${totalQuestions}. راجع الدرس وحاول تاني.`;
         }
 
+        // --- Squad Share Logic ---
+        if (squadId) {
+            setTimeout(async () => {
+                const { isConfirmed } = await Swal.fire({
+                    title: 'مشارك النتيجة؟ 📊',
+                    text: 'تحب تشارك نتيجتك مع صحابك في الشلة؟',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'ماشي، شارك',
+                    cancelButtonText: 'لا، قول خلصت بس',
+                    confirmButtonColor: '#10b981',
+                    cancelButtonColor: '#64748b'
+                });
+
+                let shareText = isConfirmed ? `انا خلصت وجبت ${percentage}% 🎯` : 'انا خلصت ✅';
+                await shareResultInSquadChat(shareText);
+            }, 1500);
+        }
+
     } catch (err) {
         console.error("Submission Error:", err);
         Swal.fire({
@@ -583,6 +602,30 @@ async function calculateResult() {
     }
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+async function shareResultInSquadChat(text) {
+    try {
+        const { data: { user } } = await supabase.auth.getUser();
+        await supabase.from('squad_chat_messages').insert({
+            squad_id: squadId,
+            sender_id: user.id,
+            text: text
+        });
+
+        await Swal.fire({
+            icon: 'success',
+            title: 'تمت المشاركة! 🚀',
+            text: 'جاري التحويل لصفحة الشلة...',
+            timer: 1500,
+            showConfirmButton: false
+        });
+
+        window.location.href = 'squad.html';
+    } catch (err) {
+        console.error("Shared result error:", err);
+        window.location.href = 'squad.html';
+    }
 }
 
 // Note: saveResultToDatabase is now handled server-side via RPC submit_exam
