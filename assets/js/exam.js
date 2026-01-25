@@ -489,57 +489,14 @@ async function calculateResult() {
             if (percentage === 0) {
                 scoreValEl.textContent = "0%";
                 clearInterval(animTimer);
-                // Show Detailed Rewards Popup if percentage is 0 but points were earned (e.g., bonus)
-                if (totalEarned > 0) {
-                    let breakdownHtml = `<div style="text-align: right; direction: rtl; font-size: 0.95rem;">`;
-                    if (pointsExam > 0) breakdownHtml += `<span style="color:#64748b">من حلك للامتحان:</span> <b>${pointsExam} نقطة</b><br>`;
-                    if (bonusPerfect > 0) breakdownHtml += `<span style="color:#10b981">بونص التقفيل:</span> <b>+${bonusPerfect} نقطة</b><br>`;
-                    if (bonusStreak > 0) breakdownHtml += `<span style="color:#f59e0b">بونص الاستمرارية:</span> <b>+${bonusStreak} نقطة</b><br>`;
-                    breakdownHtml += `</div>`;
-
-                    const isFunny = Math.random() < 0.2;
-                    Swal.fire({
-                        title: isFunny ? `عاش يا قلبي😘 خدت ${totalEarned} نقطة` : `عاش عليك. خدت ${totalEarned} نقط`,
-                        html: breakdownHtml,
-                        icon: 'success',
-                        confirmButtonText: isFunny ? 'ماشي يقلبي 😂' : 'ماشي',
-                        confirmButtonColor: 'var(--primary-color)',
-                        timer: isFunny ? 10000 : 5000
-                    });
-                }
+                handleExamCompletionFlow(totalEarned, pointsExam, bonusPerfect, bonusStreak, percentage);
                 return;
             }
             currentCountAnim += 1;
             scoreValEl.textContent = `${currentCountAnim}%`;
             if (currentCountAnim >= percentage) {
                 clearInterval(animTimer);
-
-                // Show Detailed Rewards Popup
-                if (totalEarned > 0) {
-                    let breakdownHtml = `<div style="text-align: right; direction: rtl; font-size: 0.95rem;">`;
-                    if (pointsExam > 0) breakdownHtml += `<span style="color:#64748b">من حلك للامتحان:</span> <b>${pointsExam} نقطة</b><br>`;
-                    if (bonusPerfect > 0) breakdownHtml += `<span style="color:#10b981">بونص التقفيل:</span> <b>+${bonusPerfect} نقطة</b><br>`;
-                    if (bonusStreak > 0) breakdownHtml += `<span style="color:#f59e0b">بونص الاستمرارية:</span> <b>+${bonusStreak} نقطة</b><br>`;
-                    breakdownHtml += `</div>`;
-
-                    if (totalEarned > 0) {
-                        let breakdownHtml = `<div style="text-align: right; direction: rtl; font-size: 0.95rem;">`;
-                        if (pointsExam > 0) breakdownHtml += `<span style="color:#64748b">من حلك للامتحان:</span> <b>${pointsExam} نقطة</b><br>`;
-                        if (bonusPerfect > 0) breakdownHtml += `<span style="color:#10b981">بونص التقفيل:</span> <b>+${bonusPerfect} نقطة</b><br>`;
-                        if (bonusStreak > 0) breakdownHtml += `<span style="color:#f59e0b">بونص الاستمرارية:</span> <b>+${bonusStreak} نقطة</b><br>`;
-                        breakdownHtml += `</div>`;
-
-                        const isFunny = Math.random() < 0.2;
-                        Swal.fire({
-                            title: isFunny ? `عاش يا قلبي😘 خدت ${totalEarned} نقطة` : `عاش عليك. خدت ${totalEarned} نقط`,
-                            html: breakdownHtml,
-                            icon: 'success',
-                            confirmButtonText: isFunny ? 'ماشي يقلبي 😂' : 'ماشي',
-                            confirmButtonColor: 'var(--primary-color)',
-                            timer: isFunny ? 10000 : 5000
-                        });
-                    }
-                }
+                handleExamCompletionFlow(totalEarned, pointsExam, bonusPerfect, bonusStreak, percentage);
             }
         }, 15);
 
@@ -549,7 +506,7 @@ async function calculateResult() {
         if (percentage >= 85) {
             resultTitle.textContent = "ممتاز! 🥇";
             resultTitle.style.color = "var(--primary-color)";
-            resultMsg.textContent = `جبت ${score} من ${totalQuestions}.كمل بنفس المستوى!`;
+            resultMsg.textContent = `جبت ${score} من ${totalQuestions}. كمل بنفس المستوى!`;
         } else if (percentage >= 50) {
             resultTitle.textContent = "جيد جداً";
             resultTitle.style.color = "var(--secondary-color)";
@@ -558,25 +515,6 @@ async function calculateResult() {
             resultTitle.textContent = "محتاج تذاكر تاني";
             resultTitle.style.color = "#EF4444";
             resultMsg.textContent = `جبت ${score} من ${totalQuestions}. راجع الدرس وحاول تاني.`;
-        }
-
-        // --- Squad Share Logic ---
-        if (squadId) {
-            setTimeout(async () => {
-                const { isConfirmed } = await Swal.fire({
-                    title: 'قول لصحابك جبت كام',
-                    text: 'تحب تشارك نتيجتك مع صحابك في الشلة؟',
-                    icon: 'question',
-                    showCancelButton: true,
-                    confirmButtonText: 'ماشي',
-                    cancelButtonText: 'لا، قول خلصت بس',
-                    confirmButtonColor: '#10b981',
-                    cancelButtonColor: '#64748b'
-                });
-
-                let shareText = isConfirmed ? `انا خلصت وجبت ${percentage}% 🎯` : 'انا خلصت ✅';
-                await shareResultInSquadChat(shareText);
-            }, 1500);
         }
 
     } catch (err) {
@@ -593,6 +531,43 @@ async function calculateResult() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+async function handleExamCompletionFlow(totalEarned, pointsExam, bonusPerfect, bonusStreak, percentage) {
+    // 1. If Squad Mode, ask to share first
+    if (squadId) {
+        const { isConfirmed } = await Swal.fire({
+            title: 'قول لصحابك جبت كام',
+            text: 'تحب تشارك نتيجتك مع صحابك في الشلة؟',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'ماشي',
+            cancelButtonText: 'لا، قول خلصت بس',
+            confirmButtonColor: '#10b981',
+            cancelButtonColor: '#64748b'
+        });
+
+        let shareText = isConfirmed ? `انا خلصت وجبت ${percentage}% 🎯` : 'انا خلصت ✅';
+        await shareResultInSquadChat(shareText);
+    }
+
+    // 2. Show Points Reward Modal
+    if (totalEarned > 0) {
+        let breakdownHtml = `<div style="text-align: right; direction: rtl; font-size: 0.95rem;">`;
+        if (pointsExam > 0) breakdownHtml += `<span style="color:#64748b">من حلك للامتحان:</span> <b>${pointsExam} نقطة</b><br>`;
+        if (bonusPerfect > 0) breakdownHtml += `<span style="color:#10b981">بونص التقفيل:</span> <b>+${bonusPerfect} نقطة</b><br>`;
+        if (bonusStreak > 0) breakdownHtml += `<span style="color:#f59e0b">بونص الاستمرارية:</span> <b>+${bonusStreak} نقطة</b><br>`;
+        breakdownHtml += `</div>`;
+
+        const isFunny = Math.random() < 0.2;
+        await Swal.fire({
+            title: isFunny ? `عاش يا قلبي😘 خدت ${totalEarned} نقطة` : `عاش عليك. خدت ${totalEarned} نقط`,
+            html: breakdownHtml,
+            icon: 'success',
+            confirmButtonText: isFunny ? 'ماشي يقلبي 😂' : 'ماشي',
+            confirmButtonColor: 'var(--primary-color)',
+            timer: totalEarned > 15 ? 15000 : 8000
+        });
+    }
+}
 async function shareResultInSquadChat(text) {
     try {
         const { data: { user } } = await supabase.auth.getUser();
@@ -602,19 +577,8 @@ async function shareResultInSquadChat(text) {
             challenge_id: challengeId,
             text: text
         });
-
-        await Swal.fire({
-            icon: 'success',
-            title: 'تمت المشاركة! 🚀',
-            text: 'جاري التحويل لصفحة الشلة...',
-            timer: 1500,
-            showConfirmButton: false
-        });
-
-        window.location.href = 'squad.html';
     } catch (err) {
         console.error("Shared result error:", err);
-        window.location.href = 'squad.html';
     }
 }
 
