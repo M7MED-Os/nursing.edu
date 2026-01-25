@@ -655,7 +655,7 @@ async function renderChat(msgs) {
             <div class="msg ${m.sender_id === myId ? 'sent' : 'received'}" 
                  ${m.sender_id === myId ? `onclick="showReadBy('${fullReaderNames}')"` : ''} 
                  style="${m.sender_id === myId ? 'cursor:pointer;' : ''}">
-                <span class="msg-sender">${m.profiles ? m.profiles.full_name : 'مستخدم'}</span>
+                <span class="msg-sender">${m.profiles ? m.profiles.full_name : 'M7MED'}</span>
                 <div class="msg-content">
                     ${renderMessageContent(m, myId)}
                 </div>
