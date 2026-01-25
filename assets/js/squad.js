@@ -11,6 +11,7 @@ let presenceChannel = null;
 let pomodoroInterval = null;
 let pomodoroEnd = null;
 let userResults = []; // Store user's completed exams for dynamic buttons
+let examTimers = {}; // Store intervals for active exam cards
 
 // DOM Elements
 const views = {
@@ -590,7 +591,11 @@ window.deleteSquadTask = async (id) => {
 
 // --- Chat ---
 async function loadChat() {
-    // 1. Fetch user scores to determine exam status
+    // 1. Clear existing exam timers before reload
+    Object.values(examTimers).forEach(t => clearInterval(t));
+    examTimers = {};
+
+    // 2. Fetch user scores to determine exam status
     const { data: results } = await supabase.from('results').select('exam_id, created_at').eq('user_id', currentProfile.id);
     userResults = results || [];
 
@@ -665,36 +670,50 @@ function renderMessageContent(m, myId) {
         const examId = examMatch[1];
         const textPart = m.text.split('[')[0].trim();
 
-        // Find if user solved this exam
         const resultsForThisExam = userResults.filter(r => r.exam_id === examId);
         const msgAt = new Date(m.created_at);
+        const expiresAt = msgAt.getTime() + (60 * 60 * 1000); // 1 Hour limit
+        const isExpired = Date.now() > expiresAt;
+
         const hasSessionResult = resultsForThisExam.some(r => new Date(r.created_at) > msgAt);
         const hasOldResult = resultsForThisExam.length > 0;
 
         let btnState = 'fresh'; // Default
-        if (hasSessionResult) {
-            // Solved AFTER message (part of this session)
+        if (isExpired) {
+            btnState = 'expired';
+        } else if (hasSessionResult) {
             btnState = 'completed';
         } else if (hasOldResult) {
-            // Solved BEFORE message (old result)
             btnState = 'help';
         }
 
         const btnConfigs = {
-            'fresh': { text: 'خش دلوقتي 🚀', class: 'btn-primary', onclick: `window.joinSquadExamMessenger(event, '${examId}', '${currentSquad.id}', 'fresh')`, notice: '' },
-            'help': { text: 'خش ساعد 🤝', class: 'btn-secondary', onclick: `window.joinSquadExamMessenger(event, '${examId}', '${currentSquad.id}', 'help')`, notice: '<div style="font-size: 0.7rem; color: #64748b; margin-top: 6px; text-align: center;">مش هتاخد النقط كامله هتاخد البونص بس</div>' },
-            'completed': { text: 'انت حليت الامتحان ✅', class: 'btn-outline', onclick: 'void(0)', disabled: true, notice: '' }
+            'fresh': { text: 'خش دلوقتي 🚀', class: 'btn-primary', onclick: `window.joinSquadExamMessenger(event, '${examId}', '${currentSquad.id}', 'fresh', ${expiresAt})`, notice: '' },
+            'help': { text: 'خش ساعد 🤝', class: 'btn-secondary', onclick: `window.joinSquadExamMessenger(event, '${examId}', '${currentSquad.id}', 'help', ${expiresAt})`, notice: '<div style="font-size: 0.7rem; color: #64748b; margin-top: 6px; text-align: center;">مش هتاخد النقط كامله هتاخد البونص بس</div>' },
+            'completed': { text: 'انت حليت الامتحان ✅', class: 'btn-outline', onclick: 'void(0)', disabled: true, notice: '' },
+            'expired': { text: 'انتهى وقت التحدي ⏱️', class: 'btn-outline', onclick: 'void(0)', disabled: true, notice: '<div style="font-size: 0.7rem; color: #ef4444; margin-top: 6px; text-align: center;">الجلسة خلصت (مدتها ساعة)</div>' }
         };
 
         const config = btnConfigs[btnState];
+
+        if (!isExpired && btnState !== 'completed') {
+            setTimeout(() => startExamCardTimer(m.id, expiresAt), 10);
+        }
+
+        const countdownHtml = !isExpired && btnState !== 'completed' ? `
+            <div id="countdown-${m.id}" style="font-size:0.75rem; color:#f59e0b; margin-bottom:8px; font-weight:700;">
+                <i class="fas fa-clock"></i> ينتهي التحدي خلال: <span class="timer-val">..:..</span>
+            </div>
+        ` : '';
 
         return `
             <div class="msg-exam-card" style="background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:12px; margin-top:8px; box-shadow:0 2px 4px rgba(0,0,0,0.05);">
                 <div style="color:var(--primary-color); font-weight:700; font-size:0.85rem; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
                     <i class="fas fa-graduation-cap"></i> تحدي جماعي
                 </div>
+                ${countdownHtml}
                 <div style="font-size:0.9rem; color:#1e293b; line-height:1.5; margin-bottom:12px;">${textPart}</div>
-                <button class="btn ${config.class}" style="width:100%; padding:8px; font-size:0.85rem;" 
+                <button class="btn ${config.class}" id="btn-exam-${m.id}" style="width:100%; padding:8px; font-size:0.85rem;" 
                         onclick="event.stopPropagation(); ${config.onclick}" ${config.disabled ? 'disabled' : ''}>
                     ${config.text}
                 </button>
@@ -705,6 +724,39 @@ function renderMessageContent(m, myId) {
 
     // Normal text message
     return m.text;
+}
+
+function startExamCardTimer(msgId, expiresAt) {
+    if (examTimers[msgId]) clearInterval(examTimers[msgId]);
+
+    const updateTimer = () => {
+        const el = document.getElementById(`countdown-${msgId}`);
+        if (!el) {
+            clearInterval(examTimers[msgId]);
+            return;
+        }
+
+        const diff = expiresAt - Date.now();
+        if (diff <= 0) {
+            clearInterval(examTimers[msgId]);
+            el.innerHTML = '<span style="color:#ef4444;">انتهى وقت التحدي</span>';
+            const btn = document.getElementById(`btn-exam-${msgId}`);
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = 'انتهى وقت التحدي ⏱️';
+                btn.className = 'btn btn-outline';
+            }
+            return;
+        }
+
+        const mins = Math.floor(diff / (1000 * 60));
+        const secs = Math.floor((diff / 1000) % 60);
+        const timerVal = el.querySelector('.timer-val');
+        if (timerVal) timerVal.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    };
+
+    updateTimer();
+    examTimers[msgId] = setInterval(updateTimer, 1000);
 }
 
 window.showReadBy = (names) => {
@@ -1123,8 +1175,15 @@ function restoreCooldowns() {
 }
 
 // Handler for joining squad exams via chat
-window.joinSquadExamMessenger = async (event, examId, squadId, state = 'fresh') => {
+window.joinSquadExamMessenger = async (event, examId, squadId, state = 'fresh', expiresAt) => {
     if (event) event.stopPropagation();
+
+    // Safety check for expiration
+    if (expiresAt && Date.now() > expiresAt) {
+        Swal.fire('انتهى الوقت!', 'معلش الوقت خلص، الجلسة دي كانت مدتها ساعة بس.', 'error');
+        return;
+    }
+
     try {
         // 1. Send Message "انا دخلت"
         await supabase.from('squad_chat_messages').insert({
