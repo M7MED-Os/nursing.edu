@@ -364,7 +364,7 @@ window.selectSquadExam = async (examId, examTitle, squadId) => {
         // 4. Success & Redirect
         await Swal.fire({
             icon: 'success',
-            title: 'تم إطلاق التحدي! 🚀',
+            title: 'التحدي بدأ! 🚀',
             text: 'أصحابك في الشلة هيوصلهم إشعار دلوقتي في الشات.',
             timer: 2000,
             showConfirmButton: false

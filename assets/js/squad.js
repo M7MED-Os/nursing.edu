@@ -12,7 +12,6 @@ let pomodoroInterval = null;
 let pomodoroEnd = null;
 let userResults = []; // Store user's completed exams for dynamic buttons
 let examTimers = {}; // Store intervals for active exam cards
-let sentReminders = {}; // Track which 10-min marks have been messaged for each challenge
 
 // DOM Elements
 const views = {
@@ -595,7 +594,6 @@ async function loadChat() {
     // 1. Clear existing exam timers before reload
     Object.values(examTimers).forEach(t => clearInterval(t));
     examTimers = {};
-    sentReminders = {};
 
     // 2. Fetch user scores and active challenges status
     const [{ data: results }, { data: challenges }] = await Promise.all([
@@ -761,17 +759,13 @@ function startExamCardTimer(msgId, expiresAt, challengeId) {
         const diff = expiresAt - Date.now();
         if (diff <= 0) {
             clearInterval(examTimers[msgId]);
-
-            // Finalize Challenge (Indempotent: DB will handle logic)
-            if (challengeId) {
-                supabase.rpc('finalize_squad_challenge', { p_challenge_id: challengeId });
-            }
+            if (challengeId) supabase.rpc('finalize_squad_challenge', { p_challenge_id: challengeId });
 
             el.innerHTML = '<span style="color:#ef4444;">انتهى الوقت</span>';
             const btn = document.getElementById(`btn-exam-${msgId}`);
             if (btn) {
                 btn.disabled = true;
-                btn.textContent = 'انتهى وقت التحدي ⏱️';
+                btn.textContent = 'انتهى التحدي ⏱️';
                 btn.className = 'btn btn-outline';
             }
             return;
@@ -779,15 +773,6 @@ function startExamCardTimer(msgId, expiresAt, challengeId) {
 
         const mins = Math.floor(diff / (1000 * 60));
         const secs = Math.floor((diff / 1000) % 60);
-
-        // --- Reminder Logic every 10 minutes ---
-        if (challengeId && mins % 10 === 0 && secs === 0 && mins < 60) {
-            const reminderKey = `${challengeId}_${mins}`;
-            if (!sentReminders[reminderKey]) {
-                sentReminders[reminderKey] = true;
-                sendSquadReminder(challengeId);
-            }
-        }
 
         const timerVal = el.querySelector('.timer-val');
         if (timerVal) timerVal.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
@@ -797,36 +782,7 @@ function startExamCardTimer(msgId, expiresAt, challengeId) {
     examTimers[msgId] = setInterval(updateTimer, 1000);
 }
 
-async function sendSquadReminder(challengeId) {
-    try {
-        // --- ADMIN ONLY SECURITY ---
-        // Only the squad owner is allowed to trigger the automated 10-min reminder messages
-        if (currentProfile.id !== currentSquad.owner_id) return;
-
-        // Fetch current participation and member count
-        const [{ count: solvedCount }, { count: memberCount }, { data: challenge }] = await Promise.all([
-            supabase.from('challenge_participations').select('*', { count: 'exact', head: true }).eq('challenge_id', challengeId),
-            supabase.from('squad_members').select('*', { count: 'exact', head: true }).eq('squad_id', currentSquad.id),
-            supabase.from('squad_exam_challenges').select('status').eq('id', challengeId).single()
-        ]);
-
-        if (challenge?.status === 'completed') return;
-
-        const target = Math.ceil(memberCount * 0.8);
-        const remaining = target - solvedCount;
-
-        if (remaining > 0) {
-            await supabase.from('squad_chat_messages').insert({
-                squad_id: currentSquad.id,
-                challenge_id: challengeId,
-                sender_id: currentProfile.id,
-                text: `⏰ تنبيه: باقي ${remaining} أشخاص يحلوا عشان النقط تتضاف للشلة! الهمة يا أبطال.`
-            });
-        }
-    } catch (e) {
-        console.error("Reminder error", e);
-    }
-}
+// End of Exam Timers Logic
 
 window.showReadBy = (names) => {
     Swal.fire({
