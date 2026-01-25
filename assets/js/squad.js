@@ -682,9 +682,9 @@ function renderMessageContent(m, myId) {
         }
 
         const btnConfigs = {
-            'fresh': { text: 'خش دلوقتي 🚀', class: 'btn-primary', onclick: `window.joinSquadExamMessenger('${examId}', '${currentSquad.id}', 'fresh')` },
-            'help': { text: 'خش ساعد 🤝', class: 'btn-secondary', onclick: `window.joinSquadExamMessenger('${examId}', '${currentSquad.id}', 'help')` },
-            'completed': { text: 'انت حليت الامتحان ✅', class: 'btn-outline', onclick: 'void(0)', disabled: true }
+            'fresh': { text: 'خش دلوقتي 🚀', class: 'btn-primary', onclick: `window.joinSquadExamMessenger(event, '${examId}', '${currentSquad.id}', 'fresh')`, notice: '' },
+            'help': { text: 'خش ساعد 🤝', class: 'btn-secondary', onclick: `window.joinSquadExamMessenger(event, '${examId}', '${currentSquad.id}', 'help')`, notice: '<div style="font-size: 0.7rem; color: #64748b; margin-top: 6px; text-align: center;">مش هتاخد النقط كامله هتاخد البونص بس</div>' },
+            'completed': { text: 'انت حليت الامتحان ✅', class: 'btn-outline', onclick: 'void(0)', disabled: true, notice: '' }
         };
 
         const config = btnConfigs[btnState];
@@ -696,9 +696,10 @@ function renderMessageContent(m, myId) {
                 </div>
                 <div style="font-size:0.9rem; color:#1e293b; line-height:1.5; margin-bottom:12px;">${textPart}</div>
                 <button class="btn ${config.class}" style="width:100%; padding:8px; font-size:0.85rem;" 
-                        onclick="${config.onclick}" ${config.disabled ? 'disabled' : ''}>
+                        onclick="event.stopPropagation(); ${config.onclick}" ${config.disabled ? 'disabled' : ''}>
                     ${config.text}
                 </button>
+                ${config.notice}
             </div>
         `;
     }
@@ -1123,20 +1124,9 @@ function restoreCooldowns() {
 }
 
 // Handler for joining squad exams via chat
-window.joinSquadExamMessenger = async (examId, squadId, state = 'fresh') => {
+window.joinSquadExamMessenger = async (event, examId, squadId, state = 'fresh') => {
+    if (event) event.stopPropagation();
     try {
-        if (state === 'help') {
-            const { isConfirmed } = await Swal.fire({
-                title: 'تنبيه البونص 💡',
-                text: 'مش هتاخد النقط كاملة عشان انت حليت الامتحان ده قبل كده، هتاخد بونص المساعدة بس!',
-                icon: 'info',
-                showCancelButton: true,
-                confirmButtonText: 'ماشي، خش ساعد',
-                cancelButtonText: 'تراجع'
-            });
-            if (!isConfirmed) return;
-        }
-
         // 1. Send Message "انا دخلت"
         await supabase.from('squad_chat_messages').insert({
             squad_id: squadId,
