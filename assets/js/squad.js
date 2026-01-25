@@ -876,25 +876,35 @@ document.getElementById('startPomodoroBtn').onclick = startPomodoroFlow;
 // --- Collaborative Exams ---
 window.startSharedExam = async () => {
     try {
-        // 1. Fetch Subjects (Filtered by Squad Level & Department)
+        // 1. Fetch Subjects (Filtered by User Level & Department)
         let query = supabase.from('subjects').select('*');
 
-        // Filter by Year
-        if (currentSquad.academic_year) {
-            query = query.eq('academic_year', currentSquad.academic_year);
+        // Filter by Grade (1, 2, 3, 4)
+        if (currentProfile.grade) {
+            query = query.eq('grade', currentProfile.grade);
         }
 
-        // Filter by Department (if not 'عام')
-        if (currentSquad.department && currentSquad.department !== 'عام') {
-            query = query.eq('department', currentSquad.department);
+        // Filter by Stream/Department (pediatric, obs_gyn, etc.)
+        // Note: Grade 1/2 use 'term' (1 or 2), Grade 3/4 use 'stream'
+        if (currentProfile.stream) {
+            if (['1', '2'].includes(currentProfile.stream)) {
+                query = query.eq('term', currentProfile.stream);
+            } else {
+                query = query.eq('stream', currentProfile.stream);
+            }
         }
 
-        const { data: subjects } = await query;
+        const { data: subjects, error: subjError } = await query;
+
+        if (subjError || !subjects || subjects.length === 0) {
+            Swal.fire('تنبيه', 'مفيش مواد متاحة لمستواك الدراسي حالياً.', 'info');
+            return;
+        }
 
         const { value: subjId } = await Swal.fire({
             title: 'اختار المادة 📚',
             input: 'select',
-            inputOptions: Object.fromEntries(subjects.map(s => [s.id, s.name_ar || s.title || 'مادة بدون اسم'])),
+            inputOptions: Object.fromEntries(subjects.map(s => [s.id, s.name_ar || 'مادة بدون اسم'])),
             inputPlaceholder: 'اختار المادة...',
             showCancelButton: true
         });
