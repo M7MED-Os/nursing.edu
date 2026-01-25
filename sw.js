@@ -1,50 +1,72 @@
-const CACHE_NAME = 'thanaweya-v1';
-const ASSETS_TO_CACHE = [
+const CACHE_NAME = 'nursing-edu-v3'; // Bumping to force cache clear
+const STATIC_ASSETS = [
     './',
     './index.html',
     './dashboard.html',
+    './subject.html',
+    './squad.html',
+    './todo.html',
+    './profile.html',
+    './leaderboard.html',
     './assets/css/style.css',
     './assets/js/main.js',
     './assets/js/auth.js',
-    './assets/images/icon-192.png',
-    './assets/images/icon-512.png',
+    './assets/js/supabaseClient.js',
+    './assets/js/utils.js',
+    './assets/js/constants.js',
     'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css',
     'https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap'
 ];
 
-// Install Event
+// 1. Install - Cache Static Assets
 self.addEventListener('install', (event) => {
     event.waitUntil(
-        caches.open(CACHE_NAME)
-            .then((cache) => {
-                console.log('[Service Worker] Caching core assets');
-                return cache.addAll(ASSETS_TO_CACHE);
-            })
+        caches.open(CACHE_NAME).then((cache) => {
+            return cache.addAll(STATIC_ASSETS);
+        })
     );
+    self.skipWaiting();
 });
 
-// Activate Event (Cleanup old caches)
+// 2. Activate - Cleanup Old Caches
 self.addEventListener('activate', (event) => {
     event.waitUntil(
         caches.keys().then((keys) => {
             return Promise.all(
-                keys.map((key) => {
-                    if (key !== CACHE_NAME) {
-                        console.log('[Service Worker] Removing old cache', key);
-                        return caches.delete(key);
-                    }
-                })
+                keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
             );
         })
     );
+    self.clients.claim();
 });
 
-// Fetch Event (Network First, then Cache)
+// 3. Fetch Strategy: Cache-First for static assets, Network-First for others
 self.addEventListener('fetch', (event) => {
+    const { request } = event;
+    const url = new URL(request.url);
+
+    // Bypass Supabase API calls (we handle them with JSON caching in utils.js)
+    if (url.hostname.includes('supabase.co')) {
+        return;
+    }
+
     event.respondWith(
-        fetch(event.request)
-            .catch(() => {
-                return caches.match(event.request);
-            })
+        caches.match(request).then((cachedResponse) => {
+            if (cachedResponse) return cachedResponse;
+
+            return fetch(request).then((networkResponse) => {
+                // Cache new static assets on the fly
+                if (request.method === 'GET' && networkResponse.status === 200) {
+                    const cacheCopy = networkResponse.clone();
+                    caches.open(CACHE_NAME).then((cache) => cache.put(request, cacheCopy));
+                }
+                return networkResponse;
+            });
+        }).catch(() => {
+            // Offline Fallback for HTML
+            if (request.headers.get('accept').includes('text/html')) {
+                return caches.match('./dashboard.html');
+            }
+        })
     );
 });

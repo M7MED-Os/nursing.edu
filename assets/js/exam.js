@@ -447,11 +447,16 @@ async function calculateResult() {
         // We'll show rewards in the animated popup below
 
 
-        // 5. Clear Caches to force refresh on dashboard and profile
-        clearCache(`user_stats_${user.id}`);
-        clearCache(`profile_${user.id}`);
+        // 5. Clear Caches & Sync (The NEW Senior way)
+        const userId = user.id;
+        clearCache(`user_stats_${userId}`);
         sessionStorage.removeItem(`exam_cache_${examId}`);
         localStorage.removeItem(`exam_progress_${examId}`);
+
+        // Force a fresh profile/points sync which will trigger 'profileUpdated' everywhere
+        import("./auth.js").then(module => {
+            module.refreshUserProfile(userId);
+        });
 
         // --- UI UPDATES ---
         document.getElementById("correctCount").textContent = score;

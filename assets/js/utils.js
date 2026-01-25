@@ -122,3 +122,34 @@ export function getCache(key) {
 export function clearCache(key) {
     localStorage.removeItem(`cache_${key}`);
 }
+/**
+ * SWR Pattern: Get Data from Cache immediately, then fetch and update
+ * @param {string} key - Cache key
+ * @param {Function} fetcher - Async function to get fresh data
+ * @param {number} ttl - TTL in minutes
+ * @param {Function} onFreshData - Callback when fresh data arrives
+ */
+export async function getSWR(key, fetcher, ttl, onFreshData) {
+    const cached = getCache(key);
+
+    // 1. Return cached data immediately if exists
+    if (cached && onFreshData) {
+        onFreshData(cached, true); // true = from cache
+    }
+
+    // 2. Background Revalidation
+    try {
+        const fresh = await fetcher();
+        if (fresh) {
+            // 3. Update cache if different or no cache
+            if (!cached || JSON.stringify(cached) !== JSON.stringify(fresh)) {
+                setCache(key, fresh, ttl);
+                if (onFreshData) onFreshData(fresh, false); // false = fresh from network
+            }
+        }
+        return fresh;
+    } catch (err) {
+        console.error(`[SWR] Error fetching ${key}:`, err);
+        return cached;
+    }
+}

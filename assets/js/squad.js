@@ -259,10 +259,21 @@ function timeAgo(dateString) {
 
 // --- Members ---
 async function loadMembers() {
-    const { data: members } = await supabase
-        .from('squad_members')
-        .select('profile_id, profiles(full_name, points, updated_at)')
-        .eq('squad_id', currentSquad.id);
+    const cacheKey = `squad_members_${currentSquad.id}`;
+
+    getSWR(cacheKey, async () => {
+        const { data } = await supabase
+            .from('squad_members')
+            .select('profile_id, profiles(full_name, points, updated_at)')
+            .eq('squad_id', currentSquad.id);
+        return data;
+    }, 1, (members) => {
+        renderMembersUI(members);
+    });
+}
+
+function renderMembersUI(members) {
+    if (!members) return;
 
     // Sort: Online first, then by updated_at descending
     members.sort((a, b) => {
@@ -293,14 +304,7 @@ async function loadMembers() {
             actions = '<span style="font-size:0.6rem; color:#f59e0b; margin-right:auto;">مالك الشلة ⭐</span>';
         }
 
-        // Logic: If Online (Presence) -> Show 'نشط الآن'
-        // Else -> Show timeAgo from updated_at
-        let activeText = 'غير نَشِط';
-        if (isOnline) {
-            activeText = 'نشط الآن';
-        } else if (m.profiles.updated_at) {
-            activeText = timeAgo(m.profiles.updated_at);
-        }
+        let activeText = isOnline ? 'نشط الآن' : (m.profiles.updated_at ? timeAgo(m.profiles.updated_at) : 'غير نَشِط');
 
         return `
             <div class="member-item" data-userid="${m.profile_id}" style="display:flex; align-items:center; gap:10px;">
@@ -352,23 +356,28 @@ window.transferOwnership = async (userId) => {
 
 // --- Tasks ---
 async function loadTasks() {
-    const { data: tasks } = await supabase
-        .from('squad_tasks')
-        .select('*, squad_task_completions(profile_id, profiles(full_name))')
-        .eq('squad_id', currentSquad.id)
-        .order('created_at', { ascending: true });
+    const cacheKey = `squad_tasks_${currentSquad.id}`;
 
-    // Pre-process tasks for local individual state
-    tasks.forEach(t => {
-        t.is_done_by_me = t.squad_task_completions.some(c => c.profile_id === currentProfile.id);
-        t.others_who_done = t.squad_task_completions.filter(c => c.profile_id !== currentProfile.id);
+    getSWR(cacheKey, async () => {
+        const { data } = await supabase
+            .from('squad_tasks')
+            .select('*, squad_task_completions(profile_id, profiles(full_name))')
+            .eq('squad_id', currentSquad.id)
+            .order('created_at', { ascending: true });
+        return data;
+    }, 5, (tasks) => {
+        // Pre-process tasks for local individual state
+        tasks.forEach(t => {
+            t.is_done_by_me = t.squad_task_completions.some(c => c.profile_id === currentProfile.id);
+            t.others_who_done = t.squad_task_completions.filter(c => c.profile_id !== currentProfile.id);
+        });
+
+        const mainTasks = tasks.filter(t => !t.parent_id);
+        const subTasks = tasks.filter(t => t.parent_id);
+
+        updateProgressBar(tasks);
+        renderTasks(mainTasks, subTasks);
     });
-
-    const mainTasks = tasks.filter(t => !t.parent_id);
-    const subTasks = tasks.filter(t => t.parent_id);
-
-    updateProgressBar(tasks);
-    renderTasks(mainTasks, subTasks);
 }
 
 function updateProgressBar(tasks) {
@@ -599,21 +608,9 @@ async function loadChat() {
     const box = document.getElementById('chatBox');
     if (!box) return;
 
-    // --- ZERO LOADING LOGIC ---
     const cacheKey = `squad_chat_data_${currentSquad.id}`;
-    const cachedData = getCache(cacheKey);
 
-    // 2. Show Instant UI from Cache
-    if (cachedData) {
-        userResults = cachedData.results || [];
-        window.currentChallenges = cachedData.challenges || [];
-        renderChat(cachedData.msgs);
-    } else {
-        renderChatSkeletons(box);
-    }
-
-    // 3. Background Revalidation
-    try {
+    getSWR(cacheKey, async () => {
         const [{ data: results }, { data: challenges }, { data: msgs }] = await Promise.all([
             supabase.from('results').select('exam_id, created_at').eq('user_id', currentProfile.id),
             supabase.from('squad_exam_challenges').select('id, status, squad_points_awarded').eq('squad_id', currentSquad.id),
@@ -621,19 +618,16 @@ async function loadChat() {
         ]);
 
         const freshMsgs = (msgs || []).reverse();
-        userResults = results || [];
-        window.currentChallenges = challenges || [];
-
-        const freshData = { results: userResults, challenges: window.currentChallenges, msgs: freshMsgs };
-
-        // 4. Update UI only if changed or no cache
-        if (!cachedData || JSON.stringify(cachedData.msgs) !== JSON.stringify(freshMsgs)) {
-            renderChat(freshMsgs);
-            setCache(cacheKey, freshData, 15); // Cache for 15 minutes
-        }
-    } catch (err) {
-        console.error("Chat Refresh Error:", err);
-    }
+        return {
+            results: results || [],
+            challenges: challenges || [],
+            msgs: freshMsgs
+        };
+    }, 15, (data) => {
+        userResults = data.results;
+        window.currentChallenges = data.challenges;
+        renderChat(data.msgs);
+    });
 }
 
 function renderChatSkeletons(box) {

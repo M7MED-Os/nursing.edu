@@ -1,5 +1,7 @@
 import { supabase } from "./supabaseClient.js";
-import { getCache, setCache, clearCache } from "./utils.js";
+import { getCache, setCache, clearCache, getSWR } from "./utils.js";
+import { APP_CONFIG } from "./constants.js";
+import { checkAuth } from "./auth.js";
 
 // Utility to get Query Params
 const urlParams = new URLSearchParams(window.location.search);
@@ -8,50 +10,34 @@ const mode = urlParams.get('mode');
 const squadIdInUrl = urlParams.get('squad_id');
 
 async function loadSubjectContent() {
-    const titleEl = document.getElementById("subjectTitle");
-    const gridEl = document.getElementById("examsGrid");
-    const loadingEl = document.getElementById("loading");
-    const noMsgEl = document.getElementById("noExamsMessage");
-
     if (!subjectId) {
         window.location.href = "dashboard.html";
         return;
     }
 
-    // --- ZERO LOADING LOGIC ---
+    // 1. Initial Auth Check (Ensures Realtime + Session)
+    const auth = await checkAuth();
+    if (!auth) return;
+
+    const titleEl = document.getElementById("subjectTitle");
+    const gridEl = document.getElementById("examsGrid");
+    const loadingEl = document.getElementById("loading");
+
+    // 2. Unified SWR Logic
     const cacheKey = `subject_data_${subjectId}`;
-    const cachedData = getCache(cacheKey);
 
-    // 1. Show Instant UI from Cache
-    if (cachedData) {
-        if (cachedData.subject) titleEl.textContent = cachedData.subject.name_ar;
-        renderContent(cachedData.chapters, cachedData.lessons, cachedData.exams, gridEl, mode, squadIdInUrl, cachedData.solvedExams || []);
-        loadingEl.style.display = "none";
-    } else {
-        renderSkeletons(gridEl);
-    }
-
-    // 2. Background Revalidation (Fetch Fresh Data)
-    try {
-        const freshData = await fetchSubjectFreshData();
-
-        // 3. Smart Update: Only re-render if data is different or no cache
-        if (!cachedData || isDataDifferent(cachedData, freshData)) {
-            if (freshData.subject) titleEl.textContent = freshData.subject.name_ar;
-            renderContent(freshData.chapters, freshData.lessons, freshData.exams, gridEl, mode, squadIdInUrl, freshData.solvedExams);
-            setCache(cacheKey, freshData, 60); // Cache for 1 hour
+    getSWR(cacheKey,
+        () => fetchSubjectFreshData(auth.user.id),
+        APP_CONFIG.CACHE_TIME_SUBJECT_CONTENT,
+        (data) => {
+            if (data.subject) titleEl.textContent = data.subject.name_ar;
+            renderContent(data.chapters, data.lessons, data.exams, gridEl, mode, squadIdInUrl, data.solvedExams || []);
+            loadingEl.style.display = "none";
         }
-
-        loadingEl.style.display = "none";
-    } catch (err) {
-        console.error("Error loading fresh content:", err);
-        if (!cachedData) {
-            loadingEl.innerHTML = `<p style="color: red;">حدث خطأ في الاتصال. جرب تنعش الصفحة.</p>`;
-        }
-    }
+    );
 }
 
-async function fetchSubjectFreshData() {
+async function fetchSubjectFreshData(userId) {
     const { data: subject } = await supabase.from('subjects').select('name_ar').eq('id', subjectId).single();
     const { data: chapters } = await supabase.from('chapters').select('*').eq('subject_id', subjectId).order('order_index', { ascending: true });
 
@@ -59,24 +45,23 @@ async function fetchSubjectFreshData() {
 
     const chapterIds = chapters.map(c => c.id);
     const { data: lessons } = await supabase.from('lessons').select('*').in('chapter_id', chapterIds).order('order_index', { ascending: true });
-    const { data: exams } = await supabase.from('exams').select('*').or(`chapter_id.in.(${chapterIds.join(',')}),lesson_id.in.(${lessons.length ? lessons.map(l => l.id).join(',') : 'uuid_nil()'})`).order('order_index', { ascending: true });
 
-    const { data: { user } } = await supabase.auth.getUser();
+    // Optimized Exam Query
+    const lessonIds = lessons.length ? lessons.map(l => l.id) : [];
+    const orFilter = `chapter_id.in.(${chapterIds.join(',')})${lessonIds.length ? `,lesson_id.in.(${lessonIds.join(',')})` : ''}`;
+
+    const { data: exams } = await supabase.from('exams')
+        .select('*')
+        .or(orFilter)
+        .order('order_index', { ascending: true });
+
     let solvedExams = [];
-    if (user) {
-        const { data: results } = await supabase.from('results').select('exam_id').eq('user_id', user.id);
+    if (userId) {
+        const { data: results } = await supabase.from('results').select('exam_id').eq('user_id', userId);
         solvedExams = (results || []).map(r => r.exam_id);
     }
 
     return { subject, chapters, lessons, exams, solvedExams };
-}
-
-function isDataDifferent(oldD, newD) {
-    if (!oldD || !newD) return true;
-    if (oldD.chapters?.length !== newD.chapters?.length) return true;
-    if (oldD.exams?.length !== newD.exams?.length) return true;
-    if (oldD.solvedExams?.length !== newD.solvedExams?.length) return true;
-    return false;
 }
 
 function renderSkeletons(container) {

@@ -9,44 +9,33 @@ import { GRADES, TERMS, STREAMS } from "./constants.js";
 let currentUser = null;
 let currentProfile = null;
 
-async function checkAuth() {
-    // This is already handled by auth.js usually, but we keep it here for data access
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-        window.location.href = "login.html";
-        return null;
-    }
-    currentUser = session.user;
-    return currentUser;
-}
-
-// ==========================
-// 2. UI Helpers (Toast)
-// ==========================
-
-// ==========================
-// 3. Load Profile Logic
-// ==========================
+import { checkAuth, refreshUserProfile } from "./auth.js";
 
 async function loadProfile() {
-    if (!currentUser) return;
+    // 1. Central Auth & Sync
+    const auth = await checkAuth({ forceRefresh: true });
+    if (!auth) return;
 
-    // 1. Load from 'profiles' table first
-    const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', currentUser.id)
-        .single();
+    currentUser = auth.user;
+    currentProfile = auth.profile;
 
-    if (error && error.code !== 'PGRST116') { // PGRST116 is "Row not found"
-        console.error("Error loading profile:", error);
-    }
+    renderProfileUI(auth.profile, auth.user);
 
-    // 2. Fallback to Auth Metadata if profile is missing
-    const meta = currentUser.user_metadata || {};
+    // 2. Reactive updates
+    window.addEventListener('profileUpdated', (e) => {
+        currentProfile = e.detail;
+        renderProfileUI(e.detail, currentUser);
+    });
+}
 
-    // Data to use
-    const fullName = profile?.full_name || meta.full_name || "";
+function renderProfileUI(profile, user) {
+    if (!profile) return;
+
+    // 1. Get Auth Metadata fallback
+    const meta = user?.user_metadata || {};
+
+    // 2. Data to use
+    const fullName = profile.full_name || meta.full_name || "";
     const email = currentUser.email || "";
     const grade = profile?.grade || meta.grade || "";
     const term = profile?.term || meta.term || "";

@@ -23,14 +23,15 @@ export const GRADE_STREAMS = {
 };
 
 export const APP_CONFIG = {
-    CACHE_TIME_PROFILE: 3, // 3 minutes for faster activation/expiry sync
-    CACHE_TIME_STATS: 360, // 6 hours (will be cleared after each exam)
-    CACHE_TIME_SUBJECTS: 1440, // 24 hours (subjects are stable during term)
-    CACHE_TIME_SUBJECT_CONTENT: 10, // 10 minutes (exams/lectures list inside subjects)
-    CACHE_TIME_LECTURES: 60, // 1 hour (lecture content rarely changes)
-    CACHE_TIME_ANNOUNCEMENTS: 3, // 3 minutes (for quick visibility)
-    CACHE_TIME_QUESTIONS: 3, // 3 minutes (exam questions)
-    CACHE_TIME_LEADERBOARD: 1, // 1 minute (will auto-refresh based on admin settings)
-    ACTIVE_CHECK_INTERVAL: 60000, // 1 minute
+    CACHE_VERSION: 'v2.1', // Changing this clears local caches for all users
+    CACHE_TIME_PROFILE: 5, // 5 minutes
+    CACHE_TIME_STATS: 10,  // Reduced from 6h to 10m for better sync
+    CACHE_TIME_SUBJECTS: 1440,
+    CACHE_TIME_SUBJECT_CONTENT: 10,
+    CACHE_TIME_LECTURES: 60,
+    CACHE_TIME_ANNOUNCEMENTS: 3,
+    CACHE_TIME_QUESTIONS: 3,
+    CACHE_TIME_LEADERBOARD: 1,
+    ACTIVE_CHECK_INTERVAL: 60000,
 };
 

@@ -26,46 +26,71 @@ export async function checkAuth(options = { forceRefresh: false }) {
         currentSession = session;
         const userId = session.user.id;
 
-        // 1. Try to get profile from cache
-        let profile = options.forceRefresh ? null : getCache(`profile_${userId}`);
+        // 1. Try Cache First for Instant UI
+        let profile = getCache(`profile_${userId}`);
 
-        // 2. Fallback to database
-        // BUG FIX: If profile is in cache but invalid (inactive or expired), 
-        // force a fresh check to handle instant activation/renewal.
-        const now = new Date();
-        const isCacheExpired = profile?.subscription_ends_at && new Date(profile.subscription_ends_at) < now;
-        const shouldRefresh = !profile || !profile.is_active || isCacheExpired;
-
-        if (shouldRefresh) {
-            const { data: fetchedProfile, error: profileError } = await supabase.from('profiles')
-                .select('*')
-                .eq('id', userId)
-                .single();
-
-            if (profileError) {
-                console.error("Profile fetch error:", profileError);
-                // If profile missing but auth exists, something is wrong
-                if (profileError.code === 'PGRST116') {
-                    // No profile record yet - usually new registration
-                }
-            }
-            profile = fetchedProfile;
-            if (profile) setCache(`profile_${userId}`, profile, APP_CONFIG.CACHE_TIME_PROFILE);
+        // 2. Background Revalidation OR Initial Fetch
+        if (!profile || options.forceRefresh) {
+            profile = await refreshUserProfile(userId);
+        } else {
+            // Revalidate in background without blocking
+            refreshUserProfile(userId);
         }
 
         currentProfile = profile;
-
-        // 3. Security & Access Control
         handleAccessControl(profile);
-
-        // 4. Presence Update (Throttled)
         updateUserPresence(userId);
+
+        // 3. SECURE REALTIME SYNC (The "Senior" way)
+        initRealtimeSync(userId);
 
         return { user: session.user, profile };
     } catch (err) {
         console.error("Auth Exception:", err);
         return null;
     }
+}
+
+/**
+ * Single Source of Truth: Realtime Subscription
+ */
+let profileSubscription = null;
+function initRealtimeSync(userId) {
+    if (profileSubscription) return; // Already subscribed
+
+    console.log(`[Sync] Initializing Realtime for ${userId}`);
+
+    profileSubscription = supabase
+        .channel(`public:profiles:id=eq.${userId}`)
+        .on('postgres_changes', {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'profiles',
+            filter: `id=eq.${userId}`
+        }, (payload) => {
+            console.log('[Sync] Profile change detected!', payload.new);
+            const newProfile = payload.new;
+
+            // Central Update: Update Cache + Dispatch Event
+            setCache(`profile_${userId}`, newProfile, APP_CONFIG.CACHE_TIME_PROFILE);
+            window.dispatchEvent(new CustomEvent('profileUpdated', { detail: newProfile }));
+        })
+        .subscribe();
+}
+
+/**
+ * Centrally refreshes and caches user profile
+ */
+export async function refreshUserProfile(userId) {
+    const { data: profile, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
+    if (error) return null;
+
+    setCache(`profile_${userId}`, profile, APP_CONFIG.CACHE_TIME_PROFILE);
+
+    // Trigger Global Event for UI updates
+    window.dispatchEvent(new CustomEvent('profileUpdated', { detail: profile }));
+
+    return profile;
 }
 
 function handleUnauthorizedAccess() {
@@ -578,36 +603,18 @@ async function loadUserProfile() {
         if (!authData) return;
 
         const { user, profile } = authData;
-        const fullName = profile?.full_name || user.user_metadata?.full_name || "الطالب";
 
-        // Update UI elements that depend on the profile data
-        updateNameUI(fullName);
+        // Initial Render
+        updateDashboardUI(profile || user.user_metadata);
 
-        if (profile) {
-            // Update Points Stat Card
-            const pointsEl = document.getElementById('stats-points');
-            if (pointsEl) pointsEl.textContent = profile.points || 0;
+        // Listen for background updates from auth.js
+        window.addEventListener('profileUpdated', (e) => {
+            updateDashboardUI(e.detail);
+        });
 
-            const isAdmin = profile.role === 'admin';
-            const adminNavBtn = document.getElementById('adminNavBtn');
-            const bottomAdminBtn = document.getElementById('bottomAdminBtn');
-
-            if (isAdmin) {
-                if (adminNavBtn) adminNavBtn.style.display = 'block';
-                if (bottomAdminBtn) bottomAdminBtn.style.display = 'flex';
-            } else {
-                if (adminNavBtn) adminNavBtn.remove();
-                if (bottomAdminBtn) bottomAdminBtn.remove();
-            }
-        }
-
-        // Parallel Execution: Render UI components
-        const tasks = [
-            renderSubjects(profile || user.user_metadata),
-            loadUserDashboardData(user.id)
-        ];
-
-        await Promise.all(tasks);
+        // Parallel Execution for other components
+        renderSubjects(profile || user.user_metadata);
+        loadUserDashboardData(user.id);
 
     } catch (err) {
         console.error("Dashboard Load Error:", err);
@@ -622,48 +629,63 @@ async function loadUserProfile() {
     }
 }
 
+function updateDashboardUI(profile) {
+    if (!profile) return;
+
+    // 1. Name
+    const firstName = (profile.full_name || "الطالب").split(" ")[0];
+    const nameEl = document.getElementById("studentName");
+    if (nameEl) nameEl.textContent = firstName;
+
+    // 2. Points (Unified Source)
+    const pointsEl = document.getElementById('stats-points');
+    if (pointsEl) pointsEl.textContent = profile.points || 0;
+
+    // 3. Admin Access
+    const isAdmin = profile.role === 'admin';
+    const adminNavBtn = document.getElementById('adminNavBtn');
+    const bottomAdminBtn = document.getElementById('bottomAdminBtn');
+
+    if (isAdmin) {
+        if (adminNavBtn) adminNavBtn.style.display = 'block';
+        if (bottomAdminBtn) bottomAdminBtn.style.display = 'flex';
+    } else {
+        if (adminNavBtn) adminNavBtn.remove();
+        if (bottomAdminBtn) bottomAdminBtn.remove();
+    }
+}
+
 
 // fetchLeaderboard is now handled in leaderboard.html via direct script
 
 
 async function loadUserDashboardData(userId) {
     try {
-        // 1. Check Cache for Stats
-        let stats = getCache(`user_stats_${userId}`);
+        const cacheKey = `user_stats_${userId}`;
+        const cachedStats = getCache(cacheKey);
 
-        if (!stats) {
-            // Call RPC for heavy calculations
-            const { data: rpcData, error: rpcError } = await supabase.rpc('get_user_stats_v2', { p_user_id: userId });
+        // 1. Show Cache for Instant UI
+        if (cachedStats) {
+            renderStatsUI(cachedStats);
+        }
 
-            if (rpcError) throw rpcError;
-            stats = rpcData[0];
+        // 2. Background Revalidation
+        const { data: rpcData, error } = await supabase.rpc('get_user_stats_v2', { p_user_id: userId });
+        if (error) throw error;
 
-            if (stats) {
-                setCache(`user_stats_${userId}`, stats, APP_CONFIG.CACHE_TIME_STATS); // Cache for 6 hours
+        const freshStats = rpcData[0];
+        if (freshStats) {
+            // 3. Update UI only if data is different
+            if (!cachedStats || JSON.stringify(cachedStats) !== JSON.stringify(freshStats)) {
+                renderStatsUI(freshStats);
+                setCache(cacheKey, freshStats, APP_CONFIG.CACHE_TIME_STATS);
             }
         }
+    } catch (err) {
+        console.error("Dashboard Stats Error:", err);
+    }
 
-        // --- 1. Update Stats UI ---
-        const qEl = document.getElementById('stats-questions');
-        const eEl = document.getElementById('stats-exams');
-        const aEl = document.getElementById('stats-accuracy');
-        const pointsEl = document.getElementById('stats-points');
-
-        if (stats) {
-            const accuracy = stats.total_possible_questions > 0
-                ? Math.round((stats.total_solved_questions / stats.total_possible_questions) * 100)
-                : 0;
-
-            if (qEl) qEl.textContent = stats.total_solved_questions || 0;
-            if (eEl) eEl.textContent = stats.total_exams || 0;
-            if (aEl) aEl.textContent = `%${accuracy}`;
-            if (pointsEl) pointsEl.textContent = stats.user_points || 0;
-
-            // Update Results Stats Section
-            renderResultsStats(stats.total_exams, Math.round(stats.avg_percentage), Math.round(stats.best_percentage));
-        }
-
-        // --- 2. Recent Results (Keep this for UI display, but no calculations here) ---
+    try {
         const { data: recentResults, error: historyError } = await supabase
             .from('results')
             .select(`
@@ -698,11 +720,28 @@ async function loadUserDashboardData(userId) {
 
             renderResultsList(examGroups, recentResults);
         }
-
     } catch (err) {
-        console.error("Dashboard Data Error:", err);
+        console.error("Dashboard History Error:", err);
     }
 }
+
+function renderStatsUI(stats) {
+    const qEl = document.getElementById('stats-questions');
+    const eEl = document.getElementById('stats-exams');
+    const aEl = document.getElementById('stats-accuracy');
+
+    const accuracy = stats.total_possible_questions > 0
+        ? Math.round((stats.total_solved_questions / stats.total_possible_questions) * 100)
+        : 0;
+
+    if (qEl) qEl.textContent = stats.total_solved_questions || 0;
+    if (eEl) eEl.textContent = stats.total_exams || 0;
+    if (aEl) aEl.textContent = `%${accuracy}`;
+
+    // Also update bottom summary cards
+    renderResultsStats(stats.total_exams, Math.round(stats.avg_percentage), Math.round(stats.best_percentage));
+}
+
 
 // Helper to keep UI update logic DRY
 function updateNameUI(name) {

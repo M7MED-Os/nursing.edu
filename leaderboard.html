@@ -398,14 +398,20 @@
 
         // Init
         document.addEventListener('DOMContentLoaded', async () => {
-            const authData = await checkAuth();
-            if (authData) {
-                currentUserInfo = authData.profile;
+            const auth = await checkAuth();
+            if (auth) {
+                currentUserInfo = auth.profile;
 
-                // Fetch settings first
+                // Sync UI on point changes
+                window.addEventListener('profileUpdated', (e) => {
+                    currentUserInfo = e.detail;
+                    if (currentView === 'students') loadLeaderboardData();
+                });
+
+                // Fetch settings
                 settings = await getLeaderboardSettings();
 
-                // Default filter: User's stream (if year 3/4), else 'all'
+                // Default filter: User's stream
                 if ((currentUserInfo.grade === '3' || currentUserInfo.grade === '4') && currentUserInfo.stream) {
                     currentFilterStream = currentUserInfo.stream;
                 } else {
@@ -415,14 +421,11 @@
                 setupFilters();
                 await loadLeaderboardData();
 
-                // 4. Setup Auto Refresh Interval
-                const intervalMs = (settings.refresh_interval || 10) * 60000;
+                // Auto Refresh Interval
                 setInterval(() => {
-                    console.log("Auto-refreshing leaderboard data...");
-                    // Force skip cache on auto-refresh for fresh data
                     if (currentView === 'students') loadLeaderboardData(true);
                     else loadSquadLeaderboardData(true);
-                }, intervalMs);
+                }, (settings.refresh_interval || 10) * 60000);
             }
 
             const loadingGlobal = document.getElementById('loading');
