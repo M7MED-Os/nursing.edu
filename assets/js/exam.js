@@ -55,6 +55,12 @@ async function initExam() {
         const cacheKey = `exam_cache_${examId}`;
         const cachedData = sessionStorage.getItem(cacheKey);
 
+        // Restore answers from local storage to keep progress on refresh (Moved here for robust persistence)
+        const savedAnswers = localStorage.getItem(`exam_progress_${examId}`);
+        if (savedAnswers) {
+            userAnswers = JSON.parse(savedAnswers);
+        }
+
         if (cachedData) {
             const parsed = JSON.parse(cachedData);
             const cacheAge = Date.now() - (parsed.timestamp || 0);
@@ -64,13 +70,6 @@ async function initExam() {
                 currentQuestions = parsed.questions;
                 examTitle = parsed.title;
                 hierarchyInfo = parsed.hierarchy;
-
-                // Restore answers from local storage to keep progress on refresh
-                const savedAnswers = localStorage.getItem(`exam_progress_${examId}`);
-                if (savedAnswers) {
-                    userAnswers = JSON.parse(savedAnswers);
-                }
-
                 console.log("Exam loaded from cache");
             } else {
                 console.log("Exam cache expired, fetching fresh data");
@@ -136,6 +135,23 @@ async function initExam() {
         if (squadId) {
             const badge = document.getElementById('squadModeBadge');
             if (badge) badge.style.display = 'block';
+        }
+
+        // 3. Squad Grace Period Check
+        if (challengeId) {
+            const { data: chall } = await supabase.from('squad_exam_challenges').select('created_at, status').eq('id', challengeId).single();
+            if (chall) {
+                const startTime = new Date(chall.created_at).getTime();
+                const totalWindow = 60 * 60 * 1000 + (45 * 60 * 1000); // 1h join + 45m grace
+                if (Date.now() > (startTime + totalWindow) && chall.status !== 'completed') {
+                    Swal.fire({
+                        title: 'عفواً، انتهى وقت التحدي!',
+                        text: 'التحدي ده خلص بالوقت الإضافي بتاعه، تقدر تحل الامتحان عادي لكن نقطك مش هتنضاف للشلة.',
+                        icon: 'info'
+                    });
+                    challengeId = null; // Decouple from challenge
+                }
+            }
         }
 
         loadingEl.style.display = "none";
@@ -420,6 +436,18 @@ async function calculateResult() {
         // 1. Get User
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error("User not authenticated");
+
+        // 1.5. Final Grace Period Safety Check
+        if (challengeId) {
+            const { data: chall } = await supabase.from('squad_exam_challenges').select('created_at, status').eq('id', challengeId).single();
+            if (chall) {
+                const startTime = new Date(chall.created_at).getTime();
+                const totalWindow = (60 + 45) * 60 * 1000;
+                if (Date.now() > (startTime + totalWindow) && chall.status !== 'completed') {
+                    challengeId = null; // Submit as normal exam, not challenge
+                }
+            }
+        }
 
         // 2. Submit Result via New Complex RPC
         const { data: resultData, error: rpcError } = await supabase.rpc('submit_exam_complex', {

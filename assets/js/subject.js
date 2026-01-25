@@ -353,6 +353,30 @@ window.selectSquadExam = async (examId, examTitle, squadId) => {
         // 1. Get User
         const { data: { user } } = await supabase.auth.getUser();
 
+        // 2. Check if already solved by the squad
+        const { data: completedChallenges } = await supabase
+            .from('squad_exam_challenges')
+            .select('id')
+            .eq('squad_id', squadId)
+            .eq('exam_id', examId)
+            .eq('status', 'completed')
+            .limit(1);
+
+        if (completedChallenges && completedChallenges.length > 0) {
+            const { isConfirmed: proceedAnyway } = await Swal.fire({
+                title: 'تنبيه !',
+                text: 'انتو حليتو الامتحان ده مع بعض قبل كده النقط مش هتتحسب تاني.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'عارف ابدأ',
+                cancelButtonText: 'لا خلاص',
+                confirmButtonColor: '#10b981',
+                cancelButtonColor: '#64748b'
+            });
+
+            if (!proceedAnyway) return;
+        }
+
         // 2. Create Challenge (New System)
         const expiresAt = new Date(Date.now() + (60 * 60 * 1000)).toISOString(); // 1 Hour
         const { data: challenge, error: challError } = await supabase

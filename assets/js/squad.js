@@ -708,8 +708,10 @@ function renderMessageContent(m, myId) {
         const isCompleted = challengeData?.status === 'completed' || challengeData?.squad_points_awarded > 0;
 
         const msgAt = new Date(m.created_at);
-        const expiresAt = msgAt.getTime() + (60 * 60 * 1000); // 1 Hour limit
+        const expiresAt = msgAt.getTime() + (60 * 60 * 1000); // 1 Hour joining window
+        const gracePeriod = expiresAt + (45 * 60 * 1000); // EXTRA 45 mins for those who entered to finish
         const isExpired = Date.now() > expiresAt;
+        const isGraceEnded = Date.now() > gracePeriod;
 
         const hasSessionResult = resultsForThisExam.some(r => new Date(r.created_at) > msgAt);
         const hasOldResult = resultsForThisExam.length > 0;
@@ -727,7 +729,7 @@ function renderMessageContent(m, myId) {
             'fresh': { text: 'خش دلوقتي 🚀', class: 'btn-primary', onclick: `window.joinSquadExamMessenger(event, '${examId}', '${currentSquad.id}', 'fresh', ${expiresAt}, '${challengeId}')`, notice: '' },
             'help': { text: 'خش ساعد 🤝', class: 'btn-secondary', onclick: `window.joinSquadExamMessenger(event, '${examId}', '${currentSquad.id}', 'help', ${expiresAt}, '${challengeId}')`, notice: '<div style="font-size: 0.7rem; color: #64748b; margin-top: 6px; text-align: center;">مش هتاخد النقط كامله هتاخد البونص بس</div>' },
             'completed': { text: 'انت حليت الامتحان ✅', class: 'btn-outline', onclick: 'void(0)', disabled: true, notice: '' },
-            'expired': { text: 'انتهى وقت التحدي ⏱️', class: 'btn-outline', onclick: 'void(0)', disabled: true, notice: '<div style="font-size: 0.7rem; color: #ef4444; margin-top: 6px; text-align: center;">الجلسة خلصت (مدتها ساعة)</div>' }
+            'expired': { text: 'انتهى وقت الانضمام ⏱️', class: 'btn-outline', onclick: 'void(0)', disabled: true, notice: '<div style="font-size: 0.7rem; color: #ef4444; margin-top: 6px; text-align: center;">الجلسة بدأت من أكتر من ساعة.</div>' }
         };
 
         const config = btnConfigs[btnState];
@@ -743,12 +745,14 @@ function renderMessageContent(m, myId) {
             </div>` : '';
 
         let countdownHtml = '';
-        if (isExpired) {
-            countdownHtml = `<div style="font-size:0.75rem; color:#ef4444; margin-bottom:8px; font-weight:700;"><i class="fas fa-hourglass-end"></i> انتهى الوقت</div>`;
+        if (isGraceEnded) {
+            countdownHtml = `<div style="font-size:0.75rem; color:#ef4444; margin-bottom:8px; font-weight:700;"><i class="fas fa-hourglass-end"></i> انتهى التحدي بالكامل</div>`;
+        } else if (isExpired) {
+            countdownHtml = `<div style="font-size:0.75rem; color:#ef4444; margin-bottom:8px; font-weight:700;"><i class="fas fa-user-clock"></i> باب الانضمام قفل - متاح فقط للي جوه يخلصوا</div>`;
         } else if (!isCompleted) {
             countdownHtml = `
                 <div id="countdown-${m.id}" style="font-size:0.75rem; color:#f59e0b; margin-bottom:8px; font-weight:700;">
-                    <i class="fas fa-clock"></i> ينتهي التحدي خلال: <span class="timer-val">..:..</span>
+                    <i class="fas fa-clock"></i> ينتهي الانضمام خلال: <span class="timer-val">..:..</span>
                 </div>`;
         }
 
@@ -786,13 +790,22 @@ function startExamCardTimer(msgId, expiresAt, challengeId) {
         const diff = expiresAt - Date.now();
         if (diff <= 0) {
             clearInterval(examTimers[msgId]);
-            if (challengeId) supabase.rpc('finalize_squad_challenge', { p_challenge_id: challengeId });
 
-            el.innerHTML = '<span style="color:#ef4444;">انتهى الوقت</span>';
+            // Note: The actual points calculation happened in the background via RPC if everyone finished.
+            // If they didn't, we wait for a "Grace Period" (extra 45 mins) before sending failure alert.
+            const gracePeriod = expiresAt + (45 * 60 * 1000);
+            const graceTimer = setInterval(() => {
+                if (Date.now() > gracePeriod) {
+                    clearInterval(graceTimer);
+                    if (challengeId) supabase.rpc('finalize_squad_challenge', { p_challenge_id: challengeId });
+                }
+            }, 10000);
+
+            el.innerHTML = '<span style="color:#ef4444;">قفل باب الانضمام 🚪</span>';
             const btn = document.getElementById(`btn-exam-${msgId}`);
             if (btn) {
                 btn.disabled = true;
-                btn.textContent = 'انتهى التحدي ⏱️';
+                btn.textContent = 'انتهى وقت الانضمام ⏱️';
                 btn.className = 'btn btn-outline';
             }
             return;
@@ -1230,9 +1243,14 @@ function restoreCooldowns() {
 window.joinSquadExamMessenger = async (event, examId, squadId, state = 'fresh', expiresAt, challengeId) => {
     if (event) event.stopPropagation();
 
-    // Safety check for expiration
+    // STRICT Joining Window Enforcement
     if (expiresAt && Date.now() > expiresAt) {
-        Swal.fire('انتهى الوقت!', 'معلش الوقت خلص، الجلسة دي كانت مدتها ساعة بس.', 'error');
+        Swal.fire({
+            title: 'انتهى وقت الانضمام ⏱️',
+            text: 'معلش باب الانضمام قفل من شوية، كان قدامكم ساعة واحدة بس من بداية التحدي.',
+            icon: 'warning',
+            confirmButtonText: 'ماشي'
+        });
         return;
     }
 
