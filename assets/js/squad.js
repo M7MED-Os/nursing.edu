@@ -666,19 +666,18 @@ function renderMessageContent(m, myId) {
         const textPart = m.text.split('[')[0].trim();
 
         // Find if user solved this exam
-        const result = userResults.find(r => r.exam_id === examId);
-        const solvedAt = result ? new Date(result.created_at) : null;
+        const resultsForThisExam = userResults.filter(r => r.exam_id === examId);
         const msgAt = new Date(m.created_at);
+        const hasSessionResult = resultsForThisExam.some(r => new Date(r.created_at) > msgAt);
+        const hasOldResult = resultsForThisExam.length > 0;
 
         let btnState = 'fresh'; // Default
-        if (result) {
-            if (solvedAt > msgAt) {
-                // Solved AFTER message (part of this session)
-                btnState = 'completed';
-            } else {
-                // Solved BEFORE message (old result)
-                btnState = 'help';
-            }
+        if (hasSessionResult) {
+            // Solved AFTER message (part of this session)
+            btnState = 'completed';
+        } else if (hasOldResult) {
+            // Solved BEFORE message (old result)
+            btnState = 'help';
         }
 
         const btnConfigs = {
@@ -938,7 +937,7 @@ window.startSharedExam = async () => {
 
         // 3. Show transitional popup
         await Swal.fire({
-            title: 'لحظة واحدة... 🔄',
+            title: 'لحظة واحدة...',
             text: 'هيتم تحويلك لصفحة المادة عشان تختار الامتحان اللي عاوزه.',
             icon: 'info',
             timer: 2000,
