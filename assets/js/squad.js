@@ -1,5 +1,5 @@
 import { supabase } from "./supabaseClient.js";
-import { getCache, setCache } from "./utils.js";
+import { getCache, setCache, getSWR } from "./utils.js";
 
 // State
 let readQueue = [];

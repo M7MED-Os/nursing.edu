@@ -1,4 +1,4 @@
-const CACHE_NAME = 'nursing-edu-v3'; // Bumping to force cache clear
+const CACHE_NAME = 'nursing-edu-v4'; // Added missing JS files
 const STATIC_ASSETS = [
     './',
     './index.html',
@@ -11,6 +11,11 @@ const STATIC_ASSETS = [
     './assets/css/style.css',
     './assets/js/main.js',
     './assets/js/auth.js',
+    './assets/js/squad.js',
+    './assets/js/dashboard.js',
+    './assets/js/subject.js',
+    './assets/js/profile.js',
+    './assets/js/exam.js',
     './assets/js/supabaseClient.js',
     './assets/js/utils.js',
     './assets/js/constants.js',
