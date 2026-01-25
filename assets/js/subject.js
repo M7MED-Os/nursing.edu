@@ -3,6 +3,8 @@ import { supabase } from "./supabaseClient.js";
 // Utility to get Query Params
 const urlParams = new URLSearchParams(window.location.search);
 const subjectId = urlParams.get('id');
+const mode = urlParams.get('mode');
+const squadIdInUrl = urlParams.get('squad_id');
 
 async function loadSubjectContent() {
     const titleEl = document.getElementById("subjectTitle");
@@ -65,7 +67,7 @@ async function loadSubjectContent() {
         if (lError || eError) throw new Error("Partial Load Error");
 
         loadingEl.style.display = "none";
-        renderContent(chapters, lessons, exams, gridEl);
+        renderContent(chapters, lessons, exams, gridEl, mode, squadIdInUrl);
 
     } catch (err) {
         console.error("Error loading content:", err);
@@ -73,7 +75,7 @@ async function loadSubjectContent() {
     }
 }
 
-function renderContent(chapters, lessons, exams, container) {
+function renderContent(chapters, lessons, exams, container, mode, squadId) {
     container.innerHTML = "";
     container.className = ""; // Remove grid class for accordion layout
 
@@ -221,10 +223,21 @@ function renderContent(chapters, lessons, exams, container) {
 
                 if (lessonExams.length > 0) {
                     lessonExams.forEach((exam, idx) => {
-                        examsHtml += `
-                            <a href="exam.html?id=${exam.id}" class="exam-btn-sm">
-                                <i class="fas fa-pen"></i> ${exam.title || `نموذج أسئلة ${idx + 1}`}
-                            </a>`;
+                        const isSquadMode = mode === 'squad';
+                        const iconClass = isSquadMode ? 'fa-users' : 'fa-pen';
+                        const examTitle = exam.title || `نموذج أسئلة ${idx + 1}`;
+
+                        if (isSquadMode) {
+                            examsHtml += `
+                                <a href="javascript:void(0)" onclick="selectSquadExam('${exam.id}', '${examTitle}', '${squadId}')" class="exam-btn-sm">
+                                    <i class="fas ${iconClass}"></i> ${examTitle}
+                                </a>`;
+                        } else {
+                            examsHtml += `
+                                <a href="exam.html?id=${exam.id}" class="exam-btn-sm">
+                                    <i class="fas ${iconClass}"></i> ${examTitle}
+                                </a>`;
+                        }
                     });
                 } else {
                     examsHtml = `<span style="font-size:0.8rem; color:#999;">لا توجد اسئلة حالياً</span>`;
@@ -260,10 +273,21 @@ function renderContent(chapters, lessons, exams, container) {
                 <div class="exam-buttons">`;
 
             chapterExams.forEach(exam => {
-                chapterExamsHtml += `
-                    <a href="exam.html?id=${exam.id}" class="exam-btn-sm" style="background: var(--bg-light); border-color: var(--text-light); color: var(--text-dark);">
-                        <i class="fas fa-star"></i> ${exam.title}
-                    </a>`;
+                const isSquadMode = mode === 'squad';
+                const iconClass = isSquadMode ? 'fa-users' : 'fa-star';
+                const examTitle = exam.title;
+
+                if (isSquadMode) {
+                    chapterExamsHtml += `
+                        <a href="javascript:void(0)" onclick="selectSquadExam('${exam.id}', '${examTitle}', '${squadId}')" class="exam-btn-sm" style="background: var(--bg-light); border-color: var(--text-light); color: var(--text-dark);">
+                            <i class="fas ${iconClass}"></i> ${examTitle}
+                        </a>`;
+                } else {
+                    chapterExamsHtml += `
+                        <a href="exam.html?id=${exam.id}" class="exam-btn-sm" style="background: var(--bg-light); border-color: var(--text-light); color: var(--text-dark);">
+                            <i class="fas ${iconClass}"></i> ${examTitle}
+                        </a>`;
+                }
             });
 
             chapterExamsHtml += `</div></div>`;
@@ -288,6 +312,67 @@ function renderContent(chapters, lessons, exams, container) {
         container.appendChild(div);
     });
 }
+
+// Squad Exam Selection System
+window.selectSquadExam = async (examId, examTitle, squadId) => {
+    try {
+        const { isConfirmed } = await Swal.fire({
+            title: 'عاوز تبدأ الامتحان ده مع صحابك؟',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'آيوة، يلا بينا!',
+            cancelButtonText: 'إلغاء',
+            confirmButtonColor: '#10b981'
+        });
+
+        if (!isConfirmed) return;
+
+        Swal.fire({
+            title: 'جاري البدء...',
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        // 1. Get User
+        const { data: { user } } = await supabase.auth.getUser();
+
+        // 2. Create Session
+        const { data: session, error: sessError } = await supabase
+            .from('squad_exam_sessions')
+            .insert({
+                squad_id: squadId,
+                exam_id: examId,
+                status: 'active'
+            })
+            .select()
+            .single();
+
+        if (sessError) throw sessError;
+
+        // 3. Notify in chat
+        await supabase.from('squad_chat_messages').insert({
+            squad_id: squadId,
+            sender_id: user.id,
+            text: `🎯 أطلق تحدي جماعي جديد في امتحان: [${examTitle}]! يلا ادخلوا وحلوا سوا.`
+        });
+
+        // 4. Success & Redirect
+        await Swal.fire({
+            icon: 'success',
+            title: 'تم إطلاق التحدي! 🚀',
+            text: 'أصحابك في الشلة هيوصلهم إشعار دلوقتي في الشات.',
+            timer: 2000,
+            showConfirmButton: false
+        });
+
+        window.location.href = 'squad.html';
+
+    } catch (err) {
+        console.error(err);
+        Swal.fire('خطأ', 'مقدرناش نبدأ التحدي.. جرب تاني', 'error');
+    }
+};
 
 // Load Subject-Specific Results
 async function loadSubjectResults() {

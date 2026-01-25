@@ -829,63 +829,76 @@ document.getElementById('startPomodoroBtn').onclick = startPomodoroFlow;
 // --- Collaborative Exams ---
 window.startSharedExam = async () => {
     try {
-        // 1. Fetch Subjects
-        const { data: subjects } = await supabase.from('subjects').select('*');
+        if (!currentProfile) {
+            Swal.fire('خطأ', 'لم يتم تحميل بيانات البروفايل بعد.', 'error');
+            return;
+        }
+
+        const grade = currentProfile.grade;
+        const term = currentProfile.term;
+        const stream = currentProfile.stream;
+
+        if (!grade || !term) {
+            Swal.fire('تنبيه', 'يرجى تحديث بياناتك الدراسية من البروفايل أولاً.', 'warning');
+            return;
+        }
+
+        // 1. Fetch Subjects for this grade
+        const { data: allSubjects, error } = await supabase
+            .from('subjects')
+            .select('*')
+            .eq('is_active', true)
+            .eq('grade', grade)
+            .order('order_index');
+
+        if (error) throw error;
+
+        // 2. Filter subjects (same logic as dashboard)
+        const mySubjects = allSubjects.filter(s => {
+            // Shared Subjects: Same Term & No Stream
+            const isShared = s.term === term && (!s.stream || s.stream === '');
+            // Department Subjects: Same Stream & (Same Term OR No Term)
+            const isDept = stream && s.stream === stream && (!s.term || s.term === term);
+
+            return isShared || isDept;
+        });
+
+        if (mySubjects.length === 0) {
+            Swal.fire('تنبيه', 'لا توجد مواد متاحة لسنتم الدراسية حالياً.', 'info');
+            return;
+        }
 
         const { value: subjId } = await Swal.fire({
             title: 'اختار المادة 📚',
             input: 'select',
-            inputOptions: Object.fromEntries(subjects.map(s => [s.id, s.title])),
+            inputOptions: Object.fromEntries(mySubjects.map(s => [s.id, s.name_ar || s.title])),
             inputPlaceholder: 'اختار المادة...',
-            showCancelButton: true
+            showCancelButton: true,
+            confirmButtonText: 'التالي',
+            cancelButtonText: 'إلغاء'
         });
 
         if (!subjId) return;
 
-        // 2. Fetch Exams for this Subject
-        const { data: exams } = await supabase.from('exams').select('*').eq('subject_id', subjId);
-
-        if (!exams || exams.length === 0) {
-            Swal.fire('تنبيه', 'المادة دي مفيش فيها امتحانات لسة.', 'info');
-            return;
-        }
-
-        const { value: examId } = await Swal.fire({
-            title: 'اختار الامتحان 📝',
-            input: 'select',
-            inputOptions: Object.fromEntries(exams.map(e => [e.id, e.title])),
-            inputPlaceholder: 'اختار الامتحان...',
-            showCancelButton: true
+        // 3. Show transitional popup
+        await Swal.fire({
+            title: 'لحظة واحدة... 🔄',
+            text: 'هيتم تحويلك لصفحة المادة عشان تختار الامتحان اللي عاوزه.',
+            icon: 'info',
+            timer: 2000,
+            showConfirmButton: false,
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
         });
 
-        if (!examId) return;
-
-        // 3. Create Session
-        const { data: session } = await supabase
-            .from('squad_exam_sessions')
-            .insert({
-                squad_id: currentSquad.id,
-                exam_id: examId,
-                status: 'active'
-            })
-            .select()
-            .single();
-
-
-        // 4. Notify in chat with a link
-        const examName = exams.find(e => e.id == examId).title;
-        await supabase.from('squad_chat_messages').insert({
-            squad_id: currentSquad.id,
-            sender_id: currentProfile.id,
-            text: `🎯 أطلق تحدي جماعي جديد في امتحان: [${examName}]! يلا ادخلوا وحلوا سوا.`
-        });
-
-        // 5. Redirect starter
-        window.location.href = `exam.html?id=${examId}&squad_id=${currentSquad.id}`;
+        // 4. Redirect to subject.html in squad mode
+        window.location.href = `subject.html?id=${subjId}&mode=squad&squad_id=${currentSquad.id}`;
 
     } catch (err) {
         console.error(err);
-        Swal.fire('خطأ', 'فشل في بدء التحدي الجماعي.', 'error');
+        Swal.fire('خطأ', 'فشل في تحميل المواد الدراسية.', 'error');
     }
 };
 
