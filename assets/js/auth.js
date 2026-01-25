@@ -58,7 +58,7 @@ let profileSubscription = null;
 function initRealtimeSync(userId) {
     if (profileSubscription) return; // Already subscribed
 
-    console.log(`[Sync] Initializing Realtime for ${userId}`);
+
 
     profileSubscription = supabase
         .channel(`public:profiles:id=eq.${userId}`)
@@ -68,7 +68,7 @@ function initRealtimeSync(userId) {
             table: 'profiles',
             filter: `id=eq.${userId}`
         }, (payload) => {
-            console.log('[Sync] Profile change detected!', payload.new);
+
             const newProfile = payload.new;
 
             // Central Update: Update Cache + Dispatch Event
