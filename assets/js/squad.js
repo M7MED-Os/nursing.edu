@@ -1258,7 +1258,7 @@ window.joinSquadExamMessenger = async (event, examId, squadId, state = 'fresh', 
 // --- Rules Info Modal ---
 window.showSquadRules = () => {
     Swal.fire({
-        title: 'دليل النقط والتحديات 💡',
+        title: '💡ازاي النقط بتتحسب؟',
         html: `
             <div style="text-align: right; direction: rtl; font-size: 0.9rem; line-height: 1.6; color: #334155;">
                 
@@ -1297,8 +1297,7 @@ window.showSquadRules = () => {
         `,
         confirmButtonText: 'فهمت الدنيا، يلا بينا! 🚀',
         confirmButtonColor: 'var(--primary-color)',
-        width: '95%',
-        maxWidth: '450px',
+        width: '450px',
         padding: '1.25rem'
     });
 };
