@@ -575,11 +575,11 @@ async function calculateResult() {
         if (squadId) {
             setTimeout(async () => {
                 const { isConfirmed } = await Swal.fire({
-                    title: 'مشارك النتيجة؟ 📊',
+                    title: 'قول لصحابك جبت كام',
                     text: 'تحب تشارك نتيجتك مع صحابك في الشلة؟',
                     icon: 'question',
                     showCancelButton: true,
-                    confirmButtonText: 'ماشي، شارك',
+                    confirmButtonText: 'ماشي',
                     cancelButtonText: 'لا، قول خلصت بس',
                     confirmButtonColor: '#10b981',
                     cancelButtonColor: '#64748b'
