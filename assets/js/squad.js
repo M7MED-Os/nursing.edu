@@ -596,23 +596,55 @@ async function loadChat() {
     Object.values(examTimers).forEach(t => clearInterval(t));
     examTimers = {};
 
-    // 2. Fetch user scores and active challenges status
-    const [{ data: results }, { data: challenges }] = await Promise.all([
-        supabase.from('results').select('exam_id, created_at').eq('user_id', currentProfile.id),
-        supabase.from('squad_exam_challenges').select('id, status, squad_points_awarded').eq('squad_id', currentSquad.id)
-    ]);
+    const box = document.getElementById('chatBox');
+    if (!box) return;
 
-    userResults = results || [];
-    window.currentChallenges = challenges || []; // Store for access during render
+    // --- ZERO LOADING LOGIC ---
+    const cacheKey = `squad_chat_data_${currentSquad.id}`;
+    const cachedData = getCache(cacheKey);
 
-    const { data: msgs } = await supabase
-        .from('squad_chat_messages')
-        .select('*, profiles!sender_id(full_name)')
-        .eq('squad_id', currentSquad.id)
-        .order('created_at', { ascending: false })
-        .limit(50);
+    // 2. Show Instant UI from Cache
+    if (cachedData) {
+        userResults = cachedData.results || [];
+        window.currentChallenges = cachedData.challenges || [];
+        renderChat(cachedData.msgs);
+    } else {
+        renderChatSkeletons(box);
+    }
 
-    if (msgs) renderChat(msgs.reverse());
+    // 3. Background Revalidation
+    try {
+        const [{ data: results }, { data: challenges }, { data: msgs }] = await Promise.all([
+            supabase.from('results').select('exam_id, created_at').eq('user_id', currentProfile.id),
+            supabase.from('squad_exam_challenges').select('id, status, squad_points_awarded').eq('squad_id', currentSquad.id),
+            supabase.from('squad_chat_messages').select('*, profiles!sender_id(full_name)').eq('squad_id', currentSquad.id).order('created_at', { ascending: false }).limit(50)
+        ]);
+
+        const freshMsgs = (msgs || []).reverse();
+        userResults = results || [];
+        window.currentChallenges = challenges || [];
+
+        const freshData = { results: userResults, challenges: window.currentChallenges, msgs: freshMsgs };
+
+        // 4. Update UI only if changed or no cache
+        if (!cachedData || JSON.stringify(cachedData.msgs) !== JSON.stringify(freshMsgs)) {
+            renderChat(freshMsgs);
+            setCache(cacheKey, freshData, 15); // Cache for 15 minutes
+        }
+    } catch (err) {
+        console.error("Chat Refresh Error:", err);
+    }
+}
+
+function renderChatSkeletons(box) {
+    box.innerHTML = `
+        <div style="display:flex; flex-direction:column; gap:12px; width:100%;">
+            <div class="skeleton pulse" style="width:70%; height:40px; border-radius:12px; border-top-left-radius:2px; align-self:flex-start;"></div>
+            <div class="skeleton pulse" style="width:50%; height:40px; border-radius:12px; border-top-right-radius:2px; align-self:flex-end;"></div>
+            <div class="skeleton pulse" style="width:60%; height:60px; border-radius:12px; border-top-left-radius:2px; align-self:flex-start;"></div>
+            <div class="skeleton pulse" style="width:40%; height:40px; border-radius:12px; border-top-right-radius:2px; align-self:flex-end;"></div>
+        </div>
+    `;
 }
 
 async function renderChat(msgs) {

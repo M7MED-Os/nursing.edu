@@ -1694,3 +1694,66 @@ div:where(.swal2-container) button.swal2-styled:hover {
 .btn-modal.cancel:hover {
   background: #e2e8f0;
 }
+
+/* --- Skeleton Loading (Premium Feel) --- */
+.skeleton {
+  background-color: #e2e8f0;
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+}
+
+.skeleton::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.4) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  animation: skeleton-shimmer 1.5s infinite;
+}
+
+@keyframes skeleton-shimmer {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
+}
+
+.skeleton-chapter {
+  height: 80px;
+  width: 100%;
+  margin-bottom: 1rem;
+  border-radius: var(--radius-md);
+}
+
+.skeleton-lesson {
+  height: 40px;
+  width: 90%;
+  margin: 10px auto;
+}
+
+.skeleton-text {
+  height: 12px;
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.skeleton-btn {
+  height: 35px;
+  width: 100px;
+  border-radius: 20px;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}

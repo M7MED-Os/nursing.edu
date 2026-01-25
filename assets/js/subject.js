@@ -1,4 +1,5 @@
 import { supabase } from "./supabaseClient.js";
+import { getCache, setCache, clearCache } from "./utils.js";
 
 // Utility to get Query Params
 const urlParams = new URLSearchParams(window.location.search);
@@ -17,71 +18,77 @@ async function loadSubjectContent() {
         return;
     }
 
+    // --- ZERO LOADING LOGIC ---
+    const cacheKey = `subject_data_${subjectId}`;
+    const cachedData = getCache(cacheKey);
+
+    // 1. Show Instant UI from Cache
+    if (cachedData) {
+        if (cachedData.subject) titleEl.textContent = cachedData.subject.name_ar;
+        renderContent(cachedData.chapters, cachedData.lessons, cachedData.exams, gridEl, mode, squadIdInUrl, cachedData.solvedExams || []);
+        loadingEl.style.display = "none";
+    } else {
+        renderSkeletons(gridEl);
+    }
+
+    // 2. Background Revalidation (Fetch Fresh Data)
     try {
-        // 0. Fetch Subject Details (Name, etc.)
-        const { data: subject, error: subError } = await supabase
-            .from('subjects')
-            .select('name_ar')
-            .eq('id', subjectId)
-            .single();
+        const freshData = await fetchSubjectFreshData();
 
-        if (subError) {
-            console.error("Subject fetch error:", subError);
-            titleEl.textContent = "مادة غير معروفة";
-        } else {
-            titleEl.textContent = subject.name_ar;
+        // 3. Smart Update: Only re-render if data is different or no cache
+        if (!cachedData || isDataDifferent(cachedData, freshData)) {
+            if (freshData.subject) titleEl.textContent = freshData.subject.name_ar;
+            renderContent(freshData.chapters, freshData.lessons, freshData.exams, gridEl, mode, squadIdInUrl, freshData.solvedExams);
+            setCache(cacheKey, freshData, 60); // Cache for 1 hour
         }
-
-        // 1. Fetch Chapters for this subject
-        const { data: chapters, error: chError } = await supabase
-            .from('chapters')
-            .select('*')
-            .eq('subject_id', subjectId)
-            .order('order_index', { ascending: true });
-
-        if (chError) throw chError;
-
-        if (!chapters || chapters.length === 0) {
-            loadingEl.style.display = "none";
-            noMsgEl.style.display = "block";
-            return;
-        }
-
-        // 2. Fetch Lessons & Exams for all chapters (Efficiently)
-        const chapterIds = chapters.map(c => c.id);
-
-        const { data: lessons, error: lError } = await supabase
-            .from('lessons')
-            .select('*')
-            .in('chapter_id', chapterIds)
-            .order('order_index', { ascending: true });
-
-        const { data: exams, error: eError } = await supabase
-            .from('exams')
-            .select('*')
-            .or(`chapter_id.in.(${chapterIds.join(',')}),lesson_id.in.(${lessons.length ? lessons.map(l => l.id).join(',') : 'uuid_nil()'})`)
-            .order('order_index', { ascending: true });
-
-        // 3. Fetch user's solved exams
-        const { data: { user } } = await supabase.auth.getUser();
-        let solvedExams = [];
-        if (user) {
-            const { data: results } = await supabase
-                .from('results')
-                .select('exam_id')
-                .eq('user_id', user.id);
-            solvedExams = (results || []).map(r => r.exam_id);
-        }
-
-        if (lError || eError) throw new Error("Partial Load Error");
 
         loadingEl.style.display = "none";
-        renderContent(chapters, lessons, exams, gridEl, mode, squadIdInUrl, solvedExams);
-
     } catch (err) {
-        console.error("Error loading content:", err);
-        loadingEl.innerHTML = `<p style="color: red;">حدث خطأ: ${err.message}</p>`;
+        console.error("Error loading fresh content:", err);
+        if (!cachedData) {
+            loadingEl.innerHTML = `<p style="color: red;">حدث خطأ في الاتصال. جرب تنعش الصفحة.</p>`;
+        }
     }
+}
+
+async function fetchSubjectFreshData() {
+    const { data: subject } = await supabase.from('subjects').select('name_ar').eq('id', subjectId).single();
+    const { data: chapters } = await supabase.from('chapters').select('*').eq('subject_id', subjectId).order('order_index', { ascending: true });
+
+    if (!chapters || chapters.length === 0) return { subject, chapters: [], lessons: [], exams: [], solvedExams: [] };
+
+    const chapterIds = chapters.map(c => c.id);
+    const { data: lessons } = await supabase.from('lessons').select('*').in('chapter_id', chapterIds).order('order_index', { ascending: true });
+    const { data: exams } = await supabase.from('exams').select('*').or(`chapter_id.in.(${chapterIds.join(',')}),lesson_id.in.(${lessons.length ? lessons.map(l => l.id).join(',') : 'uuid_nil()'})`).order('order_index', { ascending: true });
+
+    const { data: { user } } = await supabase.auth.getUser();
+    let solvedExams = [];
+    if (user) {
+        const { data: results } = await supabase.from('results').select('exam_id').eq('user_id', user.id);
+        solvedExams = (results || []).map(r => r.exam_id);
+    }
+
+    return { subject, chapters, lessons, exams, solvedExams };
+}
+
+function isDataDifferent(oldD, newD) {
+    if (!oldD || !newD) return true;
+    if (oldD.chapters?.length !== newD.chapters?.length) return true;
+    if (oldD.exams?.length !== newD.exams?.length) return true;
+    if (oldD.solvedExams?.length !== newD.solvedExams?.length) return true;
+    return false;
+}
+
+function renderSkeletons(container) {
+    container.innerHTML = `
+        <div class="skeleton-container" style="direction: rtl;">
+            ${[1, 2, 3].map(() => `
+                <div class="chapter-card skeleton pulse" style="border:none; margin-bottom:1.5rem; background:#eee;">
+                    <div class="skeleton-chapter skeleton"></div>
+                </div>
+            `).join('')}
+        </div>
+    `;
 }
 
 function renderContent(chapters, lessons, exams, container, mode, squadId, solvedExams = []) {
@@ -214,6 +221,17 @@ function renderContent(chapters, lessons, exams, container, mode, squadId, solve
         }
     `;
     document.head.appendChild(accordionStyle);
+
+    if (!chapters || chapters.length === 0) {
+        const noMsgEl = document.getElementById("noExamsMessage");
+        if (noMsgEl) noMsgEl.style.display = "block";
+        container.innerHTML = ""; // Clear skeletons
+        return;
+    }
+
+    // Hide no message if it was showing
+    const noMsgEl = document.getElementById("noExamsMessage");
+    if (noMsgEl) noMsgEl.style.display = "none";
 
     chapters.forEach((chapter, index) => {
         const chapterLessons = lessons.filter(l => l.chapter_id === chapter.id);
