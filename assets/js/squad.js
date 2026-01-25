@@ -10,6 +10,7 @@ let activityChannel = null;
 let presenceChannel = null;
 let pomodoroInterval = null;
 let pomodoroEnd = null;
+let userResults = []; // Store user's completed exams for dynamic buttons
 
 // DOM Elements
 const views = {
@@ -589,6 +590,10 @@ window.deleteSquadTask = async (id) => {
 
 // --- Chat ---
 async function loadChat() {
+    // 1. Fetch user scores to determine exam status
+    const { data: results } = await supabase.from('results').select('exam_id, created_at').eq('user_id', currentProfile.id);
+    userResults = results || [];
+
     const { data: msgs } = await supabase
         .from('squad_chat_messages')
         .select('*, profiles!sender_id(full_name)')
@@ -642,10 +647,7 @@ async function renderChat(msgs) {
                  style="${m.sender_id === myId ? 'cursor:pointer;' : ''}">
                 <span class="msg-sender">${m.profiles ? m.profiles.full_name : 'مستخدم'}</span>
                 <div class="msg-content">
-                    ${m.text.replace(/\[SQUAD_EXAM:([a-z0-9-]+)\]/gi, (match, examId) => {
-            return `<button class="btn btn-primary" style="padding: 4px 12px; font-size: 0.8rem; margin-top: 5px; display: block;" 
-                                onclick="window.joinSquadExamMessenger('${examId}', '${currentSquad.id}')">خش دلوقتي</button>`;
-        })}
+                    ${renderMessageContent(m, myId)}
                 </div>
                 <div class="msg-footer">
                     <span class="msg-time">${time}</span>
@@ -655,6 +657,54 @@ async function renderChat(msgs) {
         `;
     }).join('');
     box.scrollTop = box.scrollHeight;
+}
+
+function renderMessageContent(m, myId) {
+    const examMatch = m.text.match(/\[SQUAD_EXAM:([a-z0-9-]+)\]/i);
+    if (examMatch) {
+        const examId = examMatch[1];
+        const textPart = m.text.split('[')[0].trim();
+
+        // Find if user solved this exam
+        const result = userResults.find(r => r.exam_id === examId);
+        const solvedAt = result ? new Date(result.created_at) : null;
+        const msgAt = new Date(m.created_at);
+
+        let btnState = 'fresh'; // Default
+        if (result) {
+            if (solvedAt > msgAt) {
+                // Solved AFTER message (part of this session)
+                btnState = 'completed';
+            } else {
+                // Solved BEFORE message (old result)
+                btnState = 'help';
+            }
+        }
+
+        const btnConfigs = {
+            'fresh': { text: 'خش دلوقتي 🚀', class: 'btn-primary', onclick: `window.joinSquadExamMessenger('${examId}', '${currentSquad.id}', 'fresh')` },
+            'help': { text: 'خش ساعد 🤝', class: 'btn-secondary', onclick: `window.joinSquadExamMessenger('${examId}', '${currentSquad.id}', 'help')` },
+            'completed': { text: 'انت حليت الامتحان ✅', class: 'btn-outline', onclick: 'void(0)', disabled: true }
+        };
+
+        const config = btnConfigs[btnState];
+
+        return `
+            <div class="msg-exam-card" style="background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:12px; margin-top:8px; box-shadow:0 2px 4px rgba(0,0,0,0.05);">
+                <div style="color:var(--primary-color); font-weight:700; font-size:0.85rem; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+                    <i class="fas fa-graduation-cap"></i> تحدي جماعي
+                </div>
+                <div style="font-size:0.9rem; color:#1e293b; line-height:1.5; margin-bottom:12px;">${textPart}</div>
+                <button class="btn ${config.class}" style="width:100%; padding:8px; font-size:0.85rem;" 
+                        onclick="${config.onclick}" ${config.disabled ? 'disabled' : ''}>
+                    ${config.text}
+                </button>
+            </div>
+        `;
+    }
+
+    // Normal text message
+    return m.text;
 }
 
 window.showReadBy = (names) => {
@@ -1073,20 +1123,31 @@ function restoreCooldowns() {
 }
 
 // Handler for joining squad exams via chat
-window.joinSquadExamMessenger = async (examId, squadId) => {
+window.joinSquadExamMessenger = async (examId, squadId, state = 'fresh') => {
     try {
+        if (state === 'help') {
+            const { isConfirmed } = await Swal.fire({
+                title: 'تنبيه البونص 💡',
+                text: 'مش هتاخد النقط كاملة عشان انت حليت الامتحان ده قبل كده، هتاخد بونص المساعدة بس!',
+                icon: 'info',
+                showCancelButton: true,
+                confirmButtonText: 'ماشي، خش ساعد',
+                cancelButtonText: 'تراجع'
+            });
+            if (!isConfirmed) return;
+        }
+
         // 1. Send Message "انا دخلت"
         await supabase.from('squad_chat_messages').insert({
             squad_id: squadId,
             sender_id: currentProfile.id,
-            text: `انا دخلت 📝`
+            text: `انا دخلت`
         });
 
         // 2. Redirect to exam
         window.location.href = `exam.html?id=${examId}&squad_id=${squadId}`;
     } catch (err) {
         console.error("Error joining exam via messenger:", err);
-        // Fallback redirect even if message fails
         window.location.href = `exam.html?id=${examId}&squad_id=${squadId}`;
     }
 };
