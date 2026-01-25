@@ -876,27 +876,38 @@ document.getElementById('startPomodoroBtn').onclick = startPomodoroFlow;
 // --- Collaborative Exams ---
 window.startSharedExam = async () => {
     try {
-        // 1. Fetch Subjects (Filtered by User Level & Department)
-        let query = supabase.from('subjects').select('*');
+        // 1. Fetch Subjects (Match Dashboard Logic)
+        const grade = currentProfile.grade;
+        const stream = currentProfile.stream;
+        const term = currentProfile.term;
 
-        // Filter by Grade (1, 2, 3, 4)
-        if (currentProfile.grade) {
-            query = query.eq('grade', currentProfile.grade);
+        if (!grade || !term) {
+            Swal.fire('تنبيه', 'يرجى تحديث بياناتك الدراسية من البروفايل أولاً.', 'warning');
+            return;
         }
 
-        // Filter by Stream/Department (pediatric, obs_gyn, etc.)
-        // Note: Grade 1/2 use 'term' (1 or 2), Grade 3/4 use 'stream'
-        if (currentProfile.stream) {
-            if (['1', '2'].includes(currentProfile.stream)) {
-                query = query.eq('term', currentProfile.stream);
-            } else {
-                query = query.eq('stream', currentProfile.stream);
-            }
-        }
+        // Fetch all active subjects for this grade
+        const { data: allSubjects, error: subjError } = await supabase
+            .from('subjects')
+            .select('*')
+            .eq('grade', grade)
+            .eq('is_active', true)
+            .order('order_index');
 
-        const { data: subjects, error: subjError } = await query;
+        if (subjError || !allSubjects) throw subjError || new Error("Failed to fetch subjects");
 
-        if (subjError || !subjects || subjects.length === 0) {
+        // Filter subjects based on dashboard rules
+        const filteredSubjects = allSubjects.filter(s => {
+            // 1. Shared Subjects: Match Term AND No Stream
+            const isShared = s.term === term && (!s.stream || s.stream === '');
+
+            // 2. Department Subjects: Match Stream AND (No Term OR Match Term)
+            const isDepartment = stream && s.stream === stream && (!s.term || s.term === term);
+
+            return isShared || isDepartment;
+        });
+
+        if (filteredSubjects.length === 0) {
             Swal.fire('تنبيه', 'مفيش مواد متاحة لمستواك الدراسي حالياً.', 'info');
             return;
         }
@@ -904,7 +915,7 @@ window.startSharedExam = async () => {
         const { value: subjId } = await Swal.fire({
             title: 'اختار المادة 📚',
             input: 'select',
-            inputOptions: Object.fromEntries(subjects.map(s => [s.id, s.name_ar || 'مادة بدون اسم'])),
+            inputOptions: Object.fromEntries(filteredSubjects.map(s => [s.id, s.name_ar || 'مادة بدون اسم'])),
             inputPlaceholder: 'اختار المادة...',
             showCancelButton: true
         });
