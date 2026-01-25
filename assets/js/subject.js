@@ -56,18 +56,27 @@ async function loadSubjectContent() {
             .in('chapter_id', chapterIds)
             .order('order_index', { ascending: true });
 
-        // Fix: Use subject_id for exams query optimization if possible, or just chapter/lesson IDs
-        // Actually, let's fetch exams linked to these chapters OR lessons.
         const { data: exams, error: eError } = await supabase
             .from('exams')
             .select('*')
             .or(`chapter_id.in.(${chapterIds.join(',')}),lesson_id.in.(${lessons.length ? lessons.map(l => l.id).join(',') : 'uuid_nil()'})`)
             .order('order_index', { ascending: true });
 
+        // 3. Fetch user's solved exams
+        const { data: { user } } = await supabase.auth.getUser();
+        let solvedExams = [];
+        if (user) {
+            const { data: results } = await supabase
+                .from('results')
+                .select('exam_id')
+                .eq('user_id', user.id);
+            solvedExams = (results || []).map(r => r.exam_id);
+        }
+
         if (lError || eError) throw new Error("Partial Load Error");
 
         loadingEl.style.display = "none";
-        renderContent(chapters, lessons, exams, gridEl, mode, squadIdInUrl);
+        renderContent(chapters, lessons, exams, gridEl, mode, squadIdInUrl, solvedExams);
 
     } catch (err) {
         console.error("Error loading content:", err);
@@ -75,7 +84,7 @@ async function loadSubjectContent() {
     }
 }
 
-function renderContent(chapters, lessons, exams, container, mode, squadId) {
+function renderContent(chapters, lessons, exams, container, mode, squadId, solvedExams = []) {
     container.innerHTML = "";
     container.className = ""; // Remove grid class for accordion layout
 
@@ -224,7 +233,9 @@ function renderContent(chapters, lessons, exams, container, mode, squadId) {
                 if (lessonExams.length > 0) {
                     lessonExams.forEach((exam, idx) => {
                         const isSquadMode = mode === 'squad';
-                        const iconClass = isSquadMode ? 'fa-users' : 'fa-pen';
+                        const isSolved = solvedExams.includes(exam.id);
+                        const iconClass = isSquadMode ? 'fa-users' : (isSolved ? 'fa-check-circle' : 'fa-pen');
+                        const iconColor = (!isSquadMode && isSolved) ? '#10b981' : 'inherit';
                         const examTitle = exam.title || `نموذج أسئلة ${idx + 1}`;
 
                         if (isSquadMode) {
@@ -234,8 +245,8 @@ function renderContent(chapters, lessons, exams, container, mode, squadId) {
                                 </a>`;
                         } else {
                             examsHtml += `
-                                <a href="exam.html?id=${exam.id}" class="exam-btn-sm">
-                                    <i class="fas ${iconClass}"></i> ${examTitle}
+                                <a href="exam.html?id=${exam.id}" class="exam-btn-sm" style="${isSolved ? 'border-color:#10b981; color:#10b981;' : ''}">
+                                    <i class="fas ${iconClass}" style="color: ${iconColor}"></i> ${examTitle}
                                 </a>`;
                         }
                     });
@@ -274,7 +285,9 @@ function renderContent(chapters, lessons, exams, container, mode, squadId) {
 
             chapterExams.forEach(exam => {
                 const isSquadMode = mode === 'squad';
-                const iconClass = isSquadMode ? 'fa-users' : 'fa-star';
+                const isSolved = solvedExams.includes(exam.id);
+                const iconClass = isSquadMode ? 'fa-users' : (isSolved ? 'fa-check-circle' : 'fa-star');
+                const iconColor = (!isSquadMode && isSolved) ? '#10b981' : 'inherit';
                 const examTitle = exam.title;
 
                 if (isSquadMode) {
@@ -284,8 +297,8 @@ function renderContent(chapters, lessons, exams, container, mode, squadId) {
                         </a>`;
                 } else {
                     chapterExamsHtml += `
-                        <a href="exam.html?id=${exam.id}" class="exam-btn-sm" style="background: var(--bg-light); border-color: var(--text-light); color: var(--text-dark);">
-                            <i class="fas ${iconClass}"></i> ${examTitle}
+                        <a href="exam.html?id=${exam.id}" class="exam-btn-sm" style="background: var(--bg-light); border-color: ${isSolved ? '#10b981' : 'var(--text-light)'}; color: ${isSolved ? '#10b981' : 'var(--text-dark)'};">
+                            <i class="fas ${iconClass}" style="color: ${iconColor}"></i> ${examTitle}
                         </a>`;
                 }
             });

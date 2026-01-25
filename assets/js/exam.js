@@ -433,8 +433,10 @@ async function calculateResult() {
 
         const score = resultData.score;
         const totalQuestions = resultData.total;
-        const pointsEarned = resultData.points_earned;
-        const bonusEarned = resultData.bonus_earned;
+        const pointsExam = resultData.points_exam || 0;
+        const bonusPerfect = resultData.bonus_perfect || 0;
+        const bonusStreak = resultData.bonus_streak || 0;
+        const totalEarned = resultData.total_earned || (pointsExam + bonusPerfect + bonusStreak);
         const percentage = totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0;
 
         // 3. UI Updates
@@ -442,23 +444,8 @@ async function calculateResult() {
         const scoreSub = document.getElementById("scoreSubtext");
         if (scoreSub) scoreSub.textContent = `حللت ${score} من ${totalQuestions} أسئلة`;
 
-        // 4. Show Rewards Feedback
-        if (pointsEarned > 0 || bonusEarned > 0) {
-            let msg = '';
-            if (pointsEarned > 0) msg += `كسبت ${pointsEarned} نقطة 🎯 `;
-            if (bonusEarned > 0) msg += `+ ${bonusEarned} بونص إضافي! 🔥`;
-            if (resultData.is_perfect) msg = "كفو! قفلت الامتحان وأخدت بونص +10 🏆";
-            if (resultData.streak_reached % 3 === 0 && resultData.bonus_earned > 0) msg += "\n استمرارية 3 أيام! ⚡";
+        // We'll show rewards in the animated popup below
 
-            Swal.fire({
-                toast: true,
-                position: 'top-end',
-                icon: 'success',
-                title: msg,
-                showConfirmButton: false,
-                timer: 4000
-            });
-        }
 
         // 5. Clear Caches to force refresh on dashboard and profile
         clearCache(`user_stats_${user.id}`);
@@ -497,26 +484,73 @@ async function calculateResult() {
             if (percentage === 0) {
                 scoreValEl.textContent = "0%";
                 clearInterval(animTimer);
+                // Show Detailed Rewards Popup if percentage is 0 but points were earned (e.g., bonus)
+                if (totalEarned > 0) {
+                    let breakdownHtml = `<div style="text-align: right; direction: rtl; font-size: 0.95rem;">`;
+                    if (pointsExam > 0) breakdownHtml += `<span style="color:#64748b">من حلك للامتحان:</span> <b>${pointsExam} نقطة</b><br>`;
+                    if (bonusPerfect > 0) breakdownHtml += `<span style="color:#10b981">بونص التقفيل:</span> <b>+${bonusPerfect} نقطة</b><br>`;
+                    if (bonusStreak > 0) breakdownHtml += `<span style="color:#f59e0b">بونص الاستمرارية:</span> <b>+${bonusStreak} نقطة</b><br>`;
+                    breakdownHtml += `</div>`;
+
+                    const isFunny = Math.random() < 0.2;
+                    Swal.fire({
+                        title: isFunny ? `عاش يا قلبي😘 خدت ${totalEarned} نقطة` : `عاش عليك. خدت ${totalEarned} نقط`,
+                        html: breakdownHtml,
+                        icon: 'success',
+                        confirmButtonText: isFunny ? 'ماشي يقلبي 😂' : 'ماشي',
+                        confirmButtonColor: 'var(--primary-color)',
+                        timer: isFunny ? 10000 : 5000
+                    });
+                }
                 return;
             }
             currentCountAnim += 1;
             scoreValEl.textContent = `${currentCountAnim}%`;
-            if (currentCountAnim >= percentage) clearInterval(animTimer);
+            if (currentCountAnim >= percentage) {
+                clearInterval(animTimer);
+
+                // Show Detailed Rewards Popup
+                if (totalEarned > 0) {
+                    let breakdownHtml = `<div style="text-align: right; direction: rtl; font-size: 0.95rem;">`;
+                    if (pointsExam > 0) breakdownHtml += `<span style="color:#64748b">من حلك للامتحان:</span> <b>${pointsExam} نقطة</b><br>`;
+                    if (bonusPerfect > 0) breakdownHtml += `<span style="color:#10b981">بونص التقفيل:</span> <b>+${bonusPerfect} نقطة</b><br>`;
+                    if (bonusStreak > 0) breakdownHtml += `<span style="color:#f59e0b">بونص الاستمرارية:</span> <b>+${bonusStreak} نقطة</b><br>`;
+                    breakdownHtml += `</div>`;
+
+                    if (totalEarned > 0) {
+                        let breakdownHtml = `<div style="text-align: right; direction: rtl; font-size: 0.95rem;">`;
+                        if (pointsExam > 0) breakdownHtml += `<span style="color:#64748b">من حلك للامتحان:</span> <b>${pointsExam} نقطة</b><br>`;
+                        if (bonusPerfect > 0) breakdownHtml += `<span style="color:#10b981">بونص التقفيل:</span> <b>+${bonusPerfect} نقطة</b><br>`;
+                        if (bonusStreak > 0) breakdownHtml += `<span style="color:#f59e0b">بونص الاستمرارية:</span> <b>+${bonusStreak} نقطة</b><br>`;
+                        breakdownHtml += `</div>`;
+
+                        const isFunny = Math.random() < 0.2;
+                        Swal.fire({
+                            title: isFunny ? `عاش يا قلبي😘 خدت ${totalEarned} نقطة` : `عاش عليك. خدت ${totalEarned} نقط`,
+                            html: breakdownHtml,
+                            icon: 'success',
+                            confirmButtonText: isFunny ? 'ماشي يقلبي 😂' : 'ماشي',
+                            confirmButtonColor: 'var(--primary-color)',
+                            timer: isFunny ? 10000 : 5000
+                        });
+                    }
+                }
+            }
         }, 15);
 
         const resultTitle = document.getElementById("resultTitle");
         const resultMsg = document.getElementById("resultMessage");
 
         if (percentage >= 85) {
-            resultTitle.textContent = "ممتاز يا بطل! 🥇";
+            resultTitle.textContent = "ممتاز! 🥇";
             resultTitle.style.color = "var(--primary-color)";
-            resultMsg.textContent = `جبت ${score} من ${totalQuestions}. أداء رائع، كمل بنفس المستوى!`;
+            resultMsg.textContent = `جبت ${score} من ${totalQuestions}.كمل بنفس المستوى!`;
         } else if (percentage >= 50) {
-            resultTitle.textContent = "جيد جداً 👍";
+            resultTitle.textContent = "جيد جداً";
             resultTitle.style.color = "var(--secondary-color)";
             resultMsg.textContent = `جبت ${score} من ${totalQuestions}. محتاج شوية تركيز المرة الجاية.`;
         } else {
-            resultTitle.textContent = "محتاج تذاكر تاني 📚";
+            resultTitle.textContent = "محتاج تذاكر تاني";
             resultTitle.style.color = "#EF4444";
             resultMsg.textContent = `جبت ${score} من ${totalQuestions}. راجع الدرس وحاول تاني.`;
         }

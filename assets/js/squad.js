@@ -148,7 +148,7 @@ window.showCreateSquadModal = async () => {
 
 window.showJoinSquadModal = async () => {
     if (currentSquad) {
-        Swal.fire('تنبيه', 'أنت بالفعل في شلة! اخرج منها أولاً لتتمكن من الانضمام لشلة أخرى.', 'warning');
+        Swal.fire('تنبيه', 'انت في شلة دلوقتي! اخرج منها الاول عشان تعرف تخش شلة تانية.', 'warning');
         return;
     }
     const { value: code } = await Swal.fire({
@@ -167,7 +167,7 @@ window.showJoinSquadModal = async () => {
         if (error) {
 
             console.error("Search error:", error);
-            Swal.fire('خطأ', 'حدثت مشكلة أثناء البحث عن الشلة.', 'error');
+            Swal.fire('خطأ', 'حصل مشكلة في البحث عن الشلة.', 'error');
             return;
         }
 
@@ -184,7 +184,7 @@ window.showJoinSquadModal = async () => {
                 location.reload();
             }
         } else {
-            Swal.fire('مش لاقيينها!', 'اتأكد من الكود يا بطل (اكتب الكود اللي ظهر لصاحبك)', 'warning');
+            Swal.fire('مش لاقيينها!', 'اتأكد من الكود (اكتب الكود اللي ظهر لصاحبك)', 'warning');
         }
     }
 };
