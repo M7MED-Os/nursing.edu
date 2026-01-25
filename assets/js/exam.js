@@ -441,8 +441,16 @@ async function calculateResult() {
         if (challengeId) {
             const { data: chall } = await supabase.from('squad_exam_challenges').select('created_at, status').eq('id', challengeId).single();
             if (chall) {
+                // Fetch dynamic settings
+                let joinMins = 60, graceMins = 45;
+                const { data: config } = await supabase.from('app_configs').select('value').eq('key', 'squad_settings').maybeSingle();
+                if (config?.value) {
+                    joinMins = config.value.join_mins || 60;
+                    graceMins = config.value.grace_mins || 45;
+                }
+
                 const startTime = new Date(chall.created_at).getTime();
-                const totalWindow = (60 + 45) * 60 * 1000;
+                const totalWindow = (joinMins + graceMins) * 60 * 1000;
                 if (Date.now() > (startTime + totalWindow) && chall.status !== 'completed') {
                     challengeId = null; // Submit as normal exam, not challenge
                 }

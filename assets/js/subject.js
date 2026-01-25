@@ -377,8 +377,16 @@ window.selectSquadExam = async (examId, examTitle, squadId) => {
             if (!proceedAnyway) return;
         }
 
-        // 2. Create Challenge (New System)
-        const expiresAt = new Date(Date.now() + (60 * 60 * 1000)).toISOString(); // 1 Hour
+        // 2. Fetch Global Settings for Duration
+        let joinWindowMins = 60; // Default
+        try {
+            const { data: config } = await supabase.from('app_configs').select('value').eq('key', 'squad_settings').maybeSingle();
+            if (config?.value?.join_mins) joinWindowMins = config.value.join_mins;
+        } catch (e) {
+            console.error("Config fetch fail:", e);
+        }
+
+        const expiresAt = new Date(Date.now() + (joinWindowMins * 60 * 1000)).toISOString();
         const { data: challenge, error: challError } = await supabase
             .from('squad_exam_challenges')
             .insert({

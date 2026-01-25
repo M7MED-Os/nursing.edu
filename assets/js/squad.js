@@ -12,6 +12,7 @@ let pomodoroInterval = null;
 let pomodoroEnd = null;
 let userResults = []; // Store user's completed exams for dynamic buttons
 let examTimers = {}; // Store intervals for active exam cards
+let globalSquadSettings = { join_mins: 60, grace_mins: 45 }; // Global challenge settings
 
 // DOM Elements
 const views = {
@@ -601,6 +602,17 @@ window.deleteSquadTask = async (id) => {
 
 // --- Chat ---
 async function loadChat() {
+    // 0. Fetch Global Admin Settings for challenges
+    try {
+        const { data: config } = await supabase.from('app_configs').select('value').eq('key', 'squad_settings').maybeSingle();
+        if (config?.value) {
+            globalSquadSettings.join_mins = config.value.join_mins || 60;
+            globalSquadSettings.grace_mins = config.value.grace_mins || 45;
+        }
+    } catch (e) {
+        console.error("Config fetch fail:", e);
+    }
+
     // 1. Clear existing exam timers before reload
     Object.values(examTimers).forEach(t => clearInterval(t));
     examTimers = {};
@@ -708,8 +720,8 @@ function renderMessageContent(m, myId) {
         const isCompleted = challengeData?.status === 'completed' || challengeData?.squad_points_awarded > 0;
 
         const msgAt = new Date(m.created_at);
-        const expiresAt = msgAt.getTime() + (60 * 60 * 1000); // 1 Hour joining window
-        const gracePeriod = expiresAt + (45 * 60 * 1000); // EXTRA 45 mins for those who entered to finish
+        const expiresAt = msgAt.getTime() + (globalSquadSettings.join_mins * 60 * 1000);
+        const gracePeriod = expiresAt + (globalSquadSettings.grace_mins * 60 * 1000);
         const isExpired = Date.now() > expiresAt;
         const isGraceEnded = Date.now() > gracePeriod;
 
@@ -792,8 +804,8 @@ function startExamCardTimer(msgId, expiresAt, challengeId) {
             clearInterval(examTimers[msgId]);
 
             // Note: The actual points calculation happened in the background via RPC if everyone finished.
-            // If they didn't, we wait for a "Grace Period" (extra 45 mins) before sending failure alert.
-            const gracePeriod = expiresAt + (45 * 60 * 1000);
+            // If they didn't, we wait for a "Grace Period" (extra X mins) before sending failure alert.
+            const gracePeriod = expiresAt + (globalSquadSettings.grace_mins * 60 * 1000);
             const graceTimer = setInterval(() => {
                 if (Date.now() > gracePeriod) {
                     clearInterval(graceTimer);

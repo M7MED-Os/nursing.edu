@@ -1836,6 +1836,7 @@ window.showSquadsView = () => {
     document.getElementById('navSquads')?.classList.add('active');
     document.getElementById('pageTitle').textContent = 'الرئيسية > إدارة الشلل';
     showView('squadsView');
+    loadSquadSettings(); // Load global configs first
     loadSquadsAdmin();
 };
 
@@ -2071,6 +2072,52 @@ window.saveLeaderboardSettings = async () => {
         if (error) throw error;
 
         Swal.fire('تم الحفظ!', 'تم تحديث إعدادات قائمة الأوائل بنجاح.', 'success');
+    } catch (err) {
+        console.error("Save failed:", err);
+        Swal.fire('خطأ', 'حدثت مشكلة أثناء الحفظ: ' + err.message, 'error');
+    }
+};
+
+// --- SQUAD SETTINGS LOGIC ---
+async function loadSquadSettings() {
+    try {
+        const { data, error } = await supabase
+            .from('app_configs')
+            .select('value')
+            .eq('key', 'squad_settings')
+            .maybeSingle();
+
+        if (error) throw error;
+        if (data && data.value) {
+            document.getElementById('settingSquadJoinMins').value = data.value.join_mins || 60;
+            document.getElementById('settingSquadGraceMins').value = data.value.grace_mins || 45;
+        }
+    } catch (err) {
+        console.error("Error loading squad settings:", err);
+    }
+}
+
+window.saveSquadSettings = async () => {
+    const joinMins = parseInt(document.getElementById('settingSquadJoinMins').value);
+    const graceMins = parseInt(document.getElementById('settingSquadGraceMins').value);
+
+    if (isNaN(joinMins) || joinMins < 5 || isNaN(graceMins) || graceMins < 0) {
+        return Swal.fire('خطأ', 'يرجى إدخال أرقام صحيحة', 'error');
+    }
+
+    Swal.fire({ title: 'جاري الحفظ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+    try {
+        const { error } = await supabase
+            .from('app_configs')
+            .upsert({
+                key: 'squad_settings',
+                value: { join_mins: joinMins, grace_mins: graceMins },
+                updated_at: new Date().toISOString()
+            });
+
+        if (error) throw error;
+        Swal.fire('تم الحفظ!', 'تم تحديث إعدادات التحديات بنجاح.', 'success');
     } catch (err) {
         console.error("Save failed:", err);
         Swal.fire('خطأ', 'حدثت مشكلة أثناء الحفظ: ' + err.message, 'error');
