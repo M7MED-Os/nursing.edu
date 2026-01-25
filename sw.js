@@ -1,4 +1,4 @@
-const CACHE_NAME = 'nursing-edu-v4'; // Added missing JS files
+const CACHE_NAME = 'nursing-edu-v5'; // Added missing JS files
 const STATIC_ASSETS = [
     './',
     './index.html',
