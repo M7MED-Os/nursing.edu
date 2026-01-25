@@ -876,8 +876,20 @@ document.getElementById('startPomodoroBtn').onclick = startPomodoroFlow;
 // --- Collaborative Exams ---
 window.startSharedExam = async () => {
     try {
-        // 1. Fetch Subjects
-        const { data: subjects } = await supabase.from('subjects').select('*');
+        // 1. Fetch Subjects (Filtered by Squad Level & Department)
+        let query = supabase.from('subjects').select('*');
+
+        // Filter by Year
+        if (currentSquad.academic_year) {
+            query = query.eq('academic_year', currentSquad.academic_year);
+        }
+
+        // Filter by Department (if not 'عام')
+        if (currentSquad.department && currentSquad.department !== 'عام') {
+            query = query.eq('department', currentSquad.department);
+        }
+
+        const { data: subjects } = await query;
 
         const { value: subjId } = await Swal.fire({
             title: 'اختار المادة 📚',
