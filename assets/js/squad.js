@@ -882,7 +882,7 @@ window.startSharedExam = async () => {
         const { value: subjId } = await Swal.fire({
             title: 'اختار المادة 📚',
             input: 'select',
-            inputOptions: Object.fromEntries(subjects.map(s => [s.id, s.title])),
+            inputOptions: Object.fromEntries(subjects.map(s => [s.id, s.name_ar || s.title || 'مادة بدون اسم'])),
             inputPlaceholder: 'اختار المادة...',
             showCancelButton: true
         });
