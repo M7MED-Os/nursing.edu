@@ -75,7 +75,8 @@ function showView(viewKey) {
 async function setupSquadUI() {
     document.getElementById('squadNameText').textContent = currentSquad.name;
     document.getElementById('squadInfo').textContent = `${currentSquad.academic_year || 'سنة غير محددة'} - ${currentSquad.department || 'عام'}`;
-    document.getElementById('squadPoints').textContent = `رصيد الشلة: ${currentSquad.points || 0} نقطة 🔥`;
+    document.getElementById('squadPoints').textContent = `رصيد الشلة: ${currentSquad.points || 0}`;
+    document.getElementById('squadMemberCount').textContent = `0 عضو`; // Will be updated by loadMembers
     document.getElementById('squadCode').textContent = currentSquad.id.split('-')[0].toUpperCase();
 
     // Load Sub-components
@@ -1226,6 +1227,54 @@ window.joinSquadExamMessenger = async (event, examId, squadId, state = 'fresh', 
         console.error("Error joining exam via messenger:", err);
         window.location.href = `exam.html?id=${examId}&squad_id=${squadId}`;
     }
+};
+
+// --- Rules Info Modal ---
+window.showSquadRules = () => {
+    Swal.fire({
+        title: 'دليل النقط والتحديات 💡',
+        html: `
+            <div style="text-align: right; direction: rtl; font-size: 0.9rem; line-height: 1.6; color: #334155;">
+                
+                <!-- Individual Rewards -->
+                <div style="margin-bottom: 1.5rem; background: #f0f9ff; padding: 12px; border-radius: 12px; border: 1px solid #bae6fd;">
+                    <h4 style="color: #0369a1; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-user-circle"></i>نقط لك انت:
+                    </h4>
+                    <ul style="list-style: none; padding: 0; display: flex; flex-direction: column; gap: 8px;">
+                        <li>🔹 <b>مجهودك:</b> درجتك في الامتحان بتنضاف على طول لنقطك الشخصية (لو دي أول محاولة).</li>
+                        <li>🔹 <b>بونص التقفيل:</b> لو جبت الدرجة النهائية، السيستم بيبعتلك <span style="color:#10b981; font-weight:800;">+10 نقط إضافية</span>.</li>
+                        <li>🔹 <b>بونص الاستمرارية:</b> حل امتحان كل يوم، وكل 3 أيام ورا بعض هتاخد <span style="color:#f59e0b; font-weight:800;">+5 نقط إضافية</span>.</li>
+                    </ul>
+                </div>
+
+                <!-- Squad Challenge Logic -->
+                <div style="margin-bottom: 1.5rem; background: #fff7ed; padding: 12px; border-radius: 12px; border: 1px solid #ffedd5;">
+                    <h4 style="color: #c2410c; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-bullseye"></i>نقط للشلة:
+                    </h4>
+                    <p style="margin-bottom: 10px; font-size: 0.85rem; color: #ea580c;">* النقط بتنضاف للشلة في نهاية الـ 60 دقيقة بس!</p>
+                    <ul style="list-style: none; padding: 0; display: flex; flex-direction: column; gap: 8px;">
+                        <li>🔸 <b>الشرط:</b> لازم <span style="color:#ef4444; font-weight:800;">80%</span> من أعضاء الشلة يحلوا الامتحان قبل ما الوقت يخلص (الساعة).</li>
+                        <li>🔸 <b>النقط:</b> بنحسب متوسط درجاتكم + بونص تفاعل <span style="color:#10b981; font-weight:800;">(+5)</span>.</li>
+                        <li>🔸 <b>الكل شارك:</b> لو 100% حلوا، البونص بيبقى <span style="color:#10b981; font-weight:800;">(+10)</span>.</li>
+                    </ul>
+                </div>
+
+                <!-- Big Gift -->
+                <div style="background: #f5f3ff; padding: 12px; border-radius: 12px; border: 1px dashed #8b5cf6; text-align: center;">
+                    <h4 style="color: #6d28d9; margin-bottom: 5px;">🎁 هدية الـ 100% مشاركة</h4>
+                    <p>لو كل الشلة حلت الامتحان، النظام بيدي <span style="color:#7c3aed; font-weight:800;">+3 نقط بونص</span> لكل واحد فيكم في حسابه الشخصي!</p>
+                </div>
+
+            </div>
+        `,
+        confirmButtonText: 'فهمت الدنيا، يلا بينا! 🚀',
+        confirmButtonColor: 'var(--primary-color)',
+        width: '95%',
+        maxWidth: '450px',
+        padding: '1.25rem'
+    });
 };
 
 // Add to DOMContentLoaded
