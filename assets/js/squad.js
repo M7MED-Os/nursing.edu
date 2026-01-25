@@ -10,7 +10,6 @@ let activityChannel = null;
 let presenceChannel = null;
 let pomodoroInterval = null;
 let pomodoroEnd = null;
-let completedExamIds = new Map(); // Store completed exams (id -> date)
 
 // DOM Elements
 const views = {
@@ -76,16 +75,6 @@ async function setupSquadUI() {
     document.getElementById('squadInfo').textContent = `${currentSquad.academic_year || 'سنة غير محددة'} - ${currentSquad.department || 'عام'}`;
     document.getElementById('squadPoints').textContent = `رصيد الشلة: ${currentSquad.points || 0} نقطة 🔥`;
     document.getElementById('squadCode').textContent = currentSquad.id.split('-')[0].toUpperCase();
-
-    // Fetch Completed Exams (For UI state in chat)
-    const { data: results } = await supabase
-        .from('results')
-        .select('exam_id, created_at')
-        .eq('user_id', currentProfile.id);
-
-    if (results) {
-        completedExamIds = new Map(results.map(r => [r.exam_id, new Date(r.created_at)]));
-    }
 
     // Load Sub-components
     loadMembers();
@@ -600,17 +589,31 @@ window.deleteSquadTask = async (id) => {
 
 // --- Chat ---
 async function loadChat() {
+    // 1. Fetch Messages
     const { data: msgs } = await supabase
         .from('squad_chat_messages')
-        .select('*, profiles!sender_id(full_name)')
+        .select('*, profiles!sender_id(full_name), squad_exam_challenges(*)')
         .eq('squad_id', currentSquad.id)
         .order('created_at', { ascending: false })
         .limit(50);
 
-    if (msgs) renderChat(msgs.reverse());
+    if (!msgs) return;
+
+    // 2. Fetch User Solving Status for Challenges
+    const { data: userParticipations } = await supabase
+        .from('challenge_participations')
+        .select('challenge_id')
+        .eq('profile_id', currentProfile.id);
+
+    const { data: userResults } = await supabase
+        .from('results')
+        .select('exam_id, created_at')
+        .eq('user_id', currentProfile.id);
+
+    renderChat(msgs.reverse(), userParticipations || [], userResults || []);
 }
 
-async function renderChat(msgs) {
+async function renderChat(msgs, participations, userResults) {
     const box = document.getElementById('chatBox');
     if (!box) return;
     const myId = currentProfile.id;
@@ -620,24 +623,57 @@ async function renderChat(msgs) {
     const { data: allReads } = await supabase.from('squad_message_reads').select('message_id, profile_id, profiles!profile_id(full_name)').in('message_id', msgIds);
 
     box.innerHTML = msgs.map(m => {
-        const time = new Date(m.created_at).toLocaleTimeString('ar-EG', {
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: true
-        });
+        const time = new Date(m.created_at).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', hour12: true });
 
-        // Check if I have already read this message
+        // Mark as read logic (same as before)
         const isReadByMe = allReads?.some(r => r.message_id === m.id && r.profile_id === myId);
+        if (m.sender_id !== myId && !isReadByMe) markAsRead(m.id);
 
-        // Mark as read ONLY if not mine and I haven't read it yet
-        if (m.sender_id !== myId && !isReadByMe) {
-            markAsRead(m.id);
+        // --- Challenge Card Logic ---
+        if (m.challenge_id && m.squad_exam_challenges) {
+            const ch = m.squad_exam_challenges;
+            const hasSolvedAfter = participations.some(p => p.challenge_id === ch.id);
+            const hasSolvedBefore = userResults.some(r => r.exam_id === ch.exam_id && new Date(r.created_at) < new Date(ch.created_at));
+            const isExpired = new Date() > new Date(ch.expires_at);
+
+            let cardClass = 'btn-primary'; // Blue: Join
+            let statusText = 'انضمام للتحدي';
+            let note = '';
+
+            if (hasSolvedAfter) {
+                cardClass = 'btn-success'; // Green: Solved
+                statusText = '✅ تم الحل بنجاح';
+            } else if (hasSolvedBefore) {
+                cardClass = 'btn-warning'; // Orange: Solved Before
+                statusText = '🟠 حليته قبل كده';
+                note = '<small style="display:block; opacity:0.8; font-size:0.7rem;">(لن يتم احتساب نقاط إضافية)</small>';
+            } else if (isExpired || ch.status === 'completed') {
+                cardClass = 'btn-outline'; // Grey: Locked
+                statusText = '🔚 انتهى الوقت';
+                if (ch.status === 'completed') statusText = '🏆 تم احتساب نقاط التحدي';
+            }
+
+            return `
+                <div class="msg ${m.sender_id === myId ? 'sent' : 'received'}" style="width: 280px; padding: 15px; border-radius: 20px;">
+                    <span class="msg-sender">${m.profiles ? m.profiles.full_name : 'مستخدم'}</span>
+                    <div style="margin: 10px 0; font-weight: 700;">${m.text}</div>
+                    <a href="exam.html?id=${ch.exam_id}&squad_id=${currentSquad.id}&challenge_id=${ch.id}" 
+                       class="btn ${cardClass} full-width" 
+                       style="border-radius: 12px; font-size: 0.9rem; pointer-events: ${(isExpired && !hasSolvedAfter) ? 'none' : 'auto'}">
+                        ${statusText}
+                    </a>
+                    ${note}
+                    <div class="msg-footer" style="margin-top:8px;">
+                        <span class="msg-time">${time}</span>
+                    </div>
+                </div>
+            `;
         }
 
+        // --- Standard Message Logic ---
         const readers = allReads?.filter(r => r.message_id === m.id && r.profile_id !== m.sender_id) || [];
         const isReadByOthers = readers.length > 0;
         const readerNames = readers.map(r => r.profiles.full_name.split(' ')[0]).join('، ');
-
         const readerNamesList = readers.map(r => r.profiles.full_name).join('<br>');
         const fullReaderNames = readerNamesList || 'لا يوجد أحد شاهدها بعد';
 
@@ -647,94 +683,12 @@ async function renderChat(msgs) {
             </div>
         ` : '';
 
-        let msgText = m.text;
-        // Detect Join Exam Pattern: #join_exam:UUID (Improved Regex)
-        const joinMatch = msgText.match(/#join_exam:([a-f0-9-]+)/i);
-
-        if (joinMatch) {
-            const examId = joinMatch[1];
-            // Remove the tag cleanly
-            msgText = msgText.replace(joinMatch[0], '').trim();
-
-            // Check if already completed by me and WHEN
-            const completedAt = completedExamIds.get(examId); // Date object or undefined
-            const msgTime = new Date(m.created_at);
-
-            // Logic:
-            // If completedAt exists:
-            //    If completedAt > msgTime => Solved THIS challenge (Green Check)
-            //    If completedAt < msgTime => Solved BEFORE challenge (Yellow/Orange Info)
-
-            const isSolvedThisTime = completedAt && completedAt > msgTime;
-            const isSolvedBefore = completedAt && completedAt <= msgTime;
-
-            const now = new Date();
-            const diffMinutes = (now - msgTime) / 1000 / 60;
-            const isExpired = diffMinutes > 30;
-
-            if (isSolvedThisTime) {
-                // Scenario 1: Solved as part of this challenge
-                msgText += `
-                    <div style="margin-top:12px; text-align:center; padding-top:8px; border-top:1px dashed rgba(0,0,0,0.1);">
-                        <button disabled class="btn btn-sm" style="
-                            background: #d1fae5; color: #059669; border: none;
-                            border-radius: 50px; padding: 8px 24px; font-weight: 800; cursor: default;
-                        ">
-                            <i class="fas fa-check-circle" style="margin-left:5px;"></i> تم الحل بنجاح
-                        </button>
-                    </div>
-                `;
-            } else if (isSolvedBefore) {
-                // Scenario 2: Solved historically before this challenge
-                // Still allow re-joining? Or just show status? Usually re-joining won't give points.
-                // Let's disable for now to avoid confusion, or allow re-entry for revision without points.
-                // User request: "يظهر في الزرار انت حليته قبل كده"
-                msgText += `
-                    <div style="margin-top:12px; text-align:center; padding-top:8px; border-top:1px dashed rgba(0,0,0,0.1);">
-                        <button disabled class="btn btn-sm" style="
-                            background: #fff7ed; color: #ea580c; border: 1px solid #fed7aa;
-                            border-radius: 50px; padding: 8px 24px; font-weight: 700; cursor: default;
-                        ">
-                            <i class="fas fa-history" style="margin-left:5px;"></i> حليته قبل كده
-                        </button>
-                        <div style="font-size:0.75rem; color:#94a3b8; margin-top:4px;">(لن يتم احتساب نقاط إضافية)</div>
-                    </div>
-                `;
-            } else if (isExpired) {
-            } else if (isExpired) {
-                msgText += `
-                    <div style="margin-top:12px; text-align:center; padding-top:8px; border-top:1px dashed rgba(0,0,0,0.1);">
-                        <button disabled class="btn btn-sm" style="
-                            background: #e2e8f0; color: #94a3b8; border: none;
-                            border-radius: 50px; padding: 8px 24px; font-weight: 700; cursor: not-allowed;
-                        ">
-                            <i class="fas fa-hourglass-end" style="margin-left:5px;"></i> انتهى وقت الانضمام
-                        </button>
-                    </div>
-                `;
-            } else {
-                msgText += `
-                    <div style="margin-top:12px; text-align:center; padding-top:8px; border-top:1px dashed rgba(0,0,0,0.1);">
-                        <button onclick="event.stopPropagation(); joinSquadExam('${examId}')" class="btn btn-sm btn-primary" style="
-                            border-radius: 50px; 
-                            padding: 8px 24px; 
-                            font-weight: 800; 
-                            box-shadow: 0 4px 12px rgba(30,179,245,0.4); 
-                            transition: transform 0.2s;
-                        " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
-                            <i class="fas fa-rocket" style="margin-left:5px;"></i> انضمام للتحدي (${Math.round(30 - diffMinutes)} دقيقة متبقية)
-                        </button>
-                    </div>
-                `;
-            }
-        }
-
         return `
             <div class="msg ${m.sender_id === myId ? 'sent' : 'received'}" 
                  ${m.sender_id === myId ? `onclick="showReadBy('${fullReaderNames}')"` : ''} 
                  style="${m.sender_id === myId ? 'cursor:pointer;' : ''}">
                 <span class="msg-sender">${m.profiles ? m.profiles.full_name : 'مستخدم'}</span>
-                <div class="msg-content">${msgText}</div> <!-- Fixed: Using msgText -->
+                <div class="msg-content">${m.text}</div>
                 <div class="msg-footer">
                     <span class="msg-time">${time}</span>
                     ${ticks}
@@ -922,113 +876,67 @@ document.getElementById('startPomodoroBtn').onclick = startPomodoroFlow;
 // --- Collaborative Exams ---
 window.startSharedExam = async () => {
     try {
-        // 1. Fetch Subjects with smart filtering (Grade > Term > Stream)
-        // 1. Fetch ALL Active Subjects for Grade (Fast & Simple)
-        const { data: allSubjects } = await supabase
-            .from('subjects')
-            .select('*')
-            .eq('grade', currentProfile.grade)
-            .eq('is_active', true)
-            .order('order_index');
-
-        if (!allSubjects || allSubjects.length === 0) {
-            Swal.fire('تنبيه', `مفيش مواد متاحة للفرقة ${currentProfile.grade} حالياً.`, 'info');
-            return;
-        }
-
-        // 2. Local Filtering (Smart & Fast)
-        // Matches user's exact profile: Grade + Term + Stream
-        let subjects = allSubjects;
-
-        // Filter by Term if present (e.g. "1" or "2")
-        if (currentProfile.term) {
-            subjects = subjects.filter(s => !s.term || s.term == currentProfile.term);
-        }
-
-        // Filter by Stream if present (e.g. "pediatric")
-        if (currentProfile.stream && currentProfile.stream !== 'general') {
-            subjects = subjects.filter(s => !s.stream || s.stream == currentProfile.stream);
-        }
-
-        // If local filter removed everything (edge case), fallback to all subjects for grade
-        if (subjects.length === 0) {
-            subjects = allSubjects;
-        }
-
-        if (!subjects || subjects.length === 0) {
-            Swal.fire('تنبيه', `مفيش مواد متاحة للفرقة ${currentProfile.grade} حالياً.`, 'info');
-            return;
-        }
+        // 1. Fetch Subjects
+        const { data: subjects } = await supabase.from('subjects').select('*');
 
         const { value: subjId } = await Swal.fire({
             title: 'اختار المادة 📚',
             input: 'select',
-            inputOptions: Object.fromEntries(subjects.map(s => [s.id, s.name_ar || s.title])),
+            inputOptions: Object.fromEntries(subjects.map(s => [s.id, s.title])),
             inputPlaceholder: 'اختار المادة...',
-            showCancelButton: true,
-            confirmButtonText: 'التالي',
-            cancelButtonText: 'إلغاء'
+            showCancelButton: true
         });
 
         if (!subjId) return;
 
-        // 2. Redirect to Subject Page for Exam Selection
-        // We pass a special flag so subject.js knows we are in "Selection Mode"
-        const selectedSubject = subjects.find(s => s.id === subjId);
+        // 2. Fetch Exams for this Subject
+        const { data: exams } = await supabase.from('exams').select('*').eq('subject_id', subjId);
 
-        Swal.fire({
-            title: 'جاري التحويل...',
-            text: `رايحين لصفحة ${selectedSubject.name_ar || selectedSubject.title} عشان تختار الامتحان`,
-            icon: 'info',
-            timer: 1500,
-            showConfirmButton: false
-        }).then(() => {
-            window.location.href = `subject.html?id=${subjId}&mode=select_squad_exam&squad_id=${currentSquad.id}`;
+        if (!exams || exams.length === 0) {
+            Swal.fire('تنبيه', 'المادة دي مفيش فيها امتحانات لسة.', 'info');
+            return;
+        }
+
+        const { value: examId } = await Swal.fire({
+            title: 'اختار الامتحان 📝',
+            input: 'select',
+            inputOptions: Object.fromEntries(exams.map(e => [e.id, e.title])),
+            inputPlaceholder: 'اختار الامتحان...',
+            showCancelButton: true
         });
 
-        return; // Stop here, subject.js will handle the rest
+        if (!examId) return;
 
-        // 3. Create Session
-        const { data: session } = await supabase
-            .from('squad_exam_sessions')
+        // 3. Create Challenge Record
+        const { data: challenge, error: challengeError } = await supabase
+            .from('squad_exam_challenges')
             .insert({
                 squad_id: currentSquad.id,
                 exam_id: examId,
-                status: 'active'
+                created_by: currentProfile.id,
+                expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
             })
             .select()
             .single();
 
+        if (challengeError) throw challengeError;
 
-        // 4. Notify in chat
+        // 4. Notify in chat with a link
         const examName = exams.find(e => e.id == examId).title;
         await supabase.from('squad_chat_messages').insert({
             squad_id: currentSquad.id,
             sender_id: currentProfile.id,
-            text: `🎯 أطلق تحدي جماعي جديد في امتحان: [${examName}]! يلا ادخلوا وحلوا سوا.`
+            text: `🎯 تحدي جماعي: امتحان ${examName}`,
+            challenge_id: challenge.id
         });
 
         // 5. Redirect starter
-        window.location.href = `exam.html?id=${examId}&squad_id=${currentSquad.id}`;
+        window.location.href = `exam.html?id=${examId}&squad_id=${currentSquad.id}&challenge_id=${challenge.id}`;
 
     } catch (err) {
         console.error(err);
         Swal.fire('خطأ', 'فشل في بدء التحدي الجماعي.', 'error');
     }
-};
-
-window.joinSquadExam = async (examId) => {
-    // 1. Send "I joined" message
-    try {
-        await supabase.from('squad_chat_messages').insert({
-            squad_id: currentSquad.id,
-            sender_id: currentProfile.id,
-            text: 'دخلت معاكم! 🏃‍♂️'
-        });
-    } catch (e) { console.error(e); }
-
-    // 2. Redirect
-    window.location.href = `exam.html?id=${examId}&squad_id=${currentSquad.id}`;
 };
 
 // --- Utils ---

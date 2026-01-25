@@ -3,53 +3,6 @@ import { supabase } from "./supabaseClient.js";
 // Utility to get Query Params
 const urlParams = new URLSearchParams(window.location.search);
 const subjectId = urlParams.get('id');
-const isSquadSelectionMode = urlParams.get('mode') === 'select_squad_exam';
-const squadId = urlParams.get('squad_id');
-
-// --- Helper for Squad Selection Mode ---
-window.startSquadSessionFromSubject = async (examId, examTitle) => {
-    try {
-        // 1. Get User Profile
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-
-        // 2. We don't interact with DB here, we just navigate back to squad page
-        // actually, to match the flow, we should create session here OR
-        // tell squad.js to do it. The best UX is to do it here then redirect to exam directly
-        // But the requirement was "notify in chat".
-
-        // Let's create the session directly here for speed
-        const { data: session, error } = await supabase
-            .from('squad_exam_sessions')
-            .insert({
-                squad_id: squadId,
-                exam_id: examId,
-                status: 'active'
-            })
-            .select()
-            .single();
-
-        if (error) throw error;
-
-        // 3. Send Notification in Chat
-        // We need Subject Name. It's already loaded in titleEl text content usually
-        const subjName = document.getElementById("subjectTitle").textContent;
-        const msgText = `⚡ تحدي جماعي: ${subjName} - ${examTitle} #join_exam:${examId}`;
-
-        await supabase.from('squad_chat_messages').insert({
-            squad_id: squadId,
-            sender_id: user.id,
-            text: msgText
-        });
-
-        // 4. Redirect to Exam
-        window.location.href = `exam.html?id=${examId}&squad_id=${squadId}`;
-
-    } catch (err) {
-        console.error(err);
-        Swal.fire('خطأ', 'فشل في بدء التحدي الجماعي.', 'error');
-    }
-};
 
 async function loadSubjectContent() {
     const titleEl = document.getElementById("subjectTitle");
@@ -268,17 +221,10 @@ function renderContent(chapters, lessons, exams, container) {
 
                 if (lessonExams.length > 0) {
                     lessonExams.forEach((exam, idx) => {
-                        if (isSquadSelectionMode) {
-                            examsHtml += `
-                            <button onclick="startSquadSessionFromSubject('${exam.id}', '${exam.title}')" class="exam-btn-sm" style="background: var(--primary-color); color: white;">
-                                <i class="fas fa-users"></i> ${exam.title || `نموذج ${idx + 1}`}
-                            </button>`;
-                        } else {
-                            examsHtml += `
+                        examsHtml += `
                             <a href="exam.html?id=${exam.id}" class="exam-btn-sm">
-                                <i class="fas fa-pen"></i> ${exam.title || `نموذج ${idx + 1}`}
+                                <i class="fas fa-pen"></i> ${exam.title || `نموذج أسئلة ${idx + 1}`}
                             </a>`;
-                        }
                     });
                 } else {
                     examsHtml = `<span style="font-size:0.8rem; color:#999;">لا توجد اسئلة حالياً</span>`;
@@ -291,10 +237,10 @@ function renderContent(chapters, lessons, exams, container) {
                             ${lesson.title}
                         </div>
                         <div class="exam-buttons">
-                            ${!isSquadSelectionMode ? `<a href="${lesson.content ? `lecture.html?id=${lesson.id}` : '#'}" 
+                            <a href="${lesson.content ? `lecture.html?id=${lesson.id}` : '#'}" 
                                class="lecture-btn-sm ${!lesson.content ? 'disabled' : ''}">
                                 ${lesson.content ? 'عرض المحاضرة' : 'المحاضرة قريباً'}
-                            </a>` : ''}
+                            </a>
                             ${examsHtml}
                         </div>
                     </div>
@@ -314,17 +260,10 @@ function renderContent(chapters, lessons, exams, container) {
                 <div class="exam-buttons">`;
 
             chapterExams.forEach(exam => {
-                if (isSquadSelectionMode) {
-                    chapterExamsHtml += `
-                        <button onclick="startSquadSessionFromSubject('${exam.id}', '${exam.title}')" class="exam-btn-sm">
-                            <i class="fas fa-users"></i> ${exam.title}
-                        </button>`;
-                } else {
-                    chapterExamsHtml += `
-                        <a href="exam.html?id=${exam.id}" class="exam-btn-sm">
-                            <i class="fas fa-star"></i> ${exam.title}
-                        </a>`;
-                }
+                chapterExamsHtml += `
+                    <a href="exam.html?id=${exam.id}" class="exam-btn-sm" style="background: var(--bg-light); border-color: var(--text-light); color: var(--text-dark);">
+                        <i class="fas fa-star"></i> ${exam.title}
+                    </a>`;
             });
 
             chapterExamsHtml += `</div></div>`;

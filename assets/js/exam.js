@@ -15,6 +15,7 @@ let timerInterval = null;
 let timeElapsed = 0; // in seconds
 let totalTime = 0; // calculated based on questions
 let squadId = urlParams.get('squad_id');
+let challengeId = urlParams.get('challenge_id');
 let squadSessionId = null;
 
 const loadingEl = document.getElementById("loading");
@@ -301,6 +302,10 @@ function renderNavigator() {
 window.handleAnswerChange = (qId, answer, index) => {
     saveAnswer(qId, answer);
 
+    // Persist to LocalStorage for safety (Progress Recovery)
+    const progressKey = `exam_progress_${examId}`;
+    localStorage.setItem(progressKey, JSON.stringify(userAnswers));
+
     // UI Update: Highlight option
     const options = document.querySelectorAll(`input[name="q_${qId}"]`);
     options.forEach(opt => {
@@ -479,21 +484,21 @@ async function calculateResult() {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error("User not authenticated");
 
-        // 2. Submit Result via Server-Side RPC (Secure calculation)
-        const { data: resultData, error: rpcError } = await supabase.rpc('submit_exam_result', {
+        // 2. Submit Result via Advanced Gamification RPC
+        const { data: resultData, error: rpcError } = await supabase.rpc('submit_exam_complex', {
             p_exam_id: examId,
             p_answers: userAnswers,
-            p_time_spent: timeElapsed
+            p_time_spent: timeElapsed,
+            p_challenge_id: challengeId
         });
 
         if (rpcError) throw rpcError;
 
-        const score = resultData.score;
-        const totalQuestions = resultData.total;
-        const pointsBase = resultData.points_awarded || 0;
-        const bonusPoints = resultData.bonus_points || 0;
-        const totalPoints = resultData.total_points || 0;
-        const bonuses = resultData.bonuses || [];
+        const score = resultData.score || 0;
+        const totalQuestions = resultData.total || 0;
+        const pointsEarned = resultData.points_earned || 0;
+        const bonusEarned = resultData.bonus_earned || 0;
+        const streakReached = resultData.streak_reached || 0;
         const percentage = totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0;
 
         // 3. UI Updates
@@ -502,26 +507,25 @@ async function calculateResult() {
         if (scoreSub) scoreSub.textContent = `حللت ${score} من ${totalQuestions} أسئلة`;
 
         // 4. Show Points & Bonuses
-        if (totalPoints > 0) {
-            let bonusHtml = '';
-            if (bonuses.length > 0) {
-                bonusHtml = `<div style="margin-top:10px; font-size:0.9rem; color:#10B981; direction:rtl; text-align:right;">
-                    <strong>مكافآت إضافية:</strong><br>
-                    ${bonuses.map(b => `✨ ${b}`).join('<br>')}
-                </div>`;
-            }
+        let bonusText = '';
+        if (bonusEarned > 0) {
+            bonusText = `وشارك في +${bonusEarned} نقاط بونص! 🎉`;
+            if (resultData.is_perfect) bonusText += ' (درجة نهائية!)';
+        }
 
+        Swal.fire({
+            icon: 'success',
+            title: `عاش! أخدت ${pointsEarned} نقطة 🥇`,
+            text: bonusText,
+            confirmButtonText: 'تمام'
+        });
+
+        if (resultData.challenge_unlocked) {
             Swal.fire({
-                title: `مبروك! كسبت ${totalPoints} نقطة 🌟`,
-                html: `
-                    <div style="font-size:1.1rem; line-height:1.6;">
-                        <div>نقاط أساسية: <b>${pointsBase}</b></div>
-                        ${bonusPoints > 0 ? `<div>بونص إضافي: <b>+${bonusPoints}</b></div>` : ''}
-                        ${bonusHtml}
-                    </div>
-                `,
                 icon: 'success',
-                confirmButtonText: 'عاش يا بطل! 💪'
+                title: 'مبروك لشلتك! 🏆',
+                text: `نجحتوا تجمعوا 80% مشاركة وكسبتوا ${resultData.squad_points_awarded} نقطة للشلة.`,
+                confirmButtonText: 'كفو!'
             });
         }
 
