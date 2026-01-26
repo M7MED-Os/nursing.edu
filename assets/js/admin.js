@@ -3,7 +3,7 @@ import { showSuccessAlert, showErrorAlert, showWarningAlert, showDeleteConfirmDi
 
 // Import admin modules
 import { initAdminCore, checkAdminAuth, showView, currentContext, openModal, closeModal, triggerCelebration } from "./admin/admin-core.js";
-import "./admin/admin-questions.js";
+import { renderExamQuestions } from "./admin/admin-questions.js";
 import "./admin/admin-subjects.js";
 import "./admin/admin-content.js";
 
