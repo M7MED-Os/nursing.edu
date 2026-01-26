@@ -1949,6 +1949,19 @@ async function loadSquadsAdmin() {
 }
 
 window.openEditSquadModal = (squad) => {
+    // Labels mapping to match components and RPC expectations
+    const gradeLabels = { '1': 'الفرقة الأولى', '2': 'الفرقة الثانية', '3': 'الفرقة الثالثة', '4': 'الفرقة الرابعة' };
+    const deptLabels = {
+        'general': 'عام',
+        'pediatric': 'تمريض الأطفال',
+        'obs_gyn': 'تمريض نسا و التوليد',
+        'nursing_admin': 'إدارة التمريض',
+        'psychiatric': 'تمريض النفسية'
+    };
+
+    const isGradeSelected = (v) => squad.academic_year === v || squad.academic_year === gradeLabels[v];
+    const isDeptSelected = (v) => squad.department === v || squad.department === deptLabels[v];
+
     openModal({
         title: 'تعديل بيانات الشلة',
         body: `
@@ -1959,20 +1972,20 @@ window.openEditSquadModal = (squad) => {
             <div class="form-group">
                 <label>الفرقة الدراسية</label>
                 <select id="editSquadGrade" class="form-control">
-                    <option value="1" ${squad.academic_year == '1' ? 'selected' : ''}>الأولى</option>
-                    <option value="2" ${squad.academic_year == '2' ? 'selected' : ''}>الثانية</option>
-                    <option value="3" ${squad.academic_year == '3' ? 'selected' : ''}>الثالثة</option>
-                    <option value="4" ${squad.academic_year == '4' ? 'selected' : ''}>الرابعة</option>
+                    <option value="الفرقة الأولى" ${isGradeSelected('1') ? 'selected' : ''}>الفرقة الأولى</option>
+                    <option value="الفرقة الثانية" ${isGradeSelected('2') ? 'selected' : ''}>الفرقة الثانية</option>
+                    <option value="الفرقة الثالثة" ${isGradeSelected('3') ? 'selected' : ''}>الفرقة الثالثة</option>
+                    <option value="الفرقة الرابعة" ${isGradeSelected('4') ? 'selected' : ''}>الفرقة الرابعة</option>
                 </select>
             </div>
             <div class="form-group">
                 <label>القسم</label>
                 <select id="editSquadDept" class="form-control">
-                    <option value="general" ${squad.department == 'general' ? 'selected' : ''}>عام / الكل</option>
-                    <option value="pediatric" ${squad.department == 'pediatric' ? 'selected' : ''}>أطفال</option>
-                    <option value="obs_gyn" ${squad.department == 'obs_gyn' ? 'selected' : ''}>نسا</option>
-                    <option value="nursing_admin" ${squad.department == 'nursing_admin' ? 'selected' : ''}>إدارة</option>
-                    <option value="psychiatric" ${squad.department == 'psychiatric' ? 'selected' : ''}>نفسية</option>
+                    <option value="عام" ${isDeptSelected('general') ? 'selected' : ''}>عام / الكل</option>
+                    <option value="تمريض الأطفال" ${isDeptSelected('pediatric') ? 'selected' : ''}>أطفال</option>
+                    <option value="تمريض نسا و التوليد" ${isDeptSelected('obs_gyn') ? 'selected' : ''}>نسا</option>
+                    <option value="إدارة التمريض" ${isDeptSelected('nursing_admin') ? 'selected' : ''}>إدارة</option>
+                    <option value="تمريض النفسية" ${isDeptSelected('psychiatric') ? 'selected' : ''}>نفسية</option>
                 </select>
             </div>
             <div class="form-group">

@@ -1,5 +1,6 @@
 import { supabase } from "./supabaseClient.js";
 import { getCache, setCache, getSWR } from "./utils.js";
+import { GRADES, STREAMS } from "./constants.js";
 
 // State
 let readQueue = [];
@@ -74,8 +75,11 @@ function showView(viewKey) {
 }
 
 async function setupSquadUI() {
+    const displayGrade = GRADES[currentSquad.academic_year] || currentSquad.academic_year || 'سنة غير محددة';
+    const displayDept = STREAMS[currentSquad.department] || currentSquad.department || 'عام';
+
     document.getElementById('squadNameText').textContent = currentSquad.name;
-    document.getElementById('squadInfo').textContent = `${currentSquad.academic_year || 'سنة غير محددة'} - ${currentSquad.department || 'عام'}`;
+    document.getElementById('squadInfo').textContent = `${displayGrade} - ${displayDept}`;
     document.getElementById('squadPoints').textContent = `رصيد الشلة: ${currentSquad.points || 0}`;
     document.getElementById('squadMemberCount').textContent = `0 عضو`; // Will be updated by loadMembers
     document.getElementById('squadCode').textContent = currentSquad.id.split('-')[0].toUpperCase();
