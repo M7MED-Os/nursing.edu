@@ -86,6 +86,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
+    // Real-time squad search and filters
+    const squadFilterControls = ['squadSearch', 'filterSquadGrade', 'filterSquadDept'];
+    squadFilterControls.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('input', () => loadSquadsAdmin());
+            el.addEventListener('change', () => loadSquadsAdmin());
+        }
+    });
+
     function updateStreamFilter() {
         const grade = document.getElementById('filterGrade').value;
         const group = document.getElementById('streamFilterGroup');
@@ -1842,45 +1852,93 @@ window.showSquadsView = () => {
 
 async function loadSquadsAdmin() {
     const tbody = document.getElementById('squadsTableBody');
-    tbody.innerHTML = '<tr><td colspan="7"><div class="spinner"></div></td></tr>';
+    const searchValue = document.getElementById('squadSearch')?.value.toLowerCase() || '';
+    const filterGrade = document.getElementById('filterSquadGrade')?.value || 'all';
+    const filterDept = document.getElementById('filterSquadDept')?.value || 'all';
 
-    const { data: squads, error } = await supabase
-        .from('squads')
-        .select(`
-            *,
-            profiles!squads_owner_id_fkey (full_name),
-            squad_members!squad_members_squad_id_fkey (count)
-        `)
-        .order('points', { ascending: false });
+    tbody.innerHTML = '<tr><td colspan="6"><div class="spinner"></div></td></tr>';
+
+    let query = supabase.from('squads').select(`
+        *,
+        profiles!squads_owner_id_fkey (full_name),
+        squad_members!squad_members_squad_id_fkey (count)
+    `);
+
+    // Fetch all for local filtering (since cross-table complex searches are better handled simply if dataset is small)
+    const { data: squads, error } = await query.order('points', { ascending: false });
 
     if (error) return Swal.fire('Error', error.message, 'error');
 
-    tbody.innerHTML = squads.map(s => {
+    // Stats Accumulators
+    let totalMembers = 0;
+    let totalPoints = 0;
+
+    const filteredSquads = squads.filter(s => {
+        const matchesSearch = s.name.toLowerCase().includes(searchValue) || s.id.toLowerCase().includes(searchValue);
+        const matchesGrade = filterGrade === 'all' || s.academic_year == filterGrade;
+        const matchesDept = filterDept === 'all' || s.department == filterDept;
+
+        if (matchesSearch && matchesGrade && matchesDept) {
+            totalMembers += s.squad_members?.[0]?.count || 0;
+            totalPoints += s.points || 0;
+            return true;
+        }
+        return false;
+    });
+
+    // Update Stats UI
+    document.getElementById('statsTotalSquads').textContent = filteredSquads.length;
+    document.getElementById('statsAvgPoints').textContent = filteredSquads.length > 0 ? Math.round(totalPoints / filteredSquads.length) : 0;
+    document.getElementById('statsTotalMembers').textContent = totalMembers;
+
+    if (filteredSquads.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center" style="padding:2rem; color:#64748b;">لا يوجد نتائج تطابق بحثك</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = filteredSquads.map(s => {
         const streamMap = {
             'pediatric': 'أطفال',
             'obs_gyn': 'نسا',
             'nursing_admin': 'إدارة',
-            'psychiatric': 'نفسية'
+            'psychiatric': 'نفسية',
+            'general': 'عام'
         };
+        const gradeMap = { '1': 'الأولى', '2': 'الثانية', '3': 'الثالثة', '4': 'الرابعة' };
 
         return `
         <tr>
-            <td data-label="اسم الشلة"><b style="color:var(--primary-color);">${s.name}</b></td>
-            <td data-label="الفرقة">${s.academic_year || '-'}</td>
-            <td data-label="القسم">${streamMap[s.department] || s.department || 'عام'}</td>
-            <td data-label="المالك"><span class="badge bg-primary" style="font-size:0.8rem; background:#e0f2fe; color:#0369a1; padding: 4px 8px; border-radius: 6px;">${s.profiles?.full_name || 'غير معروف'}</span></td>
-            <td data-label="النقاط"><b>${s.points || 0}</b></td>
+            <td data-label="الشلة">
+                <div style="font-weight:800; color:var(--primary-color); font-size:1.05rem;">${s.name}</div>
+                <div style="font-size:0.75rem; color:#94a3b8; font-family:monospace;">Code: ${s.id.split('-')[0].toUpperCase()}</div>
+            </td>
+            <td data-label="المستوى / القسم">
+                <div style="font-weight:600;">الفرقة ${gradeMap[s.academic_year] || s.academic_year}</div>
+                <div style="font-size:0.8rem; color:#64748b;">${streamMap[s.department] || s.department || 'عام'}</div>
+            </td>
+            <td data-label="المالك">
+                <div style="font-weight:600; cursor:pointer; color:#0369a1;" onclick="openEditStudent('${s.owner_id}')">
+                   <i class="fas fa-user-circle"></i> ${s.profiles?.full_name || 'غير معروف'}
+                </div>
+            </td>
+            <td data-label="النقاط"><span class="badge badge-info" style="font-size:1rem; padding: 4px 12px;">${s.points || 0}</span></td>
             <td data-label="الأعضاء">
-                <button class="btn btn-outline btn-sm" style="padding: 2px 8px; font-size: 0.75rem;" onclick="viewSquadMembers('${s.id}', '${s.name}')">
-                    <i class="fas fa-users"></i> ${s.squad_members?.[0]?.count || 0} أعضاء
+                <button class="btn btn-outline btn-sm" style="padding: 4px 10px; border-radius:8px;" onclick="viewSquadMembers('${s.id}', '${s.name}')">
+                    <i class="fas fa-users"></i> ${s.squad_members?.[0]?.count || 0}
                 </button>
             </td>
             <td data-label="إجراءات">
-                <div style="display:flex; gap:5px; justify-content:center;">
-                    <button class="btn btn-sm" style="background:#fee2e2; color:#ef4444; border:1px solid #fecaca;" onclick="deleteSquad('${s.id}')" title="حذف الشلة">
+                <div style="display:flex; gap:8px; justify-content:center;">
+                    <button class="btn btn-sm" style="background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd; width:34px; height:34px; display:flex; align-items:center; justify-content:center; padding:0;" 
+                            onclick="openEditSquadModal(${JSON.stringify(s).replace(/"/g, '&quot;')})" title="تعديل الشلة">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-sm" style="background:#fef2f2; color:#ef4444; border:1px solid #fee2e2; width:34px; height:34px; display:flex; align-items:center; justify-content:center; padding:0;" 
+                            onclick="deleteSquad('${s.id}')" title="حذف الشلة">
                         <i class="fas fa-trash"></i>
                     </button>
-                    <button class="btn btn-sm" style="background:#f0fdf4; color:#16a34a; border:1px solid #bbf7d0;" onclick="resetSquadPoints('${s.id}')" title="تصفير النقاط">
+                    <button class="btn btn-sm" style="background:#f0fdf4; color:#16a34a; border:1px solid #bbf7d0; width:34px; height:34px; display:flex; align-items:center; justify-content:center; padding:0;" 
+                            onclick="resetSquadPoints('${s.id}')" title="تصفير النقاط">
                         <i class="fas fa-redo"></i>
                     </button>
                 </div>
@@ -1889,6 +1947,59 @@ async function loadSquadsAdmin() {
     `;
     }).join('');
 }
+
+window.openEditSquadModal = (squad) => {
+    openModal({
+        title: 'تعديل بيانات الشلة',
+        body: `
+            <div class="form-group">
+                <label>اسم الشلة</label>
+                <input type="text" id="editSquadName" class="form-control" value="${squad.name}">
+            </div>
+            <div class="form-group">
+                <label>الفرقة الدراسية</label>
+                <select id="editSquadGrade" class="form-control">
+                    <option value="1" ${squad.academic_year == '1' ? 'selected' : ''}>الأولى</option>
+                    <option value="2" ${squad.academic_year == '2' ? 'selected' : ''}>الثانية</option>
+                    <option value="3" ${squad.academic_year == '3' ? 'selected' : ''}>الثالثة</option>
+                    <option value="4" ${squad.academic_year == '4' ? 'selected' : ''}>الرابعة</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>القسم</label>
+                <select id="editSquadDept" class="form-control">
+                    <option value="general" ${squad.department == 'general' ? 'selected' : ''}>عام / الكل</option>
+                    <option value="pediatric" ${squad.department == 'pediatric' ? 'selected' : ''}>أطفال</option>
+                    <option value="obs_gyn" ${squad.department == 'obs_gyn' ? 'selected' : ''}>نسا</option>
+                    <option value="nursing_admin" ${squad.department == 'nursing_admin' ? 'selected' : ''}>إدارة</option>
+                    <option value="psychiatric" ${squad.department == 'psychiatric' ? 'selected' : ''}>نفسية</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>النقاط الحالية</label>
+                <input type="number" id="editSquadPoints" class="form-control" value="${squad.points || 0}">
+            </div>
+        `,
+        onSave: async () => {
+            const updates = {
+                name: document.getElementById('editSquadName').value,
+                academic_year: document.getElementById('editSquadGrade').value,
+                department: document.getElementById('editSquadDept').value,
+                points: parseInt(document.getElementById('editSquadPoints').value) || 0
+            };
+
+            const { error } = await supabase.from('squads').update(updates).eq('id', squad.id);
+
+            if (error) {
+                Swal.fire('خطأ', error.message, 'error');
+            } else {
+                Swal.fire('تم!', 'تم تحديث بيانات الشلة بنجاح', 'success');
+                closeModal();
+                loadSquadsAdmin();
+            }
+        }
+    });
+};
 
 window.deleteSquad = async (id) => {
     const result = await Swal.fire({
@@ -2091,6 +2202,8 @@ async function loadSquadSettings() {
         if (data && data.value) {
             document.getElementById('settingSquadJoinMins').value = data.value.join_mins || 60;
             document.getElementById('settingSquadGraceMins').value = data.value.grace_mins || 45;
+            document.getElementById('settingSquadMaxMembers').value = data.value.max_members || 10;
+            document.getElementById('settingSquadThreshold').value = data.value.success_threshold || 80;
         }
     } catch (err) {
         console.error("Error loading squad settings:", err);
@@ -2100,8 +2213,10 @@ async function loadSquadSettings() {
 window.saveSquadSettings = async () => {
     const joinMins = parseInt(document.getElementById('settingSquadJoinMins').value);
     const graceMins = parseInt(document.getElementById('settingSquadGraceMins').value);
+    const maxMembers = parseInt(document.getElementById('settingSquadMaxMembers').value);
+    const threshold = parseInt(document.getElementById('settingSquadThreshold').value);
 
-    if (isNaN(joinMins) || joinMins < 5 || isNaN(graceMins) || graceMins < 0) {
+    if (isNaN(joinMins) || isNaN(graceMins) || isNaN(maxMembers) || isNaN(threshold)) {
         return Swal.fire('خطأ', 'يرجى إدخال أرقام صحيحة', 'error');
     }
 
@@ -2112,7 +2227,12 @@ window.saveSquadSettings = async () => {
             .from('app_configs')
             .upsert({
                 key: 'squad_settings',
-                value: { join_mins: joinMins, grace_mins: graceMins },
+                value: {
+                    join_mins: joinMins,
+                    grace_mins: graceMins,
+                    max_members: maxMembers,
+                    success_threshold: threshold
+                },
                 updated_at: new Date().toISOString()
             });
 

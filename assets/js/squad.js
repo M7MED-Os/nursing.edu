@@ -12,7 +12,7 @@ let pomodoroInterval = null;
 let pomodoroEnd = null;
 let userResults = []; // Store user's completed exams for dynamic buttons
 let examTimers = {}; // Store intervals for active exam cards
-let globalSquadSettings = { join_mins: 60, grace_mins: 45 }; // Global challenge settings
+let globalSquadSettings = { join_mins: 60, grace_mins: 45, max_members: 10, success_threshold: 80 }; // Global challenge settings
 
 // DOM Elements
 const views = {
@@ -174,6 +174,22 @@ window.showJoinSquadModal = async () => {
 
         if (squads && squads.length > 0) {
             const squad = squads[0];
+
+            // --- NEW: Check Max Members Limit ---
+            const { count: currentMemberCount } = await supabase
+                .from('squad_members')
+                .select('*', { count: 'exact', head: true })
+                .eq('squad_id', squad.id);
+
+            // Fetch current settings if not already loaded (Safety)
+            let limit = globalSquadSettings.max_members || 10;
+
+            if (currentMemberCount >= limit) {
+                Swal.fire('الشلة مليانة!', `للأسف الشلة دي وصلت للحد الأقصى (${limit} طلاب).`, 'error');
+                return;
+            }
+            // --- End of Limit Check ---
+
             const { error: joinError } = await supabase.from('squad_members').insert({
                 squad_id: squad.id,
                 profile_id: currentProfile.id
@@ -608,6 +624,8 @@ async function loadChat() {
         if (config?.value) {
             globalSquadSettings.join_mins = config.value.join_mins || 60;
             globalSquadSettings.grace_mins = config.value.grace_mins || 45;
+            globalSquadSettings.max_members = config.value.max_members || 10;
+            globalSquadSettings.success_threshold = config.value.success_threshold || 80;
         }
     } catch (e) {
         console.error("Config fetch fail:", e);
@@ -1309,9 +1327,9 @@ window.showSquadRules = () => {
                     <h4 style="color: #c2410c; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
                         <i class="fas fa-bullseye"></i>نقط للشلة:
                     </h4>
-                    <p style="margin-bottom: 10px; font-size: 0.85rem; color: #ea580c;">* النقط بتنضاف للشلة في نهاية الـ 60 دقيقة بس!</p>
+                    <p style="margin-bottom: 10px; font-size: 0.85rem; color: #ea580c;">* النقط بتنضاف للشلة في نهاية الـ ${globalSquadSettings.join_mins} دقيقة بس!</p>
                     <ul style="list-style: none; padding: 0; display: flex; flex-direction: column; gap: 8px;">
-                        <li><b>الشرط:</b> لازم <span style="color:#ef4444; font-weight:800;">80%</span> من أعضاء الشلة يحلوا الامتحان قبل ما الوقت يخلص (الساعة).</li>
+                        <li><b>الشرط:</b> لازم <span style="color:#ef4444; font-weight:800;">${globalSquadSettings.success_threshold}%</span> من أعضاء الشلة يحلوا الامتحان قبل ما الوقت يخلص.</li>
                         <li><b>النقط:</b> بنحسب متوسط درجاتكم + بونص تفاعل <span style="color:#10b981; font-weight:800;">(+5)</span>.</li>
                         <li><b>الكل شارك:</b> لو 100% حلوا، البونص بيبقى <span style="color:#10b981; font-weight:800;">(+10)</span>.</li>
                     </ul>
