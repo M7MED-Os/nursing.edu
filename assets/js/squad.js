@@ -7,13 +7,14 @@ let readQueue = [];
 let readTimeout = null;
 let currentSquad = null;
 let currentProfile = null;
-let activityChannel = null;
 let presenceChannel = null;
+let syncTimer = null; // Smart Polling timer
 let pomodoroInterval = null;
 let pomodoroEnd = null;
 let userResults = []; // Store user's completed exams for dynamic buttons
 let examTimers = {}; // Store intervals for active exam cards
 let globalSquadSettings = { join_mins: 60, grace_mins: 45, max_members: 10, success_threshold: 80 }; // Global challenge settings
+let lastPomState = null; // Track Pomodoro state to avoid flicker
 
 // DOM Elements
 const views = {
@@ -89,7 +90,6 @@ async function setupSquadUI() {
     loadTasks();
     loadChat();
     loadPomodoro();
-    setupRealtime();
     setupPresence();
 
     // Show Clear Chat button to Squad Owner OR Global Admin
@@ -212,19 +212,8 @@ window.showJoinSquadModal = async () => {
 
 
 // --- Realtime ---
-function setupRealtime() {
-    if (activityChannel) supabase.removeChannel(activityChannel);
-
-    activityChannel = supabase.channel(`squad_activity_${currentSquad.id}`)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'squad_chat_messages', filter: `squad_id=eq.${currentSquad.id}` }, () => {
-            loadChat();
-        })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'squad_tasks', filter: `squad_id=eq.${currentSquad.id}` }, () => loadTasks())
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'squad_task_completions' }, () => loadTasks())
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'squad_members', filter: `squad_id=eq.${currentSquad.id}` }, () => loadMembers())
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'squad_pomodoro', filter: `squad_id=eq.${currentSquad.id}` }, () => loadPomodoro())
-        .subscribe();
-}
+// --- Realtime Sync Logic (Legacy RLS issues workaround) ---
+// Note: We use Smart Polling instead of Postgres Channels for better reliability.
 
 // Global Set to track online users from Presence
 let onlineUsersSet = new Set();
@@ -763,7 +752,7 @@ function renderMessageContent(m, myId) {
             'fresh': { text: 'خش دلوقتي 🚀', class: 'btn-primary', onclick: `window.joinSquadExamMessenger(event, '${examId}', '${currentSquad.id}', 'fresh', ${expiresAt}, '${challengeId}')`, notice: '' },
             'help': { text: 'خش ساعد 🤝', class: 'btn-secondary', onclick: `window.joinSquadExamMessenger(event, '${examId}', '${currentSquad.id}', 'help', ${expiresAt}, '${challengeId}')`, notice: '<div style="font-size: 0.7rem; color: #64748b; margin-top: 6px; text-align: center;">مش هتاخد النقط كامله هتاخد البونص بس</div>' },
             'completed': { text: 'انت حليت الامتحان ✅', class: 'btn-outline', onclick: 'void(0)', disabled: true, notice: '' },
-            'expired': { text: 'انتهى وقت الانضمام ⏱️', class: 'btn-outline', onclick: 'void(0)', disabled: true, notice: '<div style="font-size: 0.7rem; color: #ef4444; margin-top: 6px; text-align: center;">الجلسة بدأت من أكتر من ساعة.</div>' }
+            'expired': { text: 'الوقت خلص⏱️', class: 'btn-outline', onclick: 'void(0)', disabled: true, notice: '<div style="font-size: 0.7rem; color: #ef4444; margin-top: 6px; text-align: center;">الجلسة بدأت من أكتر من ساعة.</div>' }
         };
 
         const config = btnConfigs[btnState];
@@ -839,7 +828,7 @@ function startExamCardTimer(msgId, expiresAt, challengeId) {
             const btn = document.getElementById(`btn-exam-${msgId}`);
             if (btn) {
                 btn.disabled = true;
-                btn.textContent = 'انتهى وقت الانضمام ⏱️';
+                btn.textContent = 'الوقت خلص⏱️';
                 btn.className = 'btn btn-outline';
             }
             return;
@@ -929,6 +918,11 @@ async function loadPomodoro() {
         .maybeSingle();
 
     if (pom && pom.status === 'running') {
+        // Semantic check: Only reset timer if the specific session record changed
+        const currentStateKey = `${pom.start_time}_${pom.duration}_${pom.status}`;
+        if (lastPomState === currentStateKey) return;
+
+        lastPomState = currentStateKey;
         const startTime = new Date(pom.start_time).getTime();
         const durationMs = (pom.duration || 25) * 60 * 1000;
         pomodoroEnd = startTime + durationMs;
@@ -936,10 +930,14 @@ async function loadPomodoro() {
         if (pomodoroEnd > Date.now()) {
             startLocalTimer(pom);
         } else {
+            lastPomState = null;
             resetPomodoroUI();
         }
     } else {
-        resetPomodoroUI();
+        if (lastPomState !== null) {
+            lastPomState = null;
+            resetPomodoroUI();
+        }
     }
 }
 
@@ -1280,7 +1278,7 @@ window.joinSquadExamMessenger = async (event, examId, squadId, state = 'fresh', 
     // STRICT Joining Window Enforcement
     if (expiresAt && Date.now() > expiresAt) {
         Swal.fire({
-            title: 'انتهى وقت الانضمام ⏱️',
+            title: 'الوقت خلص⏱️',
             text: 'معلش باب الانضمام قفل من شوية، كان قدامكم ساعة واحدة بس من بداية التحدي.',
             icon: 'warning',
             confirmButtonText: 'ماشي'
@@ -1354,6 +1352,52 @@ window.showSquadRules = () => {
     });
 };
 
+// ==========================
+// --- Background Sync Manager (Senior Pattern) ---
+// ==========================
+/**
+ * Orchestrates background synchronization for squad components.
+ * Replaces unreliable real-time channels with smart, throttled polling.
+ */
+function startSyncManager() {
+    if (syncTimer) clearTimeout(syncTimer);
+
+    const SYNC_INTERVAL = 15000; // 15 seconds: Balance between freshness and DB load
+
+    const performSync = async () => {
+        // Only sync if the user is active on this tab to save battery/bandwidth
+        if (document.visibilityState === 'visible') {
+            try {
+                // Parallel revalidation for all dynamic components
+                await Promise.allSettled([
+                    loadChat(),
+                    loadTasks(),
+                    loadPomodoro(),
+                    loadMembers() // Keeps presence-based UI list updated
+                ]);
+            } catch (err) {
+                console.error('[SyncManager] Batch update failed:', err);
+            }
+        }
+
+        // Schedule next sync
+        syncTimer = setTimeout(performSync, SYNC_INTERVAL);
+    };
+
+    // Kick off initial sync
+    syncTimer = setTimeout(performSync, SYNC_INTERVAL);
+
+    // Visibility-aware Resumption: Sync immediately when user returns to tab
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            performSync();
+        }
+    });
+}
+
 // Add to DOMContentLoaded
-document.addEventListener('DOMContentLoaded', restoreCooldowns);
+document.addEventListener('DOMContentLoaded', () => {
+    restoreCooldowns();
+    startSyncManager();
+});
 
