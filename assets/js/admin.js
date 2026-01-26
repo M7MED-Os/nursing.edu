@@ -2,7 +2,7 @@ import { supabase } from "./supabaseClient.js";
 import { showSuccessAlert, showErrorAlert, showWarningAlert, showDeleteConfirmDialog, showLoadingAlert } from "./utils/alerts.js";
 
 // Import admin modules
-import { initAdminCore, checkAdminAuth, showView, currentContext } from "./admin/admin-core.js";
+import { initAdminCore, checkAdminAuth, showView, currentContext, openModal, closeModal, triggerCelebration } from "./admin/admin-core.js";
 import "./admin/admin-questions.js";
 import "./admin/admin-subjects.js";
 import "./admin/admin-content.js";
