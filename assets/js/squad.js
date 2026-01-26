@@ -13,7 +13,7 @@ let pomodoroInterval = null;
 let pomodoroEnd = null;
 let userResults = []; // Store user's completed exams for dynamic buttons
 let examTimers = {}; // Store intervals for active exam cards
-let globalSquadSettings = { join_mins: 60, grace_mins: 45, max_members: 10, success_threshold: 80 }; // Global challenge settings
+let globalSquadSettings = { join_mins: null, grace_mins: null, max_members: null, success_threshold: null }; // No defaults, DB only
 let lastPomState = null; // Track Pomodoro state to avoid flicker
 
 // DOM Elements
@@ -24,9 +24,7 @@ const views = {
 };
 
 // Initialize
-document.addEventListener('DOMContentLoaded', async () => {
-    await initSquad();
-});
+// Initial DOMContentLoaded listener moved to bottom with consolidated logic
 
 async function initSquad() {
     showView('loading');
@@ -1362,10 +1360,11 @@ async function loadGlobalSettings() {
     try {
         const { data: config } = await supabase.from('app_configs').select('value').eq('key', 'squad_settings').maybeSingle();
         if (config?.value) {
-            globalSquadSettings.join_mins = config.value.join_mins || 60;
-            globalSquadSettings.grace_mins = config.value.grace_mins || 45;
-            globalSquadSettings.max_members = config.value.max_members || 10;
-            globalSquadSettings.success_threshold = config.value.success_threshold || 80;
+            // Only update if value exists, otherwise keep current/default
+            if (config.value.join_mins !== undefined) globalSquadSettings.join_mins = Number(config.value.join_mins);
+            if (config.value.grace_mins !== undefined) globalSquadSettings.grace_mins = Number(config.value.grace_mins);
+            if (config.value.max_members !== undefined) globalSquadSettings.max_members = Number(config.value.max_members);
+            if (config.value.success_threshold !== undefined) globalSquadSettings.success_threshold = Number(config.value.success_threshold);
         }
     } catch (e) { console.error("Config fetch fail:", e); }
 }
@@ -1420,8 +1419,14 @@ function startSyncManager() {
 }
 
 // Add to DOMContentLoaded
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     restoreCooldowns();
+
+    // Critical: Load settings BEFORE rendering UI to avoid timer flickering
+    // This fixes the issue where timer starts at default (60m) then jumps to configured value
+    await loadGlobalSettings();
+
     startSyncManager();
+    await initSquad();
 });
 
