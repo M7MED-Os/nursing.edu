@@ -1,6 +1,7 @@
 import { supabase } from "./supabaseClient.js";
 import { clearCache } from "./utils.js";
 import { APP_CONFIG } from "./constants.js";
+import { showErrorAlert, showSuccessAlert, showConfirmDialog, showInfoAlert } from "./utils/alerts.js";
 
 const urlParams = new URLSearchParams(window.location.search);
 const examId = urlParams.get('id');
@@ -39,12 +40,7 @@ const mobileNavGrid = document.getElementById("mobileNavGrid");
 
 // Check Auth & ID
 if (!examId) {
-    Swal.fire({
-        icon: 'error',
-        title: 'خطأ',
-        text: 'امتحان غير موجود',
-        confirmButtonText: 'عودة'
-    }).then(() => {
+    showErrorAlert('خطأ', 'امتحان غير موجود').then(() => {
         window.location.href = "dashboard.html";
     });
 }
@@ -144,11 +140,10 @@ async function initExam() {
                 const startTime = new Date(chall.created_at).getTime();
                 const totalWindow = 60 * 60 * 1000 + (45 * 60 * 1000); // 1h join + 45m grace
                 if (Date.now() > (startTime + totalWindow) && chall.status !== 'completed') {
-                    Swal.fire({
-                        title: 'عفواً، انتهى وقت التحدي!',
-                        text: 'التحدي ده خلص بالوقت الإضافي بتاعه، تقدر تحل الامتحان عادي لكن نقطك مش هتنضاف للشلة.',
-                        icon: 'info'
-                    });
+                    showInfoAlert(
+                        'عفواً، انتهى وقت التحدي!',
+                        'التحدي ده خلص بالوقت الإضافي بتاعه، تقدر تحل الامتحان عادي لكن نقطك مش هتنضاف للشلة.'
+                    );
                     challengeId = null; // Decouple from challenge
                 }
             }
@@ -555,12 +550,7 @@ async function calculateResult() {
 
     } catch (err) {
         console.error("Submission Error:", err);
-        Swal.fire({
-            icon: 'error',
-            title: 'خطأ',
-            text: 'فشل في إرسال النتيجة. تأكد من اتصال الإنترنت.',
-            confirmButtonText: 'حسناً'
-        });
+        showErrorAlert('خطأ', 'فشل في إرسال النتيجة. تأكد من اتصال الإنترنت.');
         scoreValEl.innerHTML = '<span style="color:red; font-size:1rem;">فشل الإرسال</span>';
     }
 

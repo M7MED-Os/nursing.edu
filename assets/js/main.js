@@ -1,3 +1,5 @@
+import { showSuccessAlert, showWarningAlert } from './utils/alerts.js';
+
 document.addEventListener('DOMContentLoaded', () => {
     // Mobile Menu Toggle
     const menuToggle = document.querySelector('.menu-toggle');
@@ -53,20 +55,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (name && email && message) {
                 // Simulate submission
-                Swal.fire({
-                    icon: 'success',
-                    title: 'تم الإرسال',
-                    text: 'شكراً لتواصلك معنا! سنقوم بالرد عليك في أقرب وقت.',
-                    confirmButtonText: 'حسناً'
-                });
+                showSuccessAlert('تم الإرسال', 'شكراً لتواصلك معنا! سنقوم بالرد عليك في أقرب وقت.');
                 contactForm.reset();
             } else {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'تنبيه',
-                    text: 'يرجى ملء جميع الحقول المطلوبة.',
-                    confirmButtonText: 'حسناً'
-                });
+                showWarningAlert('تنبيه', 'يرجى ملء جميع الحقول المطلوبة.');
             }
         });
     }

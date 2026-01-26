@@ -1,6 +1,10 @@
 import { supabase } from "./supabaseClient.js";
 import { showToast, showInputError, clearInputError, getCache, setCache, clearCache } from "./utils.js";
 import { APP_CONFIG, STREAMS, GRADES, TERMS, GRADE_STREAMS } from "./constants.js";
+import { showSuccessAlert, showWarningAlert, showErrorAlert, showInputDialog } from "./utils/alerts.js";
+import { validateEmail, validatePassword, validatePasswordConfirmation, validateRequired, validateSelect } from "./utils/validators.js";
+import { setButtonLoading } from "./utils/dom.js";
+import { PRESENCE_UPDATE_INTERVAL, REGISTRATION_REDIRECT_DELAY, SUCCESS_REDIRECT_DELAY } from "./constants/timings.js";
 
 // ==========================
 // 1. Auth State Management
@@ -143,7 +147,7 @@ function handleAccessControl(profile) {
 function updateUserPresence(userId) {
     const lastUpdate = sessionStorage.getItem('last_presence_update');
     const now = new Date().getTime();
-    if (!lastUpdate || now - parseInt(lastUpdate) > 120000) { // 2 mins
+    if (!lastUpdate || now - parseInt(lastUpdate) > PRESENCE_UPDATE_INTERVAL) {
         supabase.from('profiles').update({ last_seen: new Date().toISOString() }).eq('id', userId)
             .then(() => sessionStorage.setItem('last_presence_update', now.toString()))
             .catch(e => console.warn("Presence update failed", e));
@@ -302,38 +306,48 @@ if (registerForm) {
         const stream = stream_input.value;
 
         let isValid = true;
-        if (!full_name) {
-            showInputError(full_name_input, "اكتب اسمك بالكامل");
+
+        // Validate full name
+        const fullNameValidation = validateRequired(full_name, 'اسمك بالكامل');
+        if (!fullNameValidation.isValid) {
+            showInputError(full_name_input, fullNameValidation.error);
             isValid = false;
         }
-        if (!email) {
-            showInputError(email_input, "اكتب إيميلك");
-            isValid = false;
-        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-            showInputError(email_input, "اكتب إيميل صح (مثال: name@gmail.com)");
-            isValid = false;
-        }
-        if (!password) {
-            showInputError(password_input, "اكتب كلمة السر");
-            isValid = false;
-        } else if (password.length < 6) {
-            showInputError(password_input, "كلمة السر لازم تكون 6 حروف على الأقل");
+
+        // Validate email
+        const emailValidation = validateEmail(email);
+        if (!emailValidation.isValid) {
+            showInputError(email_input, emailValidation.error);
             isValid = false;
         }
-        if (!grade) {
-            showInputError(grade_input, "اختار السنة الدراسية");
+
+        // Validate password
+        const passwordValidation = validatePassword(password);
+        if (!passwordValidation.isValid) {
+            showInputError(password_input, passwordValidation.error);
+            isValid = false;
+        }
+
+        // Validate grade
+        const gradeValidation = validateSelect(grade, 'السنة الدراسية');
+        if (!gradeValidation.isValid) {
+            showInputError(grade_input, gradeValidation.error);
             isValid = false;
         } else {
             // Validate Term (Required for all years now)
-            if (!term) {
-                showInputError(term_input, "اختار الترم");
+            const termValidation = validateSelect(term, 'الترم');
+            if (!termValidation.isValid) {
+                showInputError(term_input, termValidation.error);
                 isValid = false;
             }
 
             // Validate Stream (Required for Year 3 & 4)
-            if ((grade === "3" || grade === "4") && !stream) {
-                showInputError(stream_input, "اختار القسم");
-                isValid = false;
+            if ((grade === "3" || grade === "4")) {
+                const streamValidation = validateSelect(stream, 'القسم');
+                if (!streamValidation.isValid) {
+                    showInputError(stream_input, streamValidation.error);
+                    isValid = false;
+                }
             }
         }
 
@@ -341,11 +355,9 @@ if (registerForm) {
         const confirm_password_input = document.getElementById("confirmPassword");
         if (confirm_password_input) {
             const confirm_password = confirm_password_input.value;
-            if (!confirm_password) {
-                showInputError(confirm_password_input, "أكد كلمة السر");
-                isValid = false;
-            } else if (confirm_password !== password) {
-                showInputError(confirm_password_input, "كلمة السر غير متطابقة");
+            const confirmValidation = validatePasswordConfirmation(password, confirm_password);
+            if (!confirmValidation.isValid) {
+                showInputError(confirm_password_input, confirmValidation.error);
                 isValid = false;
             }
         }
@@ -353,8 +365,7 @@ if (registerForm) {
         if (!isValid) return;
 
         const submitBtn = registerForm.querySelector('button[type="submit"]');
-        submitBtn.disabled = true;
-        submitBtn.textContent = "جاري التسجيل...";
+        setButtonLoading(submitBtn, true, 'جاري التسجيل...');
 
         try {
             const { data, error } = await supabase.auth.signUp({
@@ -396,8 +407,7 @@ if (registerForm) {
 
             showToast(userMsg || "حدث خطأ أثناء التسجيل", "error");
         } finally {
-            submitBtn.disabled = false;
-            submitBtn.textContent = "تسجيل حساب جديد";
+            setButtonLoading(submitBtn, false);
         }
     });
 }
@@ -418,20 +428,25 @@ if (loginForm) {
         const password = password_input.value;
 
         let isValid = true;
-        if (!email) {
-            showInputError(email_input, "اكتب إيميلك");
+
+        // Validate email
+        const emailValidation = validateEmail(email);
+        if (!emailValidation.isValid) {
+            showInputError(email_input, emailValidation.error);
             isValid = false;
         }
-        if (!password) {
-            showInputError(password_input, "اكتب كلمة السر");
+
+        // Validate password
+        const passwordValidation = validatePassword(password);
+        if (!passwordValidation.isValid) {
+            showInputError(password_input, passwordValidation.error);
             isValid = false;
         }
 
         if (!isValid) return;
 
         const submitBtn = loginForm.querySelector('button[type="submit"]');
-        submitBtn.disabled = true;
-        submitBtn.textContent = "جاري تسجيل الدخول...";
+        setButtonLoading(submitBtn, true, 'جاري تسجيل الدخول...');
 
         try {
             const { data, error } = await supabase.auth.signInWithPassword({
@@ -466,8 +481,7 @@ if (loginForm) {
             if (userMsg.includes("rate limit")) userMsg = "براحة شوية! حاولت كتير في وقت قصير، استنى دقايق وجرب تاني";
             showToast(userMsg || "حدث خطأ أثناء تسجيل الدخول", "error");
         } finally {
-            submitBtn.disabled = false;
-            submitBtn.textContent = "تسجيل الدخول";
+            setButtonLoading(submitBtn, false);
         }
     });
 }

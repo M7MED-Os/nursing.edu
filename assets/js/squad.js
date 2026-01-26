@@ -739,7 +739,13 @@ function renderMessageContent(m, myId) {
             'fresh': { text: 'خش دلوقتي 🚀', class: 'btn-primary', onclick: `window.joinSquadExamMessenger(event, '${examId}', '${currentSquad.id}', 'fresh', ${expiresAt}, '${challengeId}')`, notice: '' },
             'help': { text: 'خش ساعد 🤝', class: 'btn-secondary', onclick: `window.joinSquadExamMessenger(event, '${examId}', '${currentSquad.id}', 'help', ${expiresAt}, '${challengeId}')`, notice: '<div style="font-size: 0.7rem; color: #64748b; margin-top: 6px; text-align: center;">مش هتاخد النقط كامله هتاخد البونص بس</div>' },
             'completed': { text: 'انت حليت الامتحان ✅', class: 'btn-outline', onclick: 'void(0)', disabled: true, notice: '' },
-            'expired': { text: 'الوقت خلص⏱️', class: 'btn-outline', onclick: 'void(0)', disabled: true, notice: '<div style="font-size: 0.7rem; color: #ef4444; margin-top: 6px; text-align: center;">الجلسة بدأت من أكتر من ساعة.</div>' }
+            'expired': {
+                text: 'الوقت خلص⏱️',
+                class: 'btn-outline',
+                onclick: 'void(0)',
+                disabled: true,
+                notice: `<div style="font-size: 0.7rem; color: #ef4444; margin-top: 6px; text-align: center;">الجلسة بدأت من أكتر من ${globalSquadSettings.join_mins} دقيقة.</div>`
+            }
         };
 
         const config = btnConfigs[btnState];
@@ -808,7 +814,10 @@ function startExamCardTimer(msgId, expiresAt, challengeId) {
                 if (Date.now() > gracePeriod) {
                     if (challengeId) {
                         const { error } = await supabase.rpc('finalize_squad_challenge', { p_challenge_id: challengeId });
-                        if (!error) loadChat(); // Refresh to show success/fail card
+                        // Ignore 409 Conflict (means already finalized by another peer)
+                        if (!error || error.code === '409' || error.status === 409) {
+                            loadChat();
+                        }
                     }
                 } else {
                     // Check again in 10s until grace is over
@@ -1366,7 +1375,7 @@ function startSyncManager() {
 
     const FAST_INTERVAL = 20000; // 20s for Chat/Timer
     const SLOW_INTERVAL = 60000; // 60s for Tasks/Members
-    const SETTINGS_INTERVAL = 3600000; // 1 hour for Global Settings
+    const SETTINGS_INTERVAL = 300000; // 5 mins (Reduced from 1hr so users catch up faster on changes)
 
     let lastSlowSync = 0;
     let lastSettingsSync = 0;

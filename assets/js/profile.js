@@ -1,6 +1,7 @@
 import { supabase } from "./supabaseClient.js";
 import { showToast } from "./utils.js";
 import { GRADES, TERMS, STREAMS } from "./constants.js";
+import { setButtonLoading } from "./utils/dom.js";
 
 // ==========================
 // 1. Current State
@@ -180,8 +181,7 @@ if (profileForm) {
         e.preventDefault();
 
         const submitBtn = profileForm.querySelector('button[type="submit"]');
-        submitBtn.disabled = true;
-        submitBtn.textContent = "جاري الحفظ...";
+        setButtonLoading(submitBtn, true, 'جاري الحفظ...');
 
         const full_name = document.getElementById("fullname").value.trim();
         const grade = document.getElementById("grade").value;
@@ -253,8 +253,7 @@ if (profileForm) {
             console.error("Update error:", error);
             showToast(error.message || "حدث خطأ أثناء الحفظ", "error");
         } finally {
-            submitBtn.disabled = false;
-            submitBtn.textContent = "حفظ التعديلات";
+            setButtonLoading(submitBtn, false);
         }
     });
 }
