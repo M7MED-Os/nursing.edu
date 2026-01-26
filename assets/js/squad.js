@@ -804,12 +804,18 @@ function startExamCardTimer(msgId, expiresAt, challengeId) {
             // Note: The actual points calculation happened in the background via RPC if everyone finished.
             // If they didn't, we wait for a "Grace Period" (extra X mins) before sending failure alert.
             const gracePeriod = expiresAt + (globalSquadSettings.grace_mins * 60 * 1000);
-            const graceTimer = setInterval(() => {
+            const checkGrace = async () => {
                 if (Date.now() > gracePeriod) {
-                    clearInterval(graceTimer);
-                    if (challengeId) supabase.rpc('finalize_squad_challenge', { p_challenge_id: challengeId });
+                    if (challengeId) {
+                        const { error } = await supabase.rpc('finalize_squad_challenge', { p_challenge_id: challengeId });
+                        if (!error) loadChat(); // Refresh to show success/fail card
+                    }
+                } else {
+                    // Check again in 10s until grace is over
+                    setTimeout(checkGrace, 10000);
                 }
-            }, 10000);
+            };
+            checkGrace();
 
             el.innerHTML = '<span style="color:#ef4444;">قفل باب الانضمام 🚪</span>';
             const btn = document.getElementById(`btn-exam-${msgId}`);
@@ -1020,10 +1026,8 @@ document.getElementById('startPomodoroBtn').onclick = startPomodoroFlow;
 // --- Collaborative Exams ---
 window.startSharedExam = async () => {
     try {
-        if (!currentProfile) {
-            Swal.fire('خطأ', 'لم يتم تحميل بيانات البروفايل بعد.', 'error');
-            return;
-        }
+        // 0. Fetch FRESH settings before starting any challenge selection
+        await loadGlobalSettings();
 
         const grade = currentProfile.grade;
         const term = currentProfile.term;
