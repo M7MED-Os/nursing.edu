@@ -775,6 +775,13 @@ function renderMessageContent(m, myId) {
                 <div style="color:var(--primary-color); font-weight:700; font-size:0.85rem; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
                     <i class="fas fa-graduation-cap"></i> تحدي جماعي
                 </div>
+                ${(() => {
+                // Calculate required members dynamic display
+                const totalMembers = document.querySelectorAll('#memberList .member-item').length || 1;
+                const threshold = globalSquadSettings.success_threshold || 80;
+                const requiredCount = Math.ceil(totalMembers * (threshold / 100));
+                return `<div style="font-size:0.75rem; color:#64748b; margin-bottom:8px; font-weight:600;"><i class="fas fa-users-cog"></i> لازم على الأقل ${requiredCount} من ${totalMembers} يحلوه</div>`;
+            })()}
                 ${statusHtml}
                 ${countdownHtml}
                 <div style="font-size:0.9rem; color:#1e293b; line-height:1.5; margin-bottom:12px;">${textPart}</div>
