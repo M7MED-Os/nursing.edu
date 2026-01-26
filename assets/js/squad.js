@@ -611,19 +611,6 @@ window.deleteSquadTask = async (id) => {
 
 // --- Chat ---
 async function loadChat() {
-    // 0. Fetch Global Admin Settings for challenges
-    try {
-        const { data: config } = await supabase.from('app_configs').select('value').eq('key', 'squad_settings').maybeSingle();
-        if (config?.value) {
-            globalSquadSettings.join_mins = config.value.join_mins || 60;
-            globalSquadSettings.grace_mins = config.value.grace_mins || 45;
-            globalSquadSettings.max_members = config.value.max_members || 10;
-            globalSquadSettings.success_threshold = config.value.success_threshold || 80;
-        }
-    } catch (e) {
-        console.error("Config fetch fail:", e);
-    }
-
     // 1. Clear existing exam timers before reload
     Object.values(examTimers).forEach(t => clearInterval(t));
     examTimers = {};
@@ -1357,41 +1344,65 @@ window.showSquadRules = () => {
 // ==========================
 /**
  * Orchestrates background synchronization for squad components.
- * Replaces unreliable real-time channels with smart, throttled polling.
  */
+async function loadGlobalSettings() {
+    try {
+        const { data: config } = await supabase.from('app_configs').select('value').eq('key', 'squad_settings').maybeSingle();
+        if (config?.value) {
+            globalSquadSettings.join_mins = config.value.join_mins || 60;
+            globalSquadSettings.grace_mins = config.value.grace_mins || 45;
+            globalSquadSettings.max_members = config.value.max_members || 10;
+            globalSquadSettings.success_threshold = config.value.success_threshold || 80;
+        }
+    } catch (e) { console.error("Config fetch fail:", e); }
+}
+
 function startSyncManager() {
     if (syncTimer) clearTimeout(syncTimer);
 
-    const SYNC_INTERVAL = 15000; // 15 seconds: Balance between freshness and DB load
+    const FAST_INTERVAL = 20000; // 20s for Chat/Timer
+    const SLOW_INTERVAL = 60000; // 60s for Tasks/Members
+    const SETTINGS_INTERVAL = 3600000; // 1 hour for Global Settings
+
+    let lastSlowSync = 0;
+    let lastSettingsSync = 0;
 
     const performSync = async () => {
-        // Only sync if the user is active on this tab to save battery/bandwidth
-        if (document.visibilityState === 'visible') {
-            try {
-                // Parallel revalidation for all dynamic components
-                await Promise.allSettled([
-                    loadChat(),
-                    loadTasks(),
-                    loadPomodoro(),
-                    loadMembers() // Keeps presence-based UI list updated
-                ]);
-            } catch (err) {
-                console.error('[SyncManager] Batch update failed:', err);
-            }
+        if (document.visibilityState !== 'visible') {
+            syncTimer = setTimeout(performSync, FAST_INTERVAL);
+            return;
         }
 
-        // Schedule next sync
-        syncTimer = setTimeout(performSync, SYNC_INTERVAL);
+        const now = Date.now();
+        const shouldDoSlowSync = (now - lastSlowSync) >= SLOW_INTERVAL;
+        const shouldDoSettingsSync = (now - lastSettingsSync) >= SETTINGS_INTERVAL;
+
+        try {
+            const tasks = [loadChat(), loadPomodoro()];
+
+            if (shouldDoSlowSync) {
+                tasks.push(loadTasks(), loadMembers());
+                lastSlowSync = now;
+            }
+
+            if (shouldDoSettingsSync || lastSettingsSync === 0) {
+                tasks.push(loadGlobalSettings());
+                lastSettingsSync = now;
+            }
+
+            await Promise.allSettled(tasks);
+        } catch (err) {
+            console.error('[SyncManager] Sync failed:', err);
+        }
+
+        syncTimer = setTimeout(performSync, FAST_INTERVAL);
     };
 
     // Kick off initial sync
-    syncTimer = setTimeout(performSync, SYNC_INTERVAL);
+    syncTimer = setTimeout(performSync, FAST_INTERVAL);
 
-    // Visibility-aware Resumption: Sync immediately when user returns to tab
     document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') {
-            performSync();
-        }
+        if (document.visibilityState === 'visible') performSync();
     });
 }
 
