@@ -625,8 +625,7 @@ html[dir='rtl'] .step-item::after {
 
 /* --- Page Header (Premium Global Class) --- */
 .page-header {
-  /* background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%); */
-  background-color: red;
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
   color: white;
   padding: 6rem 0 3rem 0;
   text-align: center;
