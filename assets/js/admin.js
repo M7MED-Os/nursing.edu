@@ -1972,20 +1972,20 @@ window.openEditSquadModal = (squad) => {
             <div class="form-group">
                 <label>الفرقة الدراسية</label>
                 <select id="editSquadGrade" class="form-control">
-                    <option value="الفرقة الأولى" ${isGradeSelected('1') ? 'selected' : ''}>الفرقة الأولى</option>
-                    <option value="الفرقة الثانية" ${isGradeSelected('2') ? 'selected' : ''}>الفرقة الثانية</option>
-                    <option value="الفرقة الثالثة" ${isGradeSelected('3') ? 'selected' : ''}>الفرقة الثالثة</option>
-                    <option value="الفرقة الرابعة" ${isGradeSelected('4') ? 'selected' : ''}>الفرقة الرابعة</option>
+                    <option value="1" ${isGradeSelected('1') ? 'selected' : ''}>الفرقة الأولى</option>
+                    <option value="2" ${isGradeSelected('2') ? 'selected' : ''}>الفرقة الثانية</option>
+                    <option value="3" ${isGradeSelected('3') ? 'selected' : ''}>الفرقة الثالثة</option>
+                    <option value="4" ${isGradeSelected('4') ? 'selected' : ''}>الفرقة الرابعة</option>
                 </select>
             </div>
             <div class="form-group">
                 <label>القسم</label>
                 <select id="editSquadDept" class="form-control">
-                    <option value="عام" ${isDeptSelected('general') ? 'selected' : ''}>عام / الكل</option>
-                    <option value="تمريض الأطفال" ${isDeptSelected('pediatric') ? 'selected' : ''}>أطفال</option>
-                    <option value="تمريض نسا و التوليد" ${isDeptSelected('obs_gyn') ? 'selected' : ''}>نسا</option>
-                    <option value="إدارة التمريض" ${isDeptSelected('nursing_admin') ? 'selected' : ''}>إدارة</option>
-                    <option value="تمريض النفسية" ${isDeptSelected('psychiatric') ? 'selected' : ''}>نفسية</option>
+                    <option value="general" ${isDeptSelected('general') ? 'selected' : ''}>عام / الكل</option>
+                    <option value="pediatric" ${isDeptSelected('pediatric') ? 'selected' : ''}>أطفال</option>
+                    <option value="obs_gyn" ${isDeptSelected('obs_gyn') ? 'selected' : ''}>نسا</option>
+                    <option value="nursing_admin" ${isDeptSelected('nursing_admin') ? 'selected' : ''}>إدارة</option>
+                    <option value="psychiatric" ${isDeptSelected('psychiatric') ? 'selected' : ''}>نفسية</option>
                 </select>
             </div>
             <div class="form-group">

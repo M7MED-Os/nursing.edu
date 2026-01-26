@@ -535,12 +535,12 @@
                 if (!squads) {
                     const { data, error } = await supabase.rpc('get_top_squads', {
                         p_limit: settings.top_squads || 10,
-                        p_academic_year: GRADES[currentUserInfo.grade] || currentUserInfo.grade
+                        p_academic_year: currentUserInfo.grade // Use Key ('1','2','3'..) instead of Label
                     });
                     if (error) throw error;
                     squads = data;
                     // Cache duration matches the admin refresh_interval
-                    setCache(cacheKey, squads, settings.refresh_interval || 10);
+                    setCache(cacheKey, squads, settings.refresh_interval || 1);
                 }
 
                 if (!squads || squads.length === 0) {
@@ -548,7 +548,11 @@
                     return;
                 }
 
-                body.innerHTML = squads.map((s, i) => `
+                body.innerHTML = squads.map((s, i) => {
+                    const displayDept = STREAMS[s.department] || s.department || 'عام';
+                    const displayGrade = GRADES[s.academic_year] || s.academic_year || '';
+
+                    return `
                     <tr>
                         <td class="rank-cell ${i < 3 ? 'rank-' + (i + 1) : ''}">
                             ${i === 0 ? '<i class="fas fa-crown medal-icon"></i>' : (i + 1)}
@@ -558,7 +562,7 @@
                                 <div class="user-avatar" style="background: var(--secondary-color); color: white;">#</div>
                                 <div class="user-name-box">
                                     <b>${s.name}</b>
-                                    <span>${s.department || 'عام'} - ${s.academic_year}</span>
+                                    <span>${displayDept} - ${displayGrade}</span>
                                 </div>
                             </div>
                         </td>
@@ -567,7 +571,8 @@
                             <span class="points-label">نقطة</span>
                         </td>
                     </tr>
-                `).join('');
+                `;
+                }).join('');
             } catch (err) {
                 console.error(err);
                 body.innerHTML = '<tr><td colspan="3" style="text-align:center; color:red;">خطأ في التحميل</td></tr>';
