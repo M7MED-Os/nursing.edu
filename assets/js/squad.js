@@ -1772,7 +1772,7 @@ async function loadSquadPrivacySettings() {
     try {
         const { data: squad } = await supabase
             .from('squads')
-            .select('privacy_avatar, privacy_bio, privacy_stats, privacy_members')
+            .select('privacy_avatar, privacy_bio, privacy_stats, privacy_members, privacy_progress')
             .eq('id', currentSquad.id)
             .single();
 
@@ -1786,11 +1786,13 @@ async function loadSquadPrivacySettings() {
                 const bioEl = document.getElementById('squadPrivacyBio');
                 const statsEl = document.getElementById('squadPrivacyStats');
                 const membersEl = document.getElementById('squadPrivacyMembers');
+                const progressEl = document.getElementById('squadPrivacyProgress');
 
                 if (avatarEl) avatarEl.value = squad.privacy_avatar || 'public';
                 if (bioEl) bioEl.value = squad.privacy_bio || 'public';
                 if (statsEl) statsEl.value = squad.privacy_stats || 'public';
                 if (membersEl) membersEl.value = squad.privacy_members || 'public';
+                if (progressEl) progressEl.value = squad.privacy_progress || 'public';
             }, 50);
         }
     } catch (err) {
@@ -1805,7 +1807,8 @@ window.saveSquadPrivacySettings = async function () {
         privacy_avatar: document.getElementById('squadPrivacyAvatar').value,
         privacy_bio: document.getElementById('squadPrivacyBio').value,
         privacy_stats: document.getElementById('squadPrivacyStats').value,
-        privacy_members: document.getElementById('squadPrivacyMembers').value
+        privacy_members: document.getElementById('squadPrivacyMembers').value,
+        privacy_progress: document.getElementById('squadPrivacyProgress').value
     };
 
     try {

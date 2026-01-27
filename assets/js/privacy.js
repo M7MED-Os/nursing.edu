@@ -183,7 +183,6 @@ export const PRIVACY_OPTIONS = {
     ],
     squad: [
         { value: 'public', label: 'الكل', icon: 'fa-globe', description: 'يمكن لأي شخص رؤية هذا' },
-        { value: 'members', label: 'الأعضاء فقط', icon: 'fa-users', description: 'فقط أعضاء الشلة' },
-        { value: 'private', label: 'المالك فقط', icon: 'fa-lock', description: 'المالك فقط' }
+        { value: 'members', label: 'الأعضاء فقط', icon: 'fa-users', description: 'فقط أعضاء الشلة' }
     ]
 };

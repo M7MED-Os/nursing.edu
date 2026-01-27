@@ -496,7 +496,8 @@
                         avatar: squad.privacy_avatar || 'public',
                         bio: squad.privacy_bio || 'public',
                         stats: squad.privacy_stats || 'public',
-                        members: squad.privacy_members || 'public'
+                        members: squad.privacy_members || 'public',
+                        progress: squad.privacy_progress || 'public'
                     }
                 };
 
@@ -701,9 +702,18 @@
         }
 
         function renderLevelProgress(points) {
-            const progressHTML = createSquadLevelProgress(points);
+            const ctx = window.squadPrivacyContext;
+            const showProgress = ctx && isVisible(ctx.privacySettings.progress, ctx.isOwner, ctx.isMember);
+
             const progressEl = document.getElementById('levelProgress');
-            if (progressEl) {
+            const levelSection = document.getElementById('levelSection');
+
+            if (!progressEl || !levelSection) return;
+
+            if (!showProgress) {
+                progressEl.innerHTML = createLockedElement('progress');
+            } else {
+                const progressHTML = createSquadLevelProgress(points);
                 progressEl.innerHTML = progressHTML;
             }
         }
