@@ -381,7 +381,7 @@ async function loadMembers() {
     getSWR(cacheKey, async () => {
         const { data } = await supabase
             .from('squad_members')
-            .select('profile_id, profiles(full_name, points, updated_at)')
+            .select('profile_id, profiles(full_name, points, updated_at, avatar_url)')
             .eq('squad_id', currentSquad.id);
         return data;
     }, 1, (members) => {
@@ -750,7 +750,7 @@ async function loadChat() {
         const [{ data: results }, { data: challenges }, { data: msgs }] = await Promise.all([
             supabase.from('results').select('exam_id, created_at').eq('user_id', currentProfile.id),
             supabase.from('squad_exam_challenges').select('id, status, squad_points_awarded').eq('squad_id', currentSquad.id),
-            supabase.from('squad_chat_messages').select('*, profiles!sender_id(full_name)').eq('squad_id', currentSquad.id).order('created_at', { ascending: false }).limit(50)
+            supabase.from('squad_chat_messages').select('*, profiles!sender_id(full_name, avatar_url, points)').eq('squad_id', currentSquad.id).order('created_at', { ascending: false }).limit(50)
         ]);
 
         const freshMsgs = (msgs || []).reverse();
