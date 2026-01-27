@@ -818,7 +818,7 @@ function renderMessageContent(m, myId) {
                 class: 'btn-outline',
                 onclick: 'void(0)',
                 disabled: true,
-                notice: `<div style="font-size: 0.7rem; color: #ef4444; margin-top: 6px; text-align: center;">الجلسة بدأت من أكتر من ${globalSquadSettings.join_mins} دقيقة.</div>`
+                notice: `<div style="font-size: 0.7rem; color: #ef4444; margin-top: 6px; text-align: center;">الامتحان بدأ من أكتر من ${globalSquadSettings.join_mins} دقيقة.</div>`
             }
         };
 
@@ -831,14 +831,14 @@ function renderMessageContent(m, myId) {
 
         let statusHtml = isCompleted ? `
             <div style="font-size:0.75rem; color:#10b981; margin-bottom:8px; font-weight:700;">
-                <i class="fas fa-check-circle"></i> تم تحقيق الهدف لشلتكم! 🎉
+                <i class="fas fa-check-circle"></i>الهدف اتحقق لشلتكم! 🎉
             </div>` : '';
 
         let countdownHtml = '';
         if (isGraceEnded) {
-            countdownHtml = `<div style="font-size:0.75rem; color:#ef4444; margin-bottom:8px; font-weight:700;"><i class="fas fa-hourglass-end"></i> انتهى التحدي بالكامل</div>`;
+            countdownHtml = `<div style="font-size:0.75rem; color:#ef4444; margin-bottom:8px; font-weight:700;"><i class="fas fa-hourglass-end"></i>الامتحان خلص</div>`;
         } else if (isExpired) {
-            countdownHtml = `<div style="font-size:0.75rem; color:#ef4444; margin-bottom:8px; font-weight:700;"><i class="fas fa-user-clock"></i> باب الانضمام قفل - متاح فقط للي جوه يخلصوا</div>`;
+            countdownHtml = `<div style="font-size:0.75rem; color:#ef4444; margin-bottom:8px; font-weight:700;"><i class="fas fa-user-clock"></i> الامتحان وقف - مستني اللي جوه يخلصوا</div>`;
         } else if (!isCompleted) {
             countdownHtml = `
                 <div id="countdown-${m.id}" style="font-size:0.75rem; color:#f59e0b; margin-bottom:8px; font-weight:700;">
