@@ -552,6 +552,9 @@
                     const displayDept = STREAMS[s.department] || s.department || 'عام';
                     const displayGrade = GRADES[s.academic_year] || s.academic_year || '';
 
+                    // Squad avatar URL or fallback
+                    const avatarUrl = s.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(s.name || 'Squad')}&background=10b981&color=fff&size=80`;
+
                     return `
                     <tr>
                         <td class="rank-cell ${i < 3 ? 'rank-' + (i + 1) : ''}">
@@ -559,7 +562,7 @@
                         </td>
                         <td>
                             <div class="user-info-cell">
-                                <div class="user-avatar" style="background: var(--secondary-color); color: white;">#</div>
+                                <img src="${avatarUrl}" alt="${s.name}" class="user-avatar" style="background: var(--secondary-color); object-fit: cover;">
                                 <div class="user-name-box">
                                     <b>${s.name}</b>
                                     <span>${displayDept} - ${displayGrade}</span>
@@ -630,7 +633,10 @@
                     const displayStream = STREAMS[s.stream] || '';
                     const subText = displayStream ? `<span style="font-size:0.8em; color:var(--primary-color);">(${displayStream})</span>` : (GRADES[s.grade] || '-');
 
-                    return `<tr ${rowClass}><td class="rank-cell ${rankClass}">${rankDisplay}</td><td><div class="user-info-cell"><div class="user-avatar">${s.full_name ? s.full_name[0] : '?'}</div><div class="user-name-box"><b>${s.full_name} ${s.id === currentUserInfo.id ? '(أنت)' : ''}</b><span>${subText}</span></div></div></td><td class="points-cell">${s.points || 0}<span class="points-label">نقطة</span></td></tr>`;
+                    // Avatar URL or fallback
+                    const avatarUrl = s.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(s.full_name || 'User')}&background=03A9F4&color=fff&size=80`;
+
+                    return `<tr ${rowClass}><td class="rank-cell ${rankClass}">${rankDisplay}</td><td><div class="user-info-cell"><img src="${avatarUrl}" alt="${s.full_name}" class="user-avatar" style="object-fit: cover;"><div class="user-name-box"><b>${s.full_name} ${s.id === currentUserInfo.id ? '(أنت)' : ''}</b><span>${subText}</span></div></div></td><td class="points-cell">${s.points || 0}<span class="points-label">نقطة</span></td></tr>`;
                 }).join('');
 
                 const belongsToFilter = (currentFilterStream === 'all') || (currentFilterStream === currentUserInfo.stream);

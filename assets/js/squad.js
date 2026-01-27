@@ -127,6 +127,19 @@ async function setupSquadUI() {
         const squadLevel = Math.floor(Math.sqrt(Math.max(currentSquad.points || 0, 0) / 10)); // Squad level formula
         squadLevelBadgeContainer.innerHTML = createLevelBadge(currentSquad.points, 'medium');
     }
+
+    // Display Squad Points
+    const squadPointsEl = document.getElementById('squadPoints');
+    if (squadPointsEl) {
+        squadPointsEl.textContent = `${currentSquad.points || 0}`;
+    }
+
+    // Display Member Count
+    const squadMemberCountEl = document.getElementById('squadMemberCount');
+    if (squadMemberCountEl) {
+        const memberCount = currentSquad.members?.length || 0;
+        squadMemberCountEl.textContent = `${memberCount}`;
+    }
 }
 
 // --- Active Challenge Display ---

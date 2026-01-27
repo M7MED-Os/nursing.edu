@@ -503,72 +503,172 @@
 
     <!-- Main Squad View -->
     <div id="mainSquadView">
-        <header class="page-header">
+        <header class="page-header" style="position: relative; padding-bottom: 3rem; overflow: visible;">
             <div class="container">
-                <h1 id="squadName" style="display: inline-flex; align-items: center; gap: 12px;">
-                    <span id="squadNameText">اسم الشلة</span>
-                    <i id="editSquadNameBtn" class="fas fa-edit" onclick="editSquadName()"
-                        style="font-size: 0.6em; cursor: pointer; opacity: 0.7; transition: all 0.2s; display: none;"
-                        onmouseover="this.style.opacity='1'; this.style.transform='scale(1.1)'"
-                        onmouseout="this.style.opacity='0.7'; this.style.transform='scale(1)'"></i>
-                </h1>
-                <p id="squadInfo" style="font-size: 0.9rem; opacity: 0.8; margin-top: 5px;">السنة الدراسية - القسم</p>
+                <div
+                    style="display: flex; flex-direction: column; align-items: center; gap: 1.5rem; position: relative; z-index: 10;">
+
+                    <!-- Avatar Section (Centered Top) -->
+                    <div style="position: relative; width: 110px; height: 110px; margin-bottom: 0.5rem;">
+
+                        <!-- Squad Avatar -->
+                        <img id="squadAvatar"
+                            src="https://ui-avatars.com/api/?name=Squad&background=03A9F4&color=fff&size=128"
+                            alt="صورة الشلة" style="
+                                width: 100%;
+                                height: 100%;
+                                border-radius: 50%;
+                                border: 4px solid rgba(255, 255, 255, 0.9);
+                                box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+                                object-fit: cover;
+                                background: white;
+                            ">
+
+                        <!-- Camera Button (Top Right) -->
+                        <button id="changeSquadAvatarBtn" style="
+                            position: absolute;
+                            top: 0;
+                            right: 0;
+                            background: white;
+                            color: #03A9F4;
+                            border: none;
+                            width: 34px;
+                            height: 34px;
+                            border-radius: 50%;
+                            cursor: pointer;
+                            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+                            display: none;
+                            align-items: center;
+                            justify-content: center;
+                            font-size: 0.9rem;
+                            transition: all 0.3s ease;
+                            z-index: 11;
+                        " title="تغيير صورة الشلة" onmouseover="this.style.transform='scale(1.15) rotate(10deg)'"
+                            onmouseout="this.style.transform='scale(1) rotate(0)'">
+                            <i class="fas fa-camera"></i>
+                        </button>
+
+                        <!-- Level Badge (Bottom Left) -->
+                        <div id="squadLevelBadge" style="
+                            position: absolute;
+                            bottom: 0;
+                            left: 0;
+                            z-index: 11;
+                            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.2));
+                        ">
+                            <!-- Squad level badge will be inserted here -->
+                        </div>
+                    </div>
+
+                    <!-- Identity Section (Name & Dept) -->
+                    <div style="text-align: center;">
+                        <h1 id="squadName" style="
+                            display: flex;
+                            align-items: center;
+                            gap: 5px;
+                            margin: 0;
+                            justify-content: center;
+                        ">
+                            <span id="squadNameText"
+                                style="font-size: 2rem; color: white; text-shadow: 0 2px 8px rgba(0,0,0,0.1);">اسم
+                                الشلة</span>
+                            <i id="editSquadNameBtn" class="fas fa-pen-to-square" onclick="editSquadName()" style="
+                                    font-size: 0.4em;
+                                    cursor: pointer;
+                                    opacity: 0.8;
+                                    padding: 8px;
+                                    border-radius: 10px;
+                                    transition: all 0.3s;
+                                    display: none;
+                                " title="تعديل الاسم"
+                                onmouseover="this.style.background='rgba(255,255,255,0.35)'; this.style.opacity='1'"
+                                onmouseout="this.style.background='rgba(255,255,255,0.2)'; this.style.opacity='0.8'"></i>
+                        </h1>
+                        <!-- Department Info -->
+                        <p id="squadInfo" style="
+                            font-size: 0.95rem;
+                            opacity: 0.9;
+                            margin-top: 0.5rem;
+                            color: #e0f2fe;
+                            background: rgba(255,255,255,0.1);
+                            padding: 5px 14px;
+                            border-radius: 50px;
+                            display: inline-block;
+                        ">السنة الدراسية - القسم</p>
+                    </div>
+
+                    <!-- Simplified Minimalist Stats -->
+                    <div style="
+                        display: flex;
+                        gap: 12px;
+                        flex-wrap: wrap;
+                        justify-content: center;
+                        margin-top: 0.75rem;
+                    ">
+                        <!-- Points Badge -->
+                        <div style="
+                            background: rgba(255, 255, 255, 0.12);
+                            backdrop-filter: blur(10px);
+                            padding: 6px 14px;
+                            border-radius: 50px;
+                            display: flex;
+                            align-items: center;
+                            gap: 8px;
+                            border: 1px solid rgba(255, 255, 255, 0.15);
+                            color: white;
+                            transition: all 0.2s ease;
+                            cursor: default;
+                        " onmouseover="this.style.background='rgba(251, 191, 36, 0.25)'; this.style.borderColor='rgba(251, 191, 36, 0.4)'"
+                            onmouseout="this.style.background='rgba(255, 255, 255, 0.12)'; this.style.borderColor='rgba(255, 255, 255, 0.15)'">
+                            <i class="fas fa-fire" style="color: #fbbf24; font-size: 0.9rem;"></i>
+                            <span style="font-size: 0.85rem; opacity: 1;">النقاط:</span>
+                            <span id="squadPoints" style="font-size: 1rem; font-weight: 700;">0</span>
+                        </div>
+
+                        <!-- Members Badge -->
+                        <div style="
+                            background: rgba(255, 255, 255, 0.12);
+                            backdrop-filter: blur(10px);
+                            padding: 6px 14px;
+                            border-radius: 50px;
+                            display: flex;
+                            align-items: center;
+                            gap: 8px;
+                            border: 1px solid rgba(255, 255, 255, 0.15);
+                            color: white;
+                            transition: all 0.2s ease;
+                            cursor: default;
+                        " onmouseover="this.style.background='rgba(74, 222, 128, 0.25)'; this.style.borderColor='rgba(74, 222, 128, 0.4)'"
+                            onmouseout="this.style.background='rgba(255, 255, 255, 0.12)'; this.style.borderColor='rgba(255, 255, 255, 0.15)'">
+                            <i class="fas fa-users" style="color: #4ade80; font-size: 0.9rem;"></i>
+                            <span style="font-size: 0.85rem; opacity: 1;">الأعضاء:</span>
+                            <span id="squadMemberCount" style="font-size: 1rem; font-weight: 700;">0</span>
+                        </div>
+
+                        <!-- Rules Button -->
+                        <button onclick="showSquadRules()" style="
+                            background: rgba(255, 255, 255, 0.12);
+                            backdrop-filter: blur(10px);
+                            padding: 6px 14px;
+                            border-radius: 50px;
+                            display: flex;
+                            align-items: center;
+                            gap: 8px;
+                            border: 1px solid rgba(255, 255, 255, 0.15);
+                            color: white;
+                            cursor: pointer;
+                            transition: all 0.2s ease;
+                        " onmouseover="this.style.background='rgba(255, 255, 255, 0.3)'; this.style.transform='translateY(-2px)'"
+                            onmouseout="this.style.background='rgba(255, 255, 255, 0.12)'; this.style.transform='translateY(0)'">
+                            <i class="fas fa-book-open" style="color: white; font-size: 0.85rem;"></i>
+                            <span style="font-size: 0.85rem; font-weight: 700;">القواعد</span>
+                        </button>
+                    </div>
+                </div>
             </div>
         </header>
 
         <div class="container squad-container">
-            <!-- Squad Info Card (Avatar + Level + Stats) -->
-            <div class="squad-card" style="margin-bottom: 1.5rem;">
-                <div style="display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap;">
-                    <!-- Avatar -->
-                    <div style="position: relative; flex-shrink: 0;">
-                        <img id="squadAvatar"
-                            src="https://ui-avatars.com/api/?name=Squad&background=10b981&color=fff&size=80"
-                            alt="صورة الشلة"
-                            style="width: 70px; height: 70px; border-radius: 50%; border: 3px solid #10b981; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-                        <button id="changeSquadAvatarBtn" style="
-                            position: absolute;
-                            bottom: 0;
-                            right: 0;
-                            background: #10b981;
-                            color: white;
-                            border: none;
-                            width: 24px;
-                            height: 24px;
-                            border-radius: 50%;
-                            cursor: pointer;
-                            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-                            display: none;
-                            align-items: center;
-                            justify-content: center;
-                            font-size: 0.7rem;
-                            transition: all 0.3s;
-                        " title="تغيير صورة الشلة">
-                            <i class="fas fa-camera"></i>
-                        </button>
-                    </div>
-
-                    <!-- Level + Stats -->
-                    <div style="flex: 1;">
-                        <div id="squadLevelBadge" style="margin-bottom: 0.75rem;">
-                            <!-- Squad level badge will be inserted here -->
-                        </div>
-                        <div class="squad-stats-badges" style="gap: 0.5rem;">
-                            <span class="rules-help-badge" onclick="showSquadRules()" title="دليل القواعد">
-                                <i class="fas fa-info-circle"></i>
-                            </span>
-                            <span class="stat-badge">
-                                <i class="fas fa-fire"></i>
-                                <span id="squadPoints">رصيد الشلة: 0</span>
-                            </span>
-                            <span class="stat-badge">
-                                <i class="fas fa-users"></i>
-                                <span id="squadMemberCount">0 أعضاء</span>
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
             <!-- Left Side: Main Tasks & Tools -->
             <div class="squad-main">
