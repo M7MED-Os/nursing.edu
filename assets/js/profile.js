@@ -65,8 +65,15 @@ function renderProfileUI(profile, user) {
     // Display Bio
     const bioDisplay = document.getElementById('profileBioDisplay');
     if (bioDisplay) {
-        bioDisplay.textContent = profile.bio || 'لم يتم إضافة نبذة بعد...';
-        bioDisplay.style.opacity = profile.bio ? '1' : '0.6';
+        bioDisplay.textContent = profile.bio || 'ضيف بايو';
+        bioDisplay.style.opacity = profile.bio ? '1' : '0.7';
+        bioDisplay.style.fontStyle = profile.bio ? 'italic' : 'normal';
+    }
+
+    // Preview Profile Button
+    const previewBtn = document.getElementById('previewProfileBtn');
+    if (previewBtn) {
+        previewBtn.href = `student-profile.html?id=${currentUser.id}`;
     }
 
 
@@ -367,7 +374,7 @@ if (changeAvatarBtn) {
                 title: 'تعديل النبذة المختصرة',
                 input: 'textarea',
                 inputLabel: 'اكتب نبذة مختصرة عنك (اختياري)',
-                inputPlaceholder: 'مثال: طالب طموح في كلية التمريض، أحب التعلم والتطوير...',
+                inputPlaceholder: 'صلي على النبي',
                 inputValue: currentProfile.bio || '',
                 inputAttributes: {
                     maxlength: 200,
@@ -396,8 +403,9 @@ if (changeAvatarBtn) {
                     // Update UI
                     const bioDisplay = document.getElementById('profileBioDisplay');
                     if (bioDisplay) {
-                        bioDisplay.textContent = newBio || 'لم يتم إضافة نبذة بعد...';
-                        bioDisplay.style.opacity = newBio ? '1' : '0.6';
+                        bioDisplay.textContent = newBio || 'ضيف بايو';
+                        bioDisplay.style.opacity = newBio ? '1' : '0.7';
+                        bioDisplay.style.fontStyle = newBio ? 'italic' : 'normal';
                     }
 
                     currentProfile.bio = newBio;

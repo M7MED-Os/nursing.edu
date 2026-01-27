@@ -5,11 +5,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>بروفايل الشلة - Nursing Academy</title>
+
+    <!-- Favicons -->
+    <link rel="icon" type="image/png" sizes="48x48" href="assets/images/favicon-48x48.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/images/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/images/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/images/apple-touch-icon.png">
+
     <link rel="stylesheet" href="assets/css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <style>
         .squad-profile-container {
             max-width: 1000px;
@@ -79,17 +88,66 @@
             justify-content: center;
             gap: 1.5rem;
             flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+
+        .squad-bio-container {
+            max-width: 500px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
         }
 
         .squad-bio {
             background: rgba(255, 255, 255, 0.15);
             backdrop-filter: blur(10px);
             border-radius: var(--radius-md);
-            padding: 1rem 1.5rem;
-            margin-top: 1rem;
+            padding: 0.75rem 1rem;
             font-size: 0.95rem;
             line-height: 1.6;
             font-style: italic;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            min-height: 45px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .squad-bio:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .bio-text {
+            flex: 1;
+            text-align: center;
+        }
+
+        .bio-text.empty {
+            opacity: 0.7;
+            font-style: normal;
+        }
+
+        .bio-edit-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            cursor: pointer;
+            font-size: 0.85rem;
+            padding: 0.4rem;
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .bio-edit-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
         }
 
         .squad-stats {
@@ -220,7 +278,15 @@
             white-space: nowrap;
         }
 
-        .back-button {
+        .action-buttons {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: center;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
             display: inline-flex;
             align-items: center;
             gap: 0.5rem;
@@ -232,11 +298,22 @@
             text-decoration: none;
             font-weight: 700;
             transition: all 0.3s ease;
-            margin-bottom: 1rem;
+            cursor: pointer;
+            font-size: 0.9rem;
         }
 
-        .back-button:hover {
+        .action-btn:hover {
             background: #10b981;
+            color: white;
+        }
+
+        .action-btn.secondary {
+            border-color: #64748b;
+            color: #64748b;
+        }
+
+        .action-btn.secondary:hover {
+            background: #64748b;
             color: white;
         }
 
@@ -293,16 +370,27 @@
             .members-grid {
                 grid-template-columns: 1fr;
             }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .action-btn {
+                width: 100%;
+                justify-content: center;
+            }
         }
     </style>
 </head>
 
 <body>
     <div class="squad-profile-container">
-        <a href="javascript:history.back()" class="back-button">
-            <i class="fas fa-arrow-right"></i>
-            رجوع
-        </a>
+        <div class="action-buttons">
+            <a href="javascript:history.back()" class="action-btn secondary">
+                <i class="fas fa-arrow-right"></i>
+                رجوع
+            </a>
+        </div>
 
         <!-- Squad Header -->
         <div class="squad-header" id="squadHeader">
@@ -343,17 +431,36 @@
         import { generateAvatar, calculateLevel, getLevelColor, calculateSquadLevel } from './assets/js/avatars.js';
         import { createLevelBadge, createLevelProgress } from './assets/js/level-badge.js';
         import { GRADES, STREAMS } from './assets/js/constants.js';
+        import { checkAuth } from './assets/js/auth.js';
 
-        // Get squad ID from URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const squadId = urlParams.get('id');
+        let currentSquad = null;
+        let isOwner = false;
 
-        if (!squadId) {
-            window.location.href = 'leaderboard.html';
+        // Wait for DOM
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
         }
 
-        async function loadSquadProfile() {
+        async function init() {
+            // Get squad ID from URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const squadId = urlParams.get('id');
+
+            if (!squadId) {
+                window.location.href = 'leaderboard.html';
+                return;
+            }
+
+            await loadSquadProfile(squadId);
+        }
+
+        async function loadSquadProfile(squadId) {
             try {
+                // Check if user is logged in and is owner
+                const auth = await checkAuth({ forceRefresh: false });
+
                 // Fetch squad data
                 const { data: squad, error } = await supabase
                     .from('squads')
@@ -362,6 +469,13 @@
                     .single();
 
                 if (error) throw error;
+
+                currentSquad = squad;
+
+                // Check if current user is owner
+                if (auth && auth.user) {
+                    isOwner = squad.owner_id === auth.user.id;
+                }
 
                 // Render squad header
                 renderSquadHeader(squad);
@@ -377,12 +491,15 @@
 
             } catch (err) {
                 console.error('Error loading squad profile:', err);
-                document.getElementById('squadHeader').innerHTML = `
-                    <div style="text-align: center; color: white; padding: 2rem;">
-                        <i class="fas fa-exclamation-circle" style="font-size: 3rem; margin-bottom: 1rem;"></i>
-                        <p>عذراً، لم نتمكن من تحميل بروفايل الشلة</p>
-                    </div>
-                `;
+                const headerEl = document.getElementById('squadHeader');
+                if (headerEl) {
+                    headerEl.innerHTML = `
+                        <div style="text-align: center; color: white; padding: 2rem;">
+                            <i class="fas fa-exclamation-circle" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                            <p>عذراً، لم نتمكن من تحميل بروفايل الشلة</p>
+                        </div>
+                    `;
+                }
             }
         }
 
@@ -392,28 +509,35 @@
             const levelColor = getLevelColor(level);
             const levelBadgeHTML = createLevelBadge(squad.points || 0, 'large');
 
-            const bioHTML = squad.bio ? `
-                <div class="squad-bio">
-                    <i class="fas fa-quote-right" style="opacity: 0.7; margin-left: 0.5rem;"></i>
-                    ${squad.bio}
-                    <i class="fas fa-quote-left" style="opacity: 0.7; margin-right: 0.5rem;"></i>
-                </div>
-            ` : '';
+            const bioText = squad.bio || 'ضيف بايو';
+            const bioClass = squad.bio ? '' : 'empty';
+            const editBtnDisplay = isOwner ? '' : 'style="display: none;"';
 
-            document.getElementById('squadHeader').innerHTML = `
-                <div class="squad-avatar-container">
-                    <img src="${avatarUrl}" alt="${squad.name}" class="squad-avatar" style="border-color: ${levelColor};">
-                    <div class="squad-level-badge">
-                        ${levelBadgeHTML}
+            const headerEl = document.getElementById('squadHeader');
+            if (headerEl) {
+                headerEl.innerHTML = `
+                    <div class="squad-avatar-container">
+                        <img src="${avatarUrl}" alt="${squad.name}" class="squad-avatar" style="border-color: ${levelColor};">
+                        <div class="squad-level-badge">
+                            ${levelBadgeHTML}
+                        </div>
                     </div>
-                </div>
-                <h1 class="squad-name">${squad.name}</h1>
-                <div class="squad-meta">
-                    <span><i class="fas fa-graduation-cap"></i> ${squad.academic_year}</span>
-                    <span><i class="fas fa-book"></i> ${squad.department}</span>
-                </div>
-                ${bioHTML}
-            `;
+                    <h1 class="squad-name">${squad.name}</h1>
+                    <div class="squad-meta">
+                        <span><i class="fas fa-graduation-cap"></i> ${squad.academic_year}</span>
+                        <span><i class="fas fa-book"></i> ${squad.department}</span>
+                    </div>
+                    
+                    <div class="squad-bio-container">
+                        <div class="squad-bio" onclick="editBio()">
+                            <span class="bio-text ${bioClass}">${bioText}</span>
+                            <button class="bio-edit-btn" ${editBtnDisplay}>
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
         }
 
         async function renderStats(squad) {
@@ -432,28 +556,31 @@
                 .eq('squad_id', squad.id)
                 .eq('status', 'completed');
 
-            document.getElementById('squadStats').innerHTML = `
-                <div class="stat-card">
-                    <div class="stat-icon"><i class="fas fa-trophy"></i></div>
-                    <div class="stat-value">${squad.points || 0}</div>
-                    <div class="stat-label">النقاط الإجمالية</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon"><i class="fas fa-star"></i></div>
-                    <div class="stat-value">${level}</div>
-                    <div class="stat-label">مستوى الشلة</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon"><i class="fas fa-users"></i></div>
-                    <div class="stat-value">${memberCount || 0}</div>
-                    <div class="stat-label">عدد الأعضاء</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
-                    <div class="stat-value">${challengesCount || 0}</div>
-                    <div class="stat-label">التحديات المنجزة</div>
-                </div>
-            `;
+            const statsEl = document.getElementById('squadStats');
+            if (statsEl) {
+                statsEl.innerHTML = `
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-trophy"></i></div>
+                        <div class="stat-value">${squad.points || 0}</div>
+                        <div class="stat-label">النقاط الإجمالية</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-star"></i></div>
+                        <div class="stat-value">${level}</div>
+                        <div class="stat-label">مستوى الشلة</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-users"></i></div>
+                        <div class="stat-value">${memberCount || 0}</div>
+                        <div class="stat-label">عدد الأعضاء</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+                        <div class="stat-value">${challengesCount || 0}</div>
+                        <div class="stat-label">التحديات المنجزة</div>
+                    </div>
+                `;
+            }
         }
 
         async function renderMembers(squad) {
@@ -463,8 +590,11 @@
                 .eq('squad_id', squad.id)
                 .order('profiles(points)', { ascending: false });
 
+            const gridEl = document.getElementById('membersGrid');
+            if (!gridEl) return;
+
             if (!members || members.length === 0) {
-                document.getElementById('membersGrid').innerHTML = `
+                gridEl.innerHTML = `
                     <div style="text-align: center; color: var(--text-light); padding: 2rem; grid-column: 1/-1;">
                         <i class="fas fa-users-slash" style="font-size: 2rem; margin-bottom: 0.5rem;"></i>
                         <p>لا يوجد أعضاء في هذه الشلة</p>
@@ -478,7 +608,7 @@
                 const avatarUrl = profile.avatar_url || generateAvatar(profile.full_name, 'initials');
                 const level = calculateLevel(profile.points || 0);
                 const levelColor = getLevelColor(level);
-                const isOwner = m.profile_id === squad.owner_id;
+                const isSquadOwner = m.profile_id === squad.owner_id;
 
                 return `
                     <a href="student-profile.html?id=${m.profile_id}" class="member-card">
@@ -490,22 +620,90 @@
                                 • <i class="fas fa-star"></i> مستوى ${level}
                             </div>
                         </div>
-                        ${isOwner ? '<span class="owner-badge"><i class="fas fa-crown"></i> المالك</span>' : ''}
+                        ${isSquadOwner ? '<span class="owner-badge"><i class="fas fa-crown"></i> المالك</span>' : ''}
                     </a>
                 `;
             }).join('');
 
-            document.getElementById('membersGrid').innerHTML = membersHTML;
+            gridEl.innerHTML = membersHTML;
         }
 
         function renderLevelProgress(points) {
-            // For squads, we use a different formula (points / 10)
             const progressHTML = createLevelProgress(points);
-            document.getElementById('levelProgress').innerHTML = progressHTML;
+            const progressEl = document.getElementById('levelProgress');
+            if (progressEl) {
+                progressEl.innerHTML = progressHTML;
+            }
         }
 
-        // Load profile on page load
-        loadSquadProfile();
+        // Edit bio function
+        window.editBio = async function () {
+            if (!isOwner) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'غير مسموح',
+                    text: 'فقط مالك الشلة يمكنه تعديل النبذة',
+                    confirmButtonColor: '#10b981'
+                });
+                return;
+            }
+
+            const { value: newBio } = await Swal.fire({
+                title: 'تعديل نبذة الشلة',
+                input: 'textarea',
+                inputPlaceholder: 'صلي على النبي',
+                inputValue: currentSquad.bio || '',
+                inputAttributes: {
+                    maxlength: 200,
+                    'aria-label': 'نبذة الشلة'
+                },
+                showCancelButton: true,
+                confirmButtonText: 'حفظ',
+                cancelButtonText: 'إلغاء',
+                confirmButtonColor: '#10b981',
+                inputValidator: (value) => {
+                    if (value && value.length > 200) {
+                        return 'النبذة طويلة جداً! الحد الأقصى 200 حرف';
+                    }
+                }
+            });
+
+            if (newBio !== undefined) {
+                try {
+                    const { error } = await supabase
+                        .from('squads')
+                        .update({ bio: newBio || null })
+                        .eq('id', currentSquad.id);
+
+                    if (error) throw error;
+
+                    currentSquad.bio = newBio;
+
+                    // Update UI
+                    const bioTextEl = document.querySelector('.bio-text');
+                    if (bioTextEl) {
+                        bioTextEl.textContent = newBio || 'ضيف بايو';
+                        bioTextEl.className = newBio ? 'bio-text' : 'bio-text empty';
+                    }
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'تم التحديث!',
+                        text: 'تم تحديث نبذة الشلة بنجاح',
+                        confirmButtonColor: '#10b981',
+                        timer: 2000
+                    });
+                } catch (err) {
+                    console.error('Error updating bio:', err);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'خطأ',
+                        text: 'حدث خطأ أثناء التحديث',
+                        confirmButtonColor: '#10b981'
+                    });
+                }
+            }
+        };
     </script>
 </body>
 

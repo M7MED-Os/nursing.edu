@@ -85,6 +85,12 @@ async function setupSquadUI() {
     document.getElementById('squadMemberCount').textContent = `0 عضو`; // Will be updated by loadMembers
     document.getElementById('squadCode').textContent = currentSquad.id.split('-')[0].toUpperCase();
 
+    // Update preview button link
+    const previewBtn = document.getElementById('previewSquadBtn');
+    if (previewBtn) {
+        previewBtn.href = `squad-profile.html?id=${currentSquad.id}`;
+    }
+
     // Load Sub-components
     loadMembers();
     loadTasks();
