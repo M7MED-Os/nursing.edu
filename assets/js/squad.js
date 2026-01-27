@@ -89,6 +89,7 @@ async function setupSquadUI() {
     loadChat();
     loadPomodoro();
     setupPresence();
+    loadActiveChallenge(); // Check for active challenges
 
     // Show Clear Chat button to Squad Owner OR Global Admin
     const isOwner = currentSquad.owner_id === currentProfile.id;
@@ -101,6 +102,81 @@ async function setupSquadUI() {
         // Show Edit Squad Name button
         const editBtn = document.getElementById('editSquadNameBtn');
         if (editBtn) editBtn.style.display = 'inline-block';
+
+        // Show End Challenge button (will be controlled by loadActiveChallenge)
+        const endBtn = document.getElementById('endChallengeBtn');
+        if (endBtn) endBtn.dataset.canEnd = 'true';
+    }
+}
+
+// --- Active Challenge Display ---
+async function loadActiveChallenge() {
+    const { data: activeChallenge } = await supabase
+        .from('squad_exam_challenges')
+        .select('id, exam_id, created_at, expires_at, exams(title)')
+        .eq('squad_id', currentSquad.id)
+        .eq('status', 'active')
+        .maybeSingle();
+
+    const activeChallengeCard = document.getElementById('activeChallengeCard');
+    const startChallengeCard = document.getElementById('startChallengeCard');
+    const activeChallengeInfo = document.getElementById('activeChallengeInfo');
+    const endChallengeBtn = document.getElementById('endChallengeBtn');
+
+    if (activeChallenge) {
+        // There's an active challenge
+        const examTitle = activeChallenge.exams?.title || 'امتحان';
+        const expiresAt = new Date(activeChallenge.expires_at);
+        const now = new Date();
+        const timeLeft = Math.max(0, Math.floor((expiresAt - now) / 1000 / 60));
+
+        activeChallengeInfo.innerHTML = `
+            <div style="margin-bottom: 8px;"><strong>📚 ${examTitle}</strong></div>
+            <div style="font-size: 0.85rem;">⏰ الوقت المتبقي: ${timeLeft} دقيقة</div>
+        `;
+
+        activeChallengeCard.style.display = 'block';
+        startChallengeCard.style.display = 'none';
+
+        // Show end button if user is admin/owner
+        if (endChallengeBtn.dataset.canEnd === 'true') {
+            endChallengeBtn.style.display = 'block';
+            endChallengeBtn.dataset.challengeId = activeChallenge.id;
+        }
+    } else {
+        // No active challenge
+        activeChallengeCard.style.display = 'none';
+        startChallengeCard.style.display = 'block';
+    }
+}
+
+window.endActiveChallenge = async () => {
+    const endBtn = document.getElementById('endChallengeBtn');
+    const challengeId = endBtn.dataset.challengeId;
+
+    if (!challengeId) return;
+
+    const { isConfirmed } = await Swal.fire({
+        title: 'إنهاء التحدي؟',
+        text: 'هيتم حساب النقاط وتوزيع المكافآت على المشاركين.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'نعم، أنهي التحدي',
+        cancelButtonText: 'إلغاء'
+    });
+
+    if (isConfirmed) {
+        const { data, error } = await supabase.rpc('end_challenge_manually', { p_challenge_id: challengeId });
+
+        if (error) {
+            Swal.fire('خطأ', error.message || 'حصل خطأ في إنهاء التحدي', 'error');
+        } else if (data?.success) {
+            Swal.fire('تم!', 'تم إنهاء التحدي بنجاح 🎉', 'success');
+            loadActiveChallenge();
+            loadChat(); // Refresh chat to show completion message
+        } else {
+            Swal.fire('خطأ', data?.error || 'حصل خطأ', 'error');
+        }
     }
 }
 
@@ -1040,7 +1116,20 @@ document.getElementById('startPomodoroBtn').onclick = startPomodoroFlow;
 // --- Collaborative Exams ---
 window.startSharedExam = async () => {
     try {
-        // 0. Fetch FRESH settings before starting any challenge selection
+        // 0. Check if there's already an active challenge
+        const { data: activeChallenge } = await supabase
+            .from('squad_exam_challenges')
+            .select('id')
+            .eq('squad_id', currentSquad.id)
+            .eq('status', 'active')
+            .maybeSingle();
+
+        if (activeChallenge) {
+            Swal.fire('تنبيه', 'في تحدي نشط حالياً! لازم ينتهي الأول قبل ما تبدأ تحدي جديد.', 'warning');
+            return;
+        }
+
+        // 1. Fetch FRESH settings before starting any challenge selection
         await loadGlobalSettings();
 
         const grade = currentProfile.grade;
