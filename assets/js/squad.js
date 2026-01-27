@@ -1,4 +1,4 @@
-import { supabase } from './supabase.js';
+import { supabase } from './supabaseClient.js';
 import { getCache, setCache, getSWR } from "./utils.js";
 import { generateAvatar, calculateLevel } from './avatars.js';
 import { createLevelBadge, createLevelAvatar } from './level-badge.js';

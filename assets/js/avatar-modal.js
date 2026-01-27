@@ -5,7 +5,7 @@
 // تشتغل للطلاب والشلل
 // ============================================
 
-import { supabase } from './supabase.js';
+import { supabase } from './supabaseClient.js';
 import { generateAvatarOptions } from './avatars.js';
 import { showToast } from './utils.js';
 
