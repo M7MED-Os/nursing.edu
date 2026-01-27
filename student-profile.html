@@ -570,6 +570,20 @@
         }
 
         async function renderSquad(userId) {
+            const ctx = window.privacyContext;
+            const showSquad = ctx && isVisible(ctx.privacySettings.squad, ctx.isOwner, ctx.isSameSquad);
+
+            const sectionEl = document.getElementById('squadSection');
+            const contentEl = document.getElementById('squadContent');
+
+            if (!sectionEl || !contentEl) return;
+
+            if (!showSquad) {
+                sectionEl.style.display = 'block';
+                contentEl.innerHTML = createLockedElement('squad');
+                return;
+            }
+
             const { data: membership } = await supabase
                 .from('squad_members')
                 .select('squad_id, squads(*)')
@@ -586,25 +600,20 @@
                     .select('*', { count: 'exact', head: true })
                     .eq('squad_id', squad.id);
 
-                const sectionEl = document.getElementById('squadSection');
-                const contentEl = document.getElementById('squadContent');
-
-                if (sectionEl && contentEl) {
-                    sectionEl.style.display = 'block';
-                    contentEl.innerHTML = `
-                        <a href="squad-profile.html?id=${squad.id}" class="squad-link">
-                            <img src="${squadAvatar}" alt="${squad.name}" class="squad-avatar">
-                            <div class="squad-info">
-                                <div class="squad-name">${squad.name}</div>
-                                <div class="squad-meta">
-                                    <i class="fas fa-users"></i> ${memberCount || 0} عضو
-                                    • <i class="fas fa-trophy"></i> ${squad.points || 0} نقطة
-                                </div>
+                sectionEl.style.display = 'block';
+                contentEl.innerHTML = `
+                    <a href="squad-profile.html?id=${squad.id}" class="squad-link">
+                        <img src="${squadAvatar}" alt="${squad.name}" class="squad-avatar">
+                        <div class="squad-info">
+                            <div class="squad-name">${squad.name}</div>
+                            <div class="squad-meta">
+                                <i class="fas fa-users"></i> ${memberCount || 0} عضو
+                                • <i class="fas fa-trophy"></i> ${squad.points || 0} نقطة
                             </div>
-                            <i class="fas fa-chevron-left"></i>
-                        </a>
-                    `;
-                }
+                        </div>
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                `;
             }
         }
 

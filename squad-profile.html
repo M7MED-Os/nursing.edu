@@ -442,6 +442,7 @@
         import { createLevelBadge, createLevelProgress, createSquadLevelProgress } from './assets/js/level-badge.js';
         import { GRADES, STREAMS } from './assets/js/constants.js';
         import { checkAuth } from './assets/js/auth.js';
+        import { isVisible, createLockedElement, createLockedAvatar, isSquadMember } from './assets/js/privacy.js';
 
         let currentSquad = null;
         let isOwner = false;
@@ -468,8 +469,9 @@
 
         async function loadSquadProfile(squadId) {
             try {
-                // Check if user is logged in and is owner
+                // Check if user is logged in
                 const auth = await checkAuth({ forceRefresh: false });
+                const currentUser = auth ? auth.user : null;
 
                 // Fetch squad data
                 const { data: squad, error } = await supabase
@@ -482,10 +484,21 @@
 
                 currentSquad = squad;
 
-                // Check if current user is owner
-                if (auth && auth.user) {
-                    isOwner = squad.owner_id === auth.user.id;
-                }
+                // Check relationship
+                isOwner = currentUser && squad.owner_id === currentUser.id;
+                const isMember = currentUser ? await isSquadMember(squad.id, currentUser.id) : false;
+
+                // Store privacy context
+                window.squadPrivacyContext = {
+                    isOwner,
+                    isMember,
+                    privacySettings: {
+                        avatar: squad.privacy_avatar || 'public',
+                        bio: squad.privacy_bio || 'public',
+                        stats: squad.privacy_stats || 'public',
+                        members: squad.privacy_members || 'public'
+                    }
+                };
 
                 // Render squad header
                 renderSquadHeader(squad);
@@ -514,7 +527,10 @@
         }
 
         function renderSquadHeader(squad) {
-            const avatarUrl = squad.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(squad.name)}&background=10b981&color=fff&size=200`;
+            const ctx = window.squadPrivacyContext;
+            const showAvatar = ctx && isVisible(ctx.privacySettings.avatar, ctx.isOwner, ctx.isMember);
+            const showBio = ctx && isVisible(ctx.privacySettings.bio, ctx.isOwner, ctx.isMember);
+
             const level = calculateSquadLevel(squad.points || 0);
             const levelColor = getLevelColor(level);
             const levelBadgeHTML = createLevelBadge(squad.points || 0, 'large');
@@ -525,13 +541,36 @@
 
             const headerEl = document.getElementById('squadHeader');
             if (headerEl) {
-                headerEl.innerHTML = `
-                    <div class="squad-avatar-container">
-                        <img src="${avatarUrl}" alt="${squad.name}" class="squad-avatar" style="border-color: ${levelColor};">
-                        <div class="squad-level-badge">
-                            ${levelBadgeHTML}
+                // Avatar HTML
+                let avatarHTML;
+                if (showAvatar) {
+                    const avatarUrl = squad.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(squad.name)}&background=10b981&color=fff&size=200`;
+                    avatarHTML = `
+                        <div class="squad-avatar-container">
+                            <img src="${avatarUrl}" alt="${squad.name}" class="squad-avatar" style="border-color: ${levelColor};">
+                            <div class="squad-level-badge">
+                                ${levelBadgeHTML}
+                            </div>
                         </div>
-                    </div>
+                    `;
+                } else {
+                    avatarHTML = createLockedAvatar();
+                }
+
+                // Bio HTML
+                let bioHTML;
+                if (showBio) {
+                    bioHTML = `
+                        <div class="squad-bio">
+                            <span class="bio-text ${bioClass}">${bioText}</span>
+                        </div>
+                    `;
+                } else {
+                    bioHTML = createLockedElement('bio');
+                }
+
+                headerEl.innerHTML = `
+                    ${avatarHTML}
                     <h1 class="squad-name">${squad.name}</h1>
                     <div class="squad-meta">
                         <span><i class="fas fa-graduation-cap"></i> ${squad.academic_year}</span>
@@ -539,15 +578,28 @@
                     </div>
                     
                     <div class="squad-bio-container">
-                        <div class="squad-bio">
-                            <span class="bio-text ${bioClass}">${bioText}</span>
-                        </div>
+                        ${bioHTML}
                     </div>
                 `;
             }
         }
 
         async function renderStats(squad) {
+            const ctx = window.squadPrivacyContext;
+            const showStats = ctx && isVisible(ctx.privacySettings.stats, ctx.isOwner, ctx.isMember);
+
+            const statsEl = document.getElementById('squadStats');
+            if (!statsEl) return;
+
+            if (!showStats) {
+                statsEl.innerHTML = `
+                    <div style="grid-column: 1/-1;">
+                        ${createLockedElement('stats')}
+                    </div>
+                `;
+                return;
+            }
+
             const level = calculateSquadLevel(squad.points || 0);
 
             // Get member count
@@ -563,42 +615,51 @@
                 .eq('squad_id', squad.id)
                 .eq('status', 'completed');
 
-            const statsEl = document.getElementById('squadStats');
-            if (statsEl) {
-                statsEl.innerHTML = `
-                    <div class="stat-card">
-                        <div class="stat-icon"><i class="fas fa-trophy"></i></div>
-                        <div class="stat-value">${squad.points || 0}</div>
-                        <div class="stat-label">النقاط الإجمالية</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon"><i class="fas fa-star"></i></div>
-                        <div class="stat-value">${level}</div>
-                        <div class="stat-label">مستوى الشلة</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon"><i class="fas fa-users"></i></div>
-                        <div class="stat-value">${memberCount || 0}</div>
-                        <div class="stat-label">عدد الأعضاء</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
-                        <div class="stat-value">${challengesCount || 0}</div>
-                        <div class="stat-label">التحديات المنجزة</div>
-                    </div>
-                `;
-            }
+            statsEl.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-trophy"></i></div>
+                    <div class="stat-value">${squad.points || 0}</div>
+                    <div class="stat-label">النقاط الإجمالية</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-star"></i></div>
+                    <div class="stat-value">${level}</div>
+                    <div class="stat-label">مستوى الشلة</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-users"></i></div>
+                    <div class="stat-value">${memberCount || 0}</div>
+                    <div class="stat-label">عدد الأعضاء</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+                    <div class="stat-value">${challengesCount || 0}</div>
+                    <div class="stat-label">التحديات المنجزة</div>
+                </div>
+            `;
         }
 
         async function renderMembers(squad) {
+            const ctx = window.squadPrivacyContext;
+            const showMembers = ctx && isVisible(ctx.privacySettings.members, ctx.isOwner, ctx.isMember);
+
+            const gridEl = document.getElementById('membersGrid');
+            if (!gridEl) return;
+
+            if (!showMembers) {
+                gridEl.innerHTML = `
+                    <div style="grid-column: 1/-1;">
+                        ${createLockedElement('members')}
+                    </div>
+                `;
+                return;
+            }
+
             const { data: members } = await supabase
                 .from('squad_members')
                 .select('profile_id, profiles(full_name, points, avatar_url)')
                 .eq('squad_id', squad.id)
                 .order('profiles(points)', { ascending: false });
-
-            const gridEl = document.getElementById('membersGrid');
-            if (!gridEl) return;
 
             if (!members || members.length === 0) {
                 gridEl.innerHTML = `

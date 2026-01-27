@@ -98,7 +98,8 @@ export function createLockedElement(type) {
         bio: 'النبذة مخفية',
         stats: 'الإحصائيات مخفية',
         progress: 'التقدم مخفي',
-        members: 'قائمة الأعضاء مخفية'
+        members: 'قائمة الأعضاء مخفية',
+        squad: 'الشلة مخفية'
     };
 
     return `

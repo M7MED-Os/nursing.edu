@@ -141,6 +141,10 @@ async function setupSquadUI() {
         // Show Change Squad Avatar button
         const changeAvatarBtn = document.getElementById('changeSquadAvatarBtn');
         if (changeAvatarBtn) changeAvatarBtn.style.display = 'flex';
+
+        // Show Privacy Settings button
+        const privacyBtn = document.getElementById('squadPrivacyBtn');
+        if (privacyBtn) privacyBtn.style.display = 'flex';
     }
 
     // Display Squad Avatar and Level Badge
@@ -1697,4 +1701,103 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 });
+
+// --- Squad Privacy Settings ---
+window.openSquadPrivacyModal = async function () {
+    // Load modal if not exists
+    if (!document.getElementById('squadPrivacyModal')) {
+        try {
+            const response = await fetch('components/squad-privacy-modal.html');
+            const html = await response.text();
+            document.body.insertAdjacentHTML('beforeend', html);
+        } catch (err) {
+            console.error('Error loading modal:', err);
+            return;
+        }
+    }
+
+    const modal = document.getElementById('squadPrivacyModal');
+    if (modal) {
+        modal.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+        loadSquadPrivacySettings();
+    }
+};
+
+window.closeSquadPrivacyModal = function () {
+    const modal = document.getElementById('squadPrivacyModal');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
+};
+
+async function loadSquadPrivacySettings() {
+    if (!currentSquad) return;
+
+    try {
+        const { data: squad } = await supabase
+            .from('squads')
+            .select('privacy_avatar, privacy_bio, privacy_stats, privacy_members')
+            .eq('id', currentSquad.id)
+            .single();
+
+        if (squad) {
+            // Update currentSquad object locally
+            Object.assign(currentSquad, squad);
+
+            // Wait for modal DOM to be ready
+            setTimeout(() => {
+                const avatarEl = document.getElementById('squadPrivacyAvatar');
+                const bioEl = document.getElementById('squadPrivacyBio');
+                const statsEl = document.getElementById('squadPrivacyStats');
+                const membersEl = document.getElementById('squadPrivacyMembers');
+
+                if (avatarEl) avatarEl.value = squad.privacy_avatar || 'public';
+                if (bioEl) bioEl.value = squad.privacy_bio || 'public';
+                if (statsEl) statsEl.value = squad.privacy_stats || 'public';
+                if (membersEl) membersEl.value = squad.privacy_members || 'public';
+            }, 50);
+        }
+    } catch (err) {
+        console.error('Error loading squad privacy:', err);
+    }
+}
+
+window.saveSquadPrivacySettings = async function () {
+    if (!currentSquad) return;
+
+    const updates = {
+        privacy_avatar: document.getElementById('squadPrivacyAvatar').value,
+        privacy_bio: document.getElementById('squadPrivacyBio').value,
+        privacy_stats: document.getElementById('squadPrivacyStats').value,
+        privacy_members: document.getElementById('squadPrivacyMembers').value
+    };
+
+    try {
+        const { error } = await supabase
+            .from('squads')
+            .update(updates)
+            .eq('id', currentSquad.id);
+
+        if (error) throw error;
+
+        // Update local state
+        Object.assign(currentSquad, updates);
+
+        closeSquadPrivacyModal();
+
+        Swal.fire({
+            icon: 'success',
+            title: 'تم الحفظ',
+            text: 'تم تحديث إعدادات الخصوصية بنجاح',
+            timer: 2000,
+            showConfirmButton: false,
+            confirmButtonColor: '#10b981'
+        });
+    } catch (err) {
+        console.error('Error saving squad privacy:', err);
+        Swal.fire('خطأ', 'حدث خطأ أثناء حفظ الإعدادات', 'error');
+    }
+};
 

@@ -652,7 +652,13 @@
                     const levelColor = getLevelColor(level);
                     const levelBadgeHTML = createLevelBadge(s.points || 0, 'xsmall');
 
-                    return `<tr ${rowClass}><td class="rank-cell ${rankClass}">${rankDisplay}</td><td><div class="user-info-cell"><div style="position: relative; display: inline-block; width: 45px; height: 45px; min-width: 45px; min-height: 45px;"><img src="${avatarUrl}" alt="${s.full_name}" class="user-avatar" style="width: 100%; height: 100%; object-fit: cover; border: 3px solid ${levelColor}; box-shadow: 0 4px 12px ${levelColor}40;"><div style="position: absolute; bottom: -2px; left: -2px; z-index: 10; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));">${levelBadgeHTML}</div></div><div class="user-name-box"><a href="student-profile.html?id=${s.id}" style="text-decoration: none; color: inherit; font-weight: 700; transition: color 0.3s ease;" onmouseover="this.style.color='var(--primary-color)'" onmouseout="this.style.color='inherit'">${s.full_name} ${s.id === currentUserInfo.id ? '(أنت)' : ''}</a><span>${subText}</span></div></div></td><td class="points-cell">${s.points || 0}<span class="points-label">نقطة</span></td></tr>`;
+                    // Privacy Check
+                    const showAvatar = s.id === currentUserInfo.id || !s.privacy_avatar || s.privacy_avatar === 'public';
+                    const avatarHTML = showAvatar
+                        ? `<img src="${avatarUrl}" alt="${s.full_name}" class="user-avatar" style="width: 100%; height: 100%; object-fit: cover; border: 3px solid ${levelColor}; box-shadow: 0 4px 12px ${levelColor}40;">`
+                        : `<div class="user-avatar" style="width: 100%; height: 100%; background: #e2e8f0; display: flex; align-items: center; justify-content: center; border: 3px solid ${levelColor};"><i class="fas fa-lock" style="color: #94a3b8; font-size: 1.2rem;"></i></div>`;
+
+                    return `<tr ${rowClass}><td class="rank-cell ${rankClass}">${rankDisplay}</td><td><div class="user-info-cell"><div style="position: relative; display: inline-block; width: 45px; height: 45px; min-width: 45px; min-height: 45px;">${avatarHTML}<div style="position: absolute; bottom: -2px; left: -2px; z-index: 10; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));">${levelBadgeHTML}</div></div><div class="user-name-box"><a href="student-profile.html?id=${s.id}" style="text-decoration: none; color: inherit; font-weight: 700; transition: color 0.3s ease;" onmouseover="this.style.color='var(--primary-color)'" onmouseout="this.style.color='inherit'">${s.full_name} ${s.id === currentUserInfo.id ? '(أنت)' : ''}</a><span>${subText}</span></div></div></td><td class="points-cell">${s.points || 0}<span class="points-label">نقطة</span></td></tr>`;
                 }).join('');
 
                 const belongsToFilter = (currentFilterStream === 'all') || (currentFilterStream === currentUserInfo.stream);
