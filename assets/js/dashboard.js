@@ -37,7 +37,7 @@ async function loadDashboardStats(userId) {
 
     // Use SWR for Stats RPC
     getSWR(statsKey,
-        () => supabase.rpc('get_user_stats_v2', { p_user_id: userId }).then(res => res.data[0]),
+        () => supabase.rpc('get_user_stats', { p_user_id: userId }).then(res => res.data[0]),
         APP_CONFIG.CACHE_TIME_STATS,
         (stats) => renderStatsUI(stats)
     );

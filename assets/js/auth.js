@@ -684,7 +684,7 @@ async function loadUserDashboardData(userId) {
         }
 
         // 2. Background Revalidation
-        const { data: rpcData, error } = await supabase.rpc('get_user_stats_v2', { p_user_id: userId });
+        const { data: rpcData, error } = await supabase.rpc('get_user_stats', { p_user_id: userId });
         if (error) throw error;
 
         const freshStats = rpcData[0];
