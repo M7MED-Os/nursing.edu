@@ -3,7 +3,7 @@ import { showToast } from "./utils.js";
 import { GRADES, TERMS, STREAMS } from "./constants.js";
 import { setButtonLoading } from "./utils/dom.js";
 import { openAvatarModal } from "./avatar-modal.js";
-import { generateAvatar } from "./avatars.js";
+import { generateAvatar, getLevelColor } from "./avatars.js";
 import { createLevelBadge } from "./level-badge.js";
 
 // ==========================
@@ -58,81 +58,40 @@ function renderProfileUI(profile, user) {
     const termField = document.getElementById("term");
 
     if (emailField) emailField.value = email;
-    if (gradeField) {
-        gradeField.value = grade;
-        handleGradeChange(grade);
-    }
+    if (gradeField) gradeField.value = grade;
     if (termField) termField.value = term;
     if (streamField) streamField.value = stream;
 
-    // 4. Populate Info Display (The plain text view)
-    const infoRows = document.getElementById("infoRows");
-    if (infoRows) {
-        let infoHtml = `
-            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding-bottom: 0.5rem;">
-                <span style="color: #64748b;">البريد الإلكتروني:</span>
-                <span style="font-weight: 500;">${email}</span>
-            </div>
-            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding-bottom: 0.5rem;">
-                <span style="color: #64748b;">السنة الدراسية:</span>
-                <span style="font-weight: 500;">${GRADES[grade] || grade || '-'}</span>
-            </div>
-        `;
 
-        // Show Term for all years
-        if (term) {
-            infoHtml += `
-            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding-bottom: 0.5rem;">
-                <span style="color: #64748b;">الترم:</span>
-                <span style="font-weight: 500;">${TERMS[term] || term || '-'}</span>
-            </div>`;
-        }
+    // 4. Subscription Card Logic (Show for all users)
+    const subStart = document.getElementById('subStart');
+    const subEnd = document.getElementById('subEnd');
+    const planName = document.getElementById('planName');
+    const timeLeft = document.getElementById('timeLeft');
 
-        // Show Department for Year 3 & 4
-        if ((grade === "3" || grade === "4") && stream) {
-            infoHtml += `
-            <div style="display: flex; justify-content: space-between;">
-                <span style="color: #64748b;">القسم:</span>
-                <span style="font-weight: 500;">${STREAMS[stream] || stream || '-'}</span>
-            </div>`;
+    if (subStart) subStart.textContent = profile.subscription_started_at ? new Date(profile.subscription_started_at).toLocaleString('ar-EG') : 'غير محدد';
+    if (subEnd) subEnd.textContent = profile.subscription_ends_at ? new Date(profile.subscription_ends_at).toLocaleString('ar-EG') : 'غير محدد';
+    if (planName) planName.textContent = profile.last_duration_text || 'خطة مخصصة';
+
+    if (profile.subscription_ends_at && timeLeft) {
+        const end = new Date(profile.subscription_ends_at);
+        const now = new Date();
+        const diff = end - now;
+
+        if (diff > 0) {
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+            const mins = Math.floor((diff / (1000 * 60)) % 60);
+            timeLeft.textContent = `${days} يوم و ${hours} ساعة و ${mins} دقيقة`;
+        } else {
+            timeLeft.textContent = 'منتهي';
+            timeLeft.style.background = '#ef4444';
+            timeLeft.style.color = 'white';
         }
-        infoRows.innerHTML = infoHtml;
     }
 
 
-    // 5. Subscription Card Logic
-    if (profile && profile.role !== 'admin') {
-        const subStart = document.getElementById('subStart');
-        const subEnd = document.getElementById('subEnd');
-        const planName = document.getElementById('planName');
-        const timeLeft = document.getElementById('timeLeft');
-
-        if (subStart) subStart.textContent = profile.subscription_started_at ? new Date(profile.subscription_started_at).toLocaleString('ar-EG') : 'غير محدد';
-        if (subEnd) subEnd.textContent = profile.subscription_ends_at ? new Date(profile.subscription_ends_at).toLocaleString('ar-EG') : 'غير محدد';
-        if (planName) planName.textContent = profile.last_duration_text || 'خطة مخصصة';
-
-        if (profile.subscription_ends_at && timeLeft) {
-            const end = new Date(profile.subscription_ends_at);
-            const now = new Date();
-            const diff = end - now;
-
-            if (diff > 0) {
-                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-                const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
-                const mins = Math.floor((diff / (1000 * 60)) % 60);
-                timeLeft.textContent = `${days} يوم و ${hours} ساعة و ${mins} دقيقة`;
-            } else {
-                timeLeft.textContent = 'منتهي';
-                timeLeft.style.background = '#ef4444';
-                timeLeft.style.color = 'white';
-            }
-        }
-    } else {
-        const card = document.getElementById('subscriptionCard');
-        if (card) card.style.display = 'none';
-    }
-
-    // Special Admin UI override (Optional: could show a button to reveal fields)
+    // 5. Admin UI
     const adminBtn = document.getElementById("adminNavBtn");
     if (isAdmin) {
         console.log("Admin logged in. All background fields are synced.");
@@ -149,129 +108,137 @@ function renderProfileUI(profile, user) {
         if (bottomAdminBtn) bottomAdminBtn.remove();
     }
 
-    // 6. Display Avatar and Level Badge
+    // 6. Display Avatar, Name, Email, and Level Badge
     const avatarImg = document.getElementById('profileAvatar');
     const levelBadgeContainer = document.getElementById('profileLevelBadge');
+    const displayName = document.getElementById('profileDisplayName');
+    const emailDisplay = document.getElementById('profileEmailDisplay');
+    const statsGrid = document.getElementById('profileStatsGrid');
 
     if (avatarImg) {
-        const avatarUrl = profile.avatar_url || generateAvatar(fullName, 'initials');
-        avatarImg.src = avatarUrl;
+        avatarImg.src = profile.avatar_url || generateAvatar(fullName, 'initials');
+
+        // Update border color based on level
+        if (profile.points !== undefined) {
+            const level = Math.floor(Math.sqrt(Math.max(profile.points || 0, 0) / 5));
+            const color = getLevelColor(level);
+            // Keep white border for premium look
+        }
     }
 
     if (levelBadgeContainer && profile.points !== undefined) {
         levelBadgeContainer.innerHTML = createLevelBadge(profile.points, 'medium');
     }
-}
 
-// ==========================
-// 4. Form Logic
-// ==========================
-
-function handleGradeChange(gradeVal) {
-    const termGroup = document.getElementById("termGroup");
-    const streamGroup = document.getElementById("streamGroup");
-
-    // Reset displays
-    termGroup.style.display = "none";
-    streamGroup.style.display = "none";
-
-    // All years have terms
-    if (gradeVal === "1" || gradeVal === "2" || gradeVal === "3" || gradeVal === "4") {
-        termGroup.style.display = "block";
+    if (displayName) {
+        displayName.textContent = fullName || 'اسم الطالب';
     }
 
-    // Years 3 & 4 also have departments
-    if (gradeVal === "3" || gradeVal === "4") {
-        streamGroup.style.display = "block";
+    if (emailDisplay) {
+        emailDisplay.textContent = email || 'email@example.com';
     }
-}
 
-const gradeSelect = document.getElementById("grade");
-if (gradeSelect) {
-    gradeSelect.addEventListener("change", (e) => handleGradeChange(e.target.value));
-}
+    // 7. Display Stats in Premium Cards
+    if (statsGrid) {
+        let statsHtml = '';
 
-const profileForm = document.getElementById("profileForm");
-if (profileForm) {
-    profileForm.addEventListener("submit", async (e) => {
-        e.preventDefault();
+        // Academic Year Card
+        statsHtml += createStatCard(
+            'السنة الدراسية',
+            GRADES[grade] || grade || '-',
+            'fa-graduation-cap',
+            '#10b981',
+            'linear-gradient(135deg, #10b981 0%, #059669 100%)'
+        );
 
-        const submitBtn = profileForm.querySelector('button[type="submit"]');
-        setButtonLoading(submitBtn, true, 'جاري الحفظ...');
-
-        const full_name = document.getElementById("fullname").value.trim();
-        const grade = document.getElementById("grade").value;
-        const term = document.getElementById("term").value;
-        const stream = document.getElementById("stream").value;
-
-        try {
-            // Validation
-            if (!full_name) throw new Error("الاسم مطلوب");
-            if (!grade) throw new Error("السنة الدراسية مطلوبة");
-
-            // Prepare Data
-            const updates = {
-                id: currentUser.id,
-                full_name,
-                email: currentUser.email,
-                updated_at: new Date()
-            };
-
-            // Double Check Admin Status before allowing sensitive field updates
-            const meta = currentUser.user_metadata || {};
-            const isAdmin = meta.role === "admin" || meta.is_admin === true;
-
-            if (isAdmin) {
-                // Admin can update everything
-                updates.grade = grade;
-
-                // All years have terms
-                updates.term = term || null;
-
-                // Years 3 & 4 have departments
-                if (grade === "3" || grade === "4") {
-                    updates.stream = stream || null;
-                } else {
-                    updates.stream = null;
-                }
-            } else {
-                // Student cannot change grade or stream - these fields are ignored or kept from original profile
-                console.warn("Security Check: Student attempt to bypass field lock. Ignoring sensitive changes.");
-            }
-
-            // 1. Update 'profiles' table
-            const { error: dbError } = await supabase
-                .from('profiles')
-                .upsert(updates);
-
-            if (dbError) throw dbError;
-
-            // 2. Update Auth Metadata (Best effort, keeps session in sync)
-            const { error: authError } = await supabase.auth.updateUser({
-                data: {
-                    full_name,
-                    grade,
-                    term: updates.term,
-                    stream: updates.stream
-                }
-            });
-
-            if (authError) console.warn("Auth metadata update failed:", authError);
-
-            showToast("تم تحديث البيانات بنجاح", "success");
-
-            // Optional: Redirect to dashboard after short delay
-            setTimeout(() => {
-                // window.location.href = "dashboard.html"; 
-            }, 1000);
-
-        } catch (error) {
-            console.error("Update error:", error);
-            showToast(error.message || "حدث خطأ أثناء الحفظ", "error");
-        } finally {
-            setButtonLoading(submitBtn, false);
+        // Term Card
+        if (term) {
+            statsHtml += createStatCard(
+                'الترم',
+                TERMS[term] || term || '-',
+                'fa-calendar-alt',
+                '#3b82f6',
+                'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)'
+            );
         }
-    });
+
+        // Department Card (for Year 3 & 4)
+        if ((grade === "3" || grade === "4") && stream) {
+            statsHtml += createStatCard(
+                'القسم',
+                STREAMS[stream] || stream || '-',
+                'fa-user-md',
+                '#8b5cf6',
+                'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)'
+            );
+        }
+
+        // Points Card
+        if (profile.points !== undefined) {
+            const level = Math.floor(Math.sqrt(Math.max(profile.points || 0, 0) / 5));
+            statsHtml += createStatCard(
+                'النقاط',
+                `${profile.points || 0} نقطة`,
+                'fa-star',
+                '#f59e0b',
+                'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'
+            );
+        }
+
+        statsGrid.innerHTML = statsHtml;
+    }
+}
+
+// Helper function to create stat cards
+function createStatCard(label, value, icon, color, gradient) {
+    return `
+        <div style="
+            background: white;
+            border-radius: 16px;
+            padding: 1.25rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            transition: all 0.3s;
+            cursor: default;
+            border: 2px solid transparent;
+            position: relative;
+            overflow: hidden;
+        "
+        onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 8px 20px rgba(0,0,0,0.12)'; this.style.borderColor='${color}'"
+        onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.08)'; this.style.borderColor='transparent'">
+            <!-- Icon Badge -->
+            <div style="
+                width: 48px;
+                height: 48px;
+                border-radius: 12px;
+                background: ${gradient};
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin-bottom: 0.75rem;
+                box-shadow: 0 4px 12px ${color}40;
+            ">
+                <i class="fas ${icon}" style="color: white; font-size: 1.25rem;"></i>
+            </div>
+            
+            <!-- Label -->
+            <div style="
+                color: #64748b;
+                font-size: 0.75rem;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                margin-bottom: 0.25rem;
+            ">${label}</div>
+            
+            <!-- Value -->
+            <div style="
+                color: #1e293b;
+                font-size: 1.1rem;
+                font-weight: 700;
+                line-height: 1.2;
+            ">${value}</div>
+        </div>
+    `;
 }
 
 // Logout
@@ -280,6 +247,74 @@ if (logoutBtn) {
     logoutBtn.addEventListener("click", async () => {
         await supabase.auth.signOut();
         window.location.href = "login.html";
+    });
+}
+
+// Edit Name Button
+const editNameBtn = document.getElementById("editNameBtn");
+if (editNameBtn) {
+    editNameBtn.addEventListener("click", async () => {
+        if (!currentProfile || !currentUser) {
+            showToast('جاري تحميل البيانات...', 'info');
+            return;
+        }
+
+        const { value: newName } = await Swal.fire({
+            title: 'تعديل الاسم',
+            input: 'text',
+            inputValue: currentProfile.full_name,
+            inputPlaceholder: 'اكتب اسمك الكامل',
+            showCancelButton: true,
+            confirmButtonText: 'حفظ',
+            cancelButtonText: 'إلغاء',
+            confirmButtonColor: '#03A9F4',
+            inputValidator: (value) => {
+                if (!value || value.trim().length < 3) {
+                    return 'الاسم يجب أن يكون 3 أحرف على الأقل';
+                }
+            }
+        });
+
+        if (newName && newName.trim() !== currentProfile.full_name) {
+            try {
+                Swal.fire({
+                    title: 'جاري الحفظ...',
+                    allowOutsideClick: false,
+                    didOpen: () => Swal.showLoading()
+                });
+
+                const { error } = await supabase
+                    .from('profiles')
+                    .update({ full_name: newName.trim() })
+                    .eq('id', currentUser.id);
+
+                if (error) throw error;
+
+                // Update auth metadata
+                await supabase.auth.updateUser({
+                    data: { full_name: newName.trim() }
+                });
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'تم الحفظ بنجاح!',
+                    showConfirmButton: false,
+                    timer: 1500
+                });
+
+                // Update UI
+                currentProfile.full_name = newName.trim();
+                document.getElementById('profileDisplayName').textContent = newName.trim();
+                document.getElementById('fullname').value = newName.trim();
+
+                // Trigger global update
+                window.dispatchEvent(new CustomEvent('profileUpdated', { detail: currentProfile }));
+
+            } catch (error) {
+                console.error(error);
+                Swal.fire('خطأ', 'حصل خطأ في الحفظ', 'error');
+            }
+        }
     });
 }
 

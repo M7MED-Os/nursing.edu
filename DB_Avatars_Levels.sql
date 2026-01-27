@@ -66,7 +66,6 @@ CREATE OR REPLACE VIEW squads_with_levels AS
 SELECT 
     id,
     name,
-    code,
     points,
     avatar_url,
     calculate_squad_level(COALESCE(points, 0)) as level,

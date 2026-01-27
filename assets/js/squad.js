@@ -718,7 +718,7 @@ async function loadChat() {
         const [{ data: results }, { data: challenges }, { data: msgs }] = await Promise.all([
             supabase.from('results').select('exam_id, created_at').eq('user_id', currentProfile.id),
             supabase.from('squad_exam_challenges').select('id, status, squad_points_awarded').eq('squad_id', currentSquad.id),
-            supabase.from('squad_chat_messages').select('*, profiles!sender_id(full_name, avatar_url, points)').eq('squad_id', currentSquad.id).order('created_at', { ascending: false }).limit(50)
+            supabase.from('squad_chat_messages').select('*, profiles!sender_id(full_name)').eq('squad_id', currentSquad.id).order('created_at', { ascending: false }).limit(50)
         ]);
 
         const freshMsgs = (msgs || []).reverse();
@@ -782,34 +782,13 @@ async function renderChat(msgs) {
             </div>
         ` : '';
 
-        // Avatar and Level
-        const senderProfile = m.profiles || {};
-        const avatarUrl = senderProfile.avatar_url || generateAvatar(senderProfile.full_name || 'User', 'initials');
-        const points = senderProfile.points || 0;
-        const levelBadge = createLevelBadge(points, 'small');
-
         return `
             <div class="msg ${m.sender_id === myId ? 'sent' : 'received'}" 
                  ${m.sender_id === myId ? `onclick="showReadBy('${fullReaderNames}')"` : ''} 
                  style="${m.sender_id === myId ? 'cursor:pointer;' : ''}">
-                <div style="display: flex; align-items: flex-start; gap: 8px; margin-bottom: 4px;">
-                    <img src="${avatarUrl}" alt="Avatar" style="
-                        width: 32px;
-                        height: 32px;
-                        border-radius: 50%;
-                        object-fit: cover;
-                        border: 2px solid var(--primary-color);
-                        flex-shrink: 0;
-                    ">
-                    <div style="flex: 1;">
-                        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
-                            <span class="msg-sender">${senderProfile.full_name || 'M7MED'}</span>
-                            ${levelBadge}
-                        </div>
-                        <div class="msg-content">
-                            ${renderMessageContent(m, myId)}
-                        </div>
-                    </div>
+                <span class="msg-sender">${m.profiles ? m.profiles.full_name : 'M7MED'}</span>
+                <div class="msg-content">
+                    ${renderMessageContent(m, myId)}
                 </div>
                 <div class="msg-footer">
                     <span class="msg-time">${time}</span>

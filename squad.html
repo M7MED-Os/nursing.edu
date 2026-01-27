@@ -505,9 +505,23 @@
     <div id="mainSquadView">
         <header class="page-header">
             <div class="container">
-                <div style="display: flex; align-items: center; gap: 1rem; justify-content: center; flex-wrap: wrap;">
-                    <!-- Squad Avatar -->
-                    <div style="position: relative;">
+                <h1 id="squadName" style="display: inline-flex; align-items: center; gap: 12px;">
+                    <span id="squadNameText">اسم الشلة</span>
+                    <i id="editSquadNameBtn" class="fas fa-edit" onclick="editSquadName()"
+                        style="font-size: 0.6em; cursor: pointer; opacity: 0.7; transition: all 0.2s; display: none;"
+                        onmouseover="this.style.opacity='1'; this.style.transform='scale(1.1)'"
+                        onmouseout="this.style.opacity='0.7'; this.style.transform='scale(1)'"></i>
+                </h1>
+                <p id="squadInfo" style="font-size: 0.9rem; opacity: 0.8; margin-top: 5px;">السنة الدراسية - القسم</p>
+            </div>
+        </header>
+
+        <div class="container squad-container">
+            <!-- Squad Info Card (Avatar + Level + Stats) -->
+            <div class="squad-card" style="margin-bottom: 1.5rem;">
+                <div style="display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap;">
+                    <!-- Avatar -->
+                    <div style="position: relative; flex-shrink: 0;">
                         <img id="squadAvatar"
                             src="https://ui-avatars.com/api/?name=Squad&background=10b981&color=fff&size=80"
                             alt="صورة الشلة"
@@ -534,42 +548,28 @@
                         </button>
                     </div>
 
-                    <div style="text-align: center;">
-                        <h1 id="squadName"
-                            style="display: inline-flex; align-items: center; gap: 12px; margin-bottom: 0.5rem;">
-                            <span id="squadNameText">اسم الشلة</span>
-                            <i id="editSquadNameBtn" class="fas fa-edit" onclick="editSquadName()"
-                                style="font-size: 0.6em; cursor: pointer; opacity: 0.7; transition: all 0.2s; display: none;"
-                                onmouseover="this.style.opacity='1'; this.style.transform='scale(1.1)'"
-                                onmouseout="this.style.opacity='0.7'; this.style.transform='scale(1)'"></i>
-                        </h1>
-                        <p id="squadInfo" style="font-size: 0.9rem; opacity: 0.8; margin: 5px 0;">السنة الدراسية - القسم
-                        </p>
-                        <div id="squadLevelBadge" style="margin-top: 0.5rem;">
+                    <!-- Level + Stats -->
+                    <div style="flex: 1;">
+                        <div id="squadLevelBadge" style="margin-bottom: 0.75rem;">
                             <!-- Squad level badge will be inserted here -->
+                        </div>
+                        <div class="squad-stats-badges" style="gap: 0.5rem;">
+                            <span class="rules-help-badge" onclick="showSquadRules()" title="دليل القواعد">
+                                <i class="fas fa-info-circle"></i>
+                            </span>
+                            <span class="stat-badge">
+                                <i class="fas fa-fire"></i>
+                                <span id="squadPoints">رصيد الشلة: 0</span>
+                            </span>
+                            <span class="stat-badge">
+                                <i class="fas fa-users"></i>
+                                <span id="squadMemberCount">0 أعضاء</span>
+                            </span>
                         </div>
                     </div>
                 </div>
-
-                <div class="squad-stats-badges" style="margin-top: 1rem;">
-                    <span class="rules-help-badge" onclick="showSquadRules()" title="دليل القواعد">
-                        <i class="fas fa-info-circle"></i>
-                    </span>
-
-                    <span class="stat-badge">
-                        <i class="fas fa-fire"></i>
-                        <span id="squadPoints">رصيد الشلة: 0</span>
-                    </span>
-
-                    <span class="stat-badge">
-                        <i class="fas fa-users"></i>
-                        <span id="squadMemberCount">0 أعضاء</span>
-                    </span>
-                </div>
             </div>
-        </header>
 
-        <div class="container squad-container">
             <!-- Left Side: Main Tasks & Tools -->
             <div class="squad-main">
 

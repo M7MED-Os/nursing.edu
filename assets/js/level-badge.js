@@ -7,7 +7,7 @@
 import { calculateLevel, getLevelColor, getLevelBadge } from './avatars.js';
 
 /**
- * إنشاء HTML للـ Level Badge
+ * إنشاء HTML للـ Level Badge (دايرة صغيرة بالرقم فقط - زي الألعاب)
  * @param {number} points - النقاط
  * @param {string} size - الحجم: 'small', 'medium', 'large'
  * @returns {string} HTML
@@ -15,64 +15,72 @@ import { calculateLevel, getLevelColor, getLevelBadge } from './avatars.js';
 export function createLevelBadge(points, size = 'small') {
     const level = calculateLevel(points);
     const color = getLevelColor(level);
-    const emoji = getLevelBadge(level);
 
     const sizes = {
-        small: { fontSize: '0.7rem', padding: '2px 6px', iconSize: '0.8rem' },
-        medium: { fontSize: '0.85rem', padding: '4px 10px', iconSize: '1rem' },
-        large: { fontSize: '1rem', padding: '6px 14px', iconSize: '1.2rem' }
+        small: { width: '28px', height: '28px', fontSize: '0.75rem' },
+        medium: { width: '36px', height: '36px', fontSize: '0.9rem' },
+        large: { width: '44px', height: '44px', fontSize: '1.1rem' }
     };
 
     const s = sizes[size];
 
     return `
-        <span class="level-badge" style="
+        <div class="level-badge-circle" style="
+            width: ${s.width};
+            height: ${s.height};
+            border-radius: 50%;
+            background: ${color};
+            color: white;
             display: inline-flex;
             align-items: center;
-            gap: 4px;
-            background: ${color}15;
-            color: ${color};
-            border: 1.5px solid ${color};
-            border-radius: 12px;
-            padding: ${s.padding};
+            justify-content: center;
             font-size: ${s.fontSize};
-            font-weight: 700;
-            white-space: nowrap;
+            font-weight: 900;
+            box-shadow: 0 2px 8px ${color}60;
+            border: 2px solid white;
         ">
-            <span style="font-size: ${s.iconSize};">${emoji}</span>
-            <span>لفل ${level}</span>
-        </span>
+            ${level}
+        </div>
     `;
 }
 
 /**
- * إنشاء HTML للأفاتار مع Border ملون حسب المستوى
+ * إنشاء HTML للأفاتار مع Border ملون حسب المستوى + دايرة المستوى
  * @param {string} avatarUrl - رابط الصورة
  * @param {number} points - النقاط
  * @param {string} size - الحجم بالـ px
+ * @param {boolean} showLevel - عرض دايرة المستوى
  * @returns {string} HTML
  */
-export function createLevelAvatar(avatarUrl, points, size = '40px') {
+export function createLevelAvatar(avatarUrl, points, size = '70px', showLevel = true) {
     const level = calculateLevel(points);
     const color = getLevelColor(level);
+    const levelBadgeSize = parseInt(size) > 80 ? 'medium' : 'small';
 
     return `
         <div class="level-avatar" style="
             position: relative;
             width: ${size};
             height: ${size};
-            border-radius: 50%;
-            padding: 3px;
-            background: linear-gradient(135deg, ${color} 0%, ${color}80 100%);
-            box-shadow: 0 2px 8px ${color}40;
         ">
             <img src="${avatarUrl}" alt="Avatar" style="
                 width: 100%;
                 height: 100%;
                 border-radius: 50%;
                 object-fit: cover;
-                border: 2px solid white;
+                border: 4px solid ${color};
+                box-shadow: 0 4px 12px ${color}40;
             ">
+            ${showLevel ? `
+                <div style="
+                    position: absolute;
+                    bottom: -5px;
+                    right: 50%;
+                    transform: translateX(50%);
+                ">
+                    ${createLevelBadge(points, levelBadgeSize)}
+                </div>
+            ` : ''}
         </div>
     `;
 }

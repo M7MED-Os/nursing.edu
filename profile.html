@@ -63,150 +63,258 @@
     <!-- Page Header -->
     <header class="page-header">
         <div class="container">
-            <div style="display: flex; align-items: center; gap: 1.5rem; justify-content: center; flex-wrap: wrap;">
-                <!-- Avatar with Edit Button -->
-                <div style="position: relative;">
-                    <img id="profileAvatar"
-                        src="https://ui-avatars.com/api/?name=User&background=03A9F4&color=fff&size=120" alt="صورتك"
-                        style="width: 100px; height: 100px; border-radius: 50%; border: 4px solid var(--primary-color); box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-                    <button id="changeAvatarBtn" style="
-                        position: absolute;
-                        bottom: 0;
-                        right: 0;
-                        background: var(--primary-color);
-                        color: white;
-                        border: none;
-                        width: 32px;
-                        height: 32px;
-                        border-radius: 50%;
-                        cursor: pointer;
-                        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        transition: all 0.3s;
-                    " title="تغيير الصورة">
-                        <i class="fas fa-camera"></i>
-                    </button>
-                </div>
-                <div style="text-align: center;">
-                    <h1 style="margin-bottom: 0.5rem;">الملف الشخصي</h1>
-                    <p style="margin: 0;">تعديل بيانات الحساب</p>
-                    <div id="profileLevelBadge" style="margin-top: 0.5rem;">
-                        <!-- Level badge will be inserted here -->
-                    </div>
-                </div>
-            </div>
+            <h1>الملف الشخصي</h1>
+            <p>تعديل بيانات الحساب</p>
         </div>
     </header>
 
     <!-- Profile Form -->
     <section class="section">
         <div class="container">
-            <div class="card auth-card">
-                <form id="profileForm">
-                    <div class="form-group" style="margin-bottom: 2rem;">
-                        <label for="fullname" style="font-weight: 700;">الاسم بالكامل</label>
-                        <input type="text" id="fullname" class="form-control" placeholder="اكتب اسمك هنا..." required>
-                        <small style="color: #64748b; margin-top: 0.5rem; display: block;">هذا هو الاسم الذي سيظهر في
-                            شهاداتك وتقاريرك.</small>
+            <div class="card auth-card" style="padding: 0; overflow: hidden;">
+                <!-- Profile Header with Gradient Background -->
+                <div style="
+                    background: linear-gradient(135deg, #03A9F4 0%, #0288D1 100%);
+                    padding: 2.5rem 2rem 1.5rem;
+                    position: relative;
+                    overflow: hidden;
+                ">
+                    <!-- Decorative Elements -->
+                    <div
+                        style="position: absolute; top: -50px; right: -50px; width: 200px; height: 200px; background: rgba(255,255,255,0.1); border-radius: 50%;">
+                    </div>
+                    <div
+                        style="position: absolute; bottom: -30px; left: -30px; width: 150px; height: 150px; background: rgba(255,255,255,0.05); border-radius: 50%;">
                     </div>
 
-                    <!-- Info Display Container (Common for everyone) -->
-                    <div id="userInfoDisplay"
-                        style="background: #f8fafc; padding: 1.25rem; border-radius: 12px; margin-bottom: 2rem; border: 1px solid #e2e8f0;">
-                        <h4
-                            style="margin-bottom: 1rem; color: var(--primary-color); font-size: 0.9rem; display: flex; align-items: center; gap: 8px;">
-                            <i class="fas fa-user-shield"></i> بيانات الحساب الرسمية
-                        </h4>
-                        <div id="infoRows" style="font-size: 0.95rem; color: #1e293b; display: grid; gap: 0.75rem;">
-                            <!-- Filled by JS -->
-                        </div>
-                        <div id="adminNotice"
-                            style="margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed #cbd5e1; font-size: 0.85rem; color: #64748b;">
-                            * لتعديل هذه البيانات، يرجى التواصل مع الدعم الفني.
-                        </div>
-                    </div>
+                    <!-- Avatar Section -->
+                    <div style="text-align: center; position: relative; z-index: 1;">
+                        <div style="position: relative; display: inline-block; margin-bottom: 1rem;">
+                            <img id="profileAvatar"
+                                src="https://ui-avatars.com/api/?name=User&background=667eea&color=fff&size=120"
+                                alt="صورتك" style="
+                                    width: 110px; 
+                                    height: 110px; 
+                                    border-radius: 50%; 
+                                    border: 5px solid white;
+                                    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+                                    object-fit: cover;
+                                    transition: transform 0.3s;
+                                 " onmouseover="this.style.transform='scale(1.05)'"
+                                onmouseout="this.style.transform='scale(1)'">
 
-                    <!-- Subscription Plan Card -->
-                    <div id="subscriptionCard"
-                        style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: white; padding: 1.5rem; border-radius: 20px; margin-bottom: 2rem; box-shadow: 0 10px 25px rgba(0,0,0,0.1); position: relative; overflow: hidden;">
+                            <!-- Level Badge -->
+                            <div id="profileLevelBadge" style="
+                                position: absolute;
+                                bottom: 0;
+                                right: 50%;
+                                transform: translateX(50%);
+                            ">
+                                <!-- Level badge will be inserted here -->
+                            </div>
+
+                            <!-- Change Avatar Button -->
+                            <button id="changeAvatarBtn" style="
+                                position: absolute;
+                                top: -5px;
+                                right: -5px;
+                                background: white;
+                                color: #03A9F4;
+                                border: none;
+                                width: 36px;
+                                height: 36px;
+                                border-radius: 50%;
+                                cursor: pointer;
+                                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                transition: all 0.3s;
+                            " title="تغيير الصورة" onmouseover="this.style.transform='rotate(15deg) scale(1.1)'"
+                                onmouseout="this.style.transform='rotate(0) scale(1)'">
+                                <i class="fas fa-camera"></i>
+                            </button>
+                        </div>
+
+                        <!-- User Name with Edit -->
                         <div
-                            style="position: absolute; top: -20px; right: -20px; font-size: 8rem; color: rgba(255,255,255,0.05);">
-                            <i class="fas fa-crown"></i>
+                            style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                            <h2 id="profileDisplayName" style="
+                                margin: 0; 
+                                font-size: 1.75rem; 
+                                color: white;
+                                font-weight: 700;
+                                text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                            ">اسم الطالب</h2>
+                            <button id="editNameBtn" style="
+                                background: rgba(255,255,255,0.2);
+                                border: 1px solid rgba(255,255,255,0.3);
+                                color: white;
+                                cursor: pointer;
+                                font-size: 0.9rem;
+                                padding: 0.35rem;
+                                width: 32px;
+                                height: 32px;
+                                border-radius: 8px;
+                                transition: all 0.2s;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                            " title="تعديل الاسم" onmouseover="this.style.background='rgba(255,255,255,0.3)'"
+                                onmouseout="this.style.background='rgba(255,255,255,0.2)'">
+                                <i class="fas fa-edit"></i>
+                            </button>
                         </div>
-                        <h4
-                            style="margin-bottom: 1.25rem; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; color: #38bdf8;">
-                            <i class="fas fa-gem"></i> خطة الاشتراك الحالية
-                        </h4>
+
+                        <p style="color: rgba(255,255,255,0.9); margin: 0; font-size: 0.95rem;">
+                            <i class="fas fa-envelope" style="margin-left: 5px;"></i>
+                            <span id="profileEmailDisplay">email@example.com</span>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Stats Grid -->
+                <div id="profileStatsGrid" style="
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+                    gap: 1rem;
+                    padding: 1.5rem;
+                    background: #f8fafc;
+                ">
+                    <!-- Will be filled by JS -->
+                </div>
+
+
+                <!-- Subscription Card -->
+                <div id="subscriptionCard" style="
+                    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+                    color: white;
+                    padding: 2rem;
+                    margin: 1.5rem;
+                    border-radius: 24px;
+                    box-shadow: 0 12px 32px rgba(0,0,0,0.15);
+                    position: relative;
+                    overflow: hidden;
+                ">
+                    <!-- Decorative Background -->
+                    <div
+                        style="position: absolute; top: -80px; right: -80px; width: 250px; height: 250px; background: rgba(56, 189, 248, 0.1); border-radius: 50%; filter: blur(40px);">
+                    </div>
+                    <div
+                        style="position: absolute; bottom: -60px; left: -60px; width: 200px; height: 200px; background: rgba(251, 191, 36, 0.1); border-radius: 50%; filter: blur(40px);">
+                    </div>
+
+                    <div style="position: relative; z-index: 1;">
+                        <!-- Header -->
+                        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.5rem;">
+                            <div style="
+                                width: 48px;
+                                height: 48px;
+                                border-radius: 12px;
+                                background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                box-shadow: 0 4px 12px rgba(56, 189, 248, 0.4);
+                            ">
+                                <i class="fas fa-crown" style="font-size: 1.5rem; color: white;"></i>
+                            </div>
+                            <h3 style="margin: 0; font-size: 1.25rem; font-weight: 700;">خطة الاشتراك الحالية</h3>
+                        </div>
+
+                        <!-- Info Grid -->
                         <div style="display: grid; gap: 1rem;">
-                            <div style="display: flex; justify-content: space-between;">
-                                <span style="opacity: 0.7;">الخطة:</span>
-                                <span id="planName" style="font-weight: 900;">-</span>
-                            </div>
-                            <div style="display: flex; justify-content: space-between;">
-                                <span style="opacity: 0.7;">تاريخ البدء:</span>
-                                <span id="subStart" style="font-family: 'Cairo';">-</span>
-                            </div>
-                            <div style="display: flex; justify-content: space-between;">
-                                <span style="opacity: 0.7;">تاريخ الانتهاء:</span>
-                                <span id="subEnd"
-                                    style="font-family: 'Cairo'; color: #fbbf24; font-weight: bold;">-</span>
-                            </div>
                             <div
-                                style="display: flex; justify-content: space-between; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1rem;">
-                                <span style="opacity: 0.7;">باقي لك:</span>
-                                <span id="timeLeft"
-                                    style="background: rgba(56, 189, 248, 0.2); padding: 4px 10px; border-radius: 50px; font-size: 0.85rem; color: #38bdf8;">-</span>
+                                style="background: rgba(255,255,255,0.08); padding: 1rem; border-radius: 12px; backdrop-filter: blur(10px);">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span style="opacity: 0.8; font-size: 0.9rem;">
+                                        <i class="fas fa-gem" style="margin-left: 8px; color: #38bdf8;"></i>
+                                        الخطة
+                                    </span>
+                                    <span id="planName" style="font-weight: 700; font-size: 1.1rem;">-</span>
+                                </div>
+                            </div>
+
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                                <div style="background: rgba(255,255,255,0.08); padding: 1rem; border-radius: 12px;">
+                                    <div style="opacity: 0.7; font-size: 0.75rem; margin-bottom: 0.25rem;">تاريخ البدء
+                                    </div>
+                                    <div id="subStart" style="font-weight: 600; font-size: 0.9rem;">-</div>
+                                </div>
+                                <div style="background: rgba(255,255,255,0.08); padding: 1rem; border-radius: 12px;">
+                                    <div style="opacity: 0.7; font-size: 0.75rem; margin-bottom: 0.25rem;">تاريخ
+                                        الانتهاء</div>
+                                    <div id="subEnd" style="font-weight: 600; font-size: 0.9rem; color: #fbbf24;">-
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div
+                                style="background: linear-gradient(135deg, rgba(56, 189, 248, 0.2) 0%, rgba(14, 165, 233, 0.2) 100%); padding: 1.25rem; border-radius: 12px; border: 1px solid rgba(56, 189, 248, 0.3);">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span style="font-size: 0.9rem; display: flex; align-items: center; gap: 8px;">
+                                        <i class="fas fa-clock" style="color: #38bdf8;"></i>
+                                        باقي لك
+                                    </span>
+                                    <span id="timeLeft" style="
+                                        background: rgba(56, 189, 248, 0.3);
+                                        padding: 6px 14px;
+                                        border-radius: 20px;
+                                        font-size: 0.85rem;
+                                        font-weight: 700;
+                                        color: #38bdf8;
+                                    ">-</span>
+                                </div>
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Hidden Admin Fields (Keep for logic/admin override if needed later, but hidden now) -->
-                    <div id="adminAcademicFields" style="display: none;">
-                        <div class="form-group">
-                            <label>البريد الإلكتروني (أدمن)</label>
-                            <input type="email" id="email" class="form-control">
-                        </div>
-                        <div class="row" style="display: flex; gap: 1rem;">
-                            <div class="form-group" style="flex: 1;">
-                                <label for="grade">السنة الدراسية</label>
-                                <select id="grade" class="form-control">
-                                    <option value="1">الفرقة الأولى</option>
-                                    <option value="2">الفرقة الثانية</option>
-                                    <option value="3">الفرقة الثالثة</option>
-                                    <option value="4">الفرقة الرابعة</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="form-group" id="termGroup">
-                            <label for="term">الترم</label>
-                            <select id="term" class="form-control">
-                                <option value="1">الترم الأول</option>
-                                <option value="2">الترم الثاني</option>
-                            </select>
-                        </div>
-                        <div class="form-group" id="streamGroup">
-                            <label for="stream">القسم</label>
-                            <select id="stream" class="form-control">
-                                <option value="">-- اختر القسم --</option>
-                                <option value="pediatric">تمريض الأطفال (فرقة 3)</option>
-                                <option value="obs_gyn">تمريض نسا و التوليد (فرقة 3)</option>
-                                <option value="nursing_admin">إدارة التمريض (فرقة 4)</option>
-                                <option value="psychiatric">تمريض النفسية (فرقة 4)</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <button type="submit" class="btn btn-primary full-width">حفظ التعديلات</button>
-
-                    <hr style="margin: 2rem 0; border: 0; border-top: 1px solid #eee;">
-
-                    <div class="text-center">
-                        <a href="reset-password.html" class="btn btn-outline" style="margin-top: 1rem;">تغيير كلمة
-                            المرور</a>
-                    </div>
+                <!-- Hidden Form for Name Editing -->
+                <form id="profileForm" style="display: none;">
+                    <input type="text" id="fullname" class="form-control">
                 </form>
+
+                <!-- Hidden Admin Fields (Keep for logic/admin override if needed later, but hidden now) -->
+                <div id="adminAcademicFields" style="display: none;">
+                    <div class="form-group">
+                        <label>البريد الإلكتروني (أدمن)</label>
+                        <input type="email" id="email" class="form-control">
+                    </div>
+                    <div class="row" style="display: flex; gap: 1rem;">
+                        <div class="form-group" style="flex: 1;">
+                            <label for="grade">السنة الدراسية</label>
+                            <select id="grade" class="form-control">
+                                <option value="1">الفرقة الأولى</option>
+                                <option value="2">الفرقة الثانية</option>
+                                <option value="3">الفرقة الثالثة</option>
+                                <option value="4">الفرقة الرابعة</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group" id="termGroup">
+                        <label for="term">الترم</label>
+                        <select id="term" class="form-control">
+                            <option value="1">الترم الأول</option>
+                            <option value="2">الترم الثاني</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="streamGroup">
+                        <label for="stream">القسم</label>
+                        <select id="stream" class="form-control">
+                            <option value="">-- اختر القسم --</option>
+                            <option value="pediatric">تمريض الأطفال (فرقة 3)</option>
+                            <option value="obs_gyn">تمريض نسا و التوليد (فرقة 3)</option>
+                            <option value="nursing_admin">إدارة التمريض (فرقة 4)</option>
+                            <option value="psychiatric">تمريض النفسية (فرقة 4)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Password Reset Link -->
+                <div class="text-center" style="margin-top: 2rem;">
+                    <a href="reset-password.html" class="btn btn-outline">تغيير كلمة المرور</a>
+                </div>
             </div>
         </div>
     </section>
