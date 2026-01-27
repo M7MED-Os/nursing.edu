@@ -54,6 +54,10 @@ html {
   scroll-behavior: smooth;
 }
 
+textarea {
+  resize: none;
+}
+
 /* App-Like Enhancements (Part 1) */
 
 

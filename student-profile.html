@@ -372,6 +372,7 @@
         import { generateAvatar, calculateLevel, getLevelColor } from './assets/js/avatars.js';
         import { createLevelBadge, createLevelProgress } from './assets/js/level-badge.js';
         import { GRADES, STREAMS } from './assets/js/constants.js';
+        import { isInSameSquad, isVisible, createLockedElement, createLockedAvatar } from './assets/js/privacy.js';
 
         // Wait for DOM
         if (document.readyState === 'loading') {
@@ -395,25 +396,44 @@
 
         async function loadStudentProfile(studentId) {
             try {
-                // Fetch student data
+                // Fetch student data with privacy settings
                 const { data: student, error } = await supabase
                     .from('profiles')
-                    .select('*')
+                    .select('*, privacy_avatar, privacy_bio, privacy_stats, privacy_progress')
                     .eq('id', studentId)
                     .single();
 
                 if (error) throw error;
 
-                // Render profile header
+                // Get current user
+                const { data: { user } } = await supabase.auth.getUser();
+
+                // Check relationship
+                const isOwner = user && user.id === studentId;
+                const isSameSquad = user ? await isInSameSquad(studentId, user.id) : false;
+
+                // Store privacy context globally
+                window.privacyContext = {
+                    isOwner,
+                    isSameSquad,
+                    privacySettings: {
+                        avatar: student.privacy_avatar || 'public',
+                        bio: student.privacy_bio || 'public',
+                        stats: student.privacy_stats || 'public',
+                        progress: student.privacy_progress || 'public'
+                    }
+                };
+
+                // Render profile header (with privacy checks)
                 renderProfileHeader(student);
 
-                // Fetch and render stats
+                // Fetch and render stats (with privacy checks)
                 await renderStats(student);
 
                 // Fetch and render squad info
                 await renderSquad(student.id);
 
-                // Render level progress
+                // Render level progress (with privacy checks)
                 renderLevelProgress(student.points);
 
             } catch (err) {
@@ -431,7 +451,6 @@
         }
 
         function renderProfileHeader(student) {
-            const avatarUrl = student.avatar_url || generateAvatar(student.full_name, 'initials');
             const level = calculateLevel(student.points || 0);
             const levelColor = getLevelColor(level);
             const levelBadgeHTML = createLevelBadge(student.points || 0, 'large');
@@ -445,31 +464,77 @@
                 additionalInfo = `الترم ${student.term}`;
             }
 
-            const bioText = student.bio || 'مفيش بايو';
-            const bioClass = student.bio ? '' : 'empty';
+            // Check privacy for avatar
+            const ctx = window.privacyContext;
+            const showAvatar = ctx && isVisible(ctx.privacySettings.avatar, ctx.isOwner, ctx.isSameSquad);
+            const showBio = ctx && isVisible(ctx.privacySettings.bio, ctx.isOwner, ctx.isSameSquad);
 
-            const headerEl = document.getElementById('profileHeader');
-            if (headerEl) {
-                headerEl.innerHTML = `
+            // Avatar HTML
+            let avatarHTML;
+            if (showAvatar) {
+                const avatarUrl = student.avatar_url || generateAvatar(student.full_name, 'initials');
+                avatarHTML = `
                     <div class="profile-avatar-container">
                         <img src="${avatarUrl}" alt="${student.full_name}" class="profile-avatar" style="border-color: ${levelColor};">
                         <div class="profile-level-badge">
                             ${levelBadgeHTML}
                         </div>
                     </div>
-                    <h1 class="profile-name">${student.full_name}</h1>
-                    <p class="profile-grade">${gradeText}${additionalInfo ? ' - ' + additionalInfo : ''}</p>
-                    
+                `;
+            } else {
+                avatarHTML = `
+                    <div class="profile-avatar-container">
+                        ${createLockedAvatar()}
+                        <div class="profile-level-badge">
+                            ${levelBadgeHTML}
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Bio HTML
+            let bioHTML;
+            if (showBio) {
+                const bioText = student.bio || 'مفيش بايو';
+                const bioClass = student.bio ? '' : 'empty';
+                bioHTML = `
                     <div class="profile-bio-container">
                         <div class="profile-bio">
                             <span class="bio-text ${bioClass}">${bioText}</span>
                         </div>
                     </div>
                 `;
+            } else {
+                bioHTML = `
+                    <div class="profile-bio-container">
+                        ${createLockedElement('bio')}
+                    </div>
+                `;
+            }
+
+            const headerEl = document.getElementById('profileHeader');
+            if (headerEl) {
+                headerEl.innerHTML = `
+                    ${avatarHTML}
+                    <h1 class="profile-name">${student.full_name}</h1>
+                    <p class="profile-grade">${gradeText}${additionalInfo ? ' - ' + additionalInfo : ''}</p>
+                    ${bioHTML}
+                `;
             }
         }
 
         async function renderStats(student) {
+            const ctx = window.privacyContext;
+            const showStats = ctx && isVisible(ctx.privacySettings.stats, ctx.isOwner, ctx.isSameSquad);
+
+            const statsEl = document.getElementById('profileStats');
+            if (!statsEl) return;
+
+            if (!showStats) {
+                statsEl.innerHTML = createLockedElement('stats');
+                return;
+            }
+
             const { data: statsData } = await supabase.rpc('get_user_stats', { p_user_id: student.id });
             const stats = statsData || {};
 
@@ -480,31 +545,28 @@
                 ? Math.round((stats.total_solved_questions / stats.total_possible_questions) * 100)
                 : 0;
 
-            const statsEl = document.getElementById('profileStats');
-            if (statsEl) {
-                statsEl.innerHTML = `
-                    <div class="stat-card">
-                        <div class="stat-icon"><i class="fas fa-trophy"></i></div>
-                        <div class="stat-value">${student.points || 0}</div>
-                        <div class="stat-label">النقاط الإجمالية</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon"><i class="fas fa-star"></i></div>
-                        <div class="stat-value">${level}</div>
-                        <div class="stat-label">المستوى الحالي</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon"><i class="fas fa-file-alt"></i></div>
-                        <div class="stat-value">${totalExams}</div>
-                        <div class="stat-label">الامتحانات المحلولة</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon"><i class="fas fa-bullseye"></i></div>
-                        <div class="stat-value">${accuracy}%</div>
-                        <div class="stat-label">نسبة الدقة</div>
-                    </div>
-                `;
-            }
+            statsEl.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-trophy"></i></div>
+                    <div class="stat-value">${student.points || 0}</div>
+                    <div class="stat-label">النقاط الإجمالية</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-star"></i></div>
+                    <div class="stat-value">${level}</div>
+                    <div class="stat-label">المستوى الحالي</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-file-alt"></i></div>
+                    <div class="stat-value">${totalExams}</div>
+                    <div class="stat-label">الامتحانات المحلولة</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-bullseye"></i></div>
+                    <div class="stat-value">${accuracy}%</div>
+                    <div class="stat-label">نسبة الدقة</div>
+                </div>
+            `;
         }
 
         async function renderSquad(userId) {
@@ -547,11 +609,19 @@
         }
 
         function renderLevelProgress(points) {
-            const progressHTML = createLevelProgress(points);
+            const ctx = window.privacyContext;
+            const showProgress = ctx && isVisible(ctx.privacySettings.progress, ctx.isOwner, ctx.isSameSquad);
+
             const progressEl = document.getElementById('levelProgress');
-            if (progressEl) {
-                progressEl.innerHTML = progressHTML;
+            if (!progressEl) return;
+
+            if (!showProgress) {
+                progressEl.innerHTML = createLockedElement('progress');
+                return;
             }
+
+            const progressHTML = createLevelProgress(points);
+            progressEl.innerHTML = progressHTML;
         }
     </script>
 </body>

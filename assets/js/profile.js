@@ -24,6 +24,7 @@ async function loadProfile() {
     currentProfile = auth.profile;
 
     renderProfileUI(auth.profile, auth.user);
+    loadPrivacySettings();
 
     // 2. Reactive updates
     window.addEventListener('profileUpdated', (e) => {
@@ -421,6 +422,56 @@ if (changeAvatarBtn) {
         });
     }
 }
+
+// ==========================
+// Privacy Settings Functions
+// ==========================
+
+async function loadPrivacySettings() {
+    if (!currentProfile) return;
+
+    try {
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('privacy_avatar, privacy_bio, privacy_stats, privacy_progress')
+            .eq('id', currentProfile.id)
+            .single();
+
+        if (profile) {
+            document.getElementById('privacyAvatar').value = profile.privacy_avatar || 'public';
+            document.getElementById('privacyBio').value = profile.privacy_bio || 'public';
+            document.getElementById('privacyStats').value = profile.privacy_stats || 'public';
+            document.getElementById('privacyProgress').value = profile.privacy_progress || 'public';
+        }
+    } catch (err) {
+        console.error('Error loading privacy settings:', err);
+    }
+}
+
+window.savePrivacySettings = async function () {
+    if (!currentProfile) return;
+
+    const privacySettings = {
+        privacy_avatar: document.getElementById('privacyAvatar').value,
+        privacy_bio: document.getElementById('privacyBio').value,
+        privacy_stats: document.getElementById('privacyStats').value,
+        privacy_progress: document.getElementById('privacyProgress').value
+    };
+
+    try {
+        const { error } = await supabase
+            .from('profiles')
+            .update(privacySettings)
+            .eq('id', currentProfile.id);
+
+        if (error) throw error;
+
+        showToast('تم حفظ إعدادات الخصوصية بنجاح', 'success');
+    } catch (err) {
+        console.error('Error saving privacy settings:', err);
+        showToast('حدث خطأ أثناء الحفظ', 'error');
+    }
+};
 
 // Initialize
 async function init() {

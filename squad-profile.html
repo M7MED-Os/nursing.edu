@@ -109,12 +109,6 @@
             align-items: center;
             gap: 0.75rem;
             min-height: 45px;
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-
-        .squad-bio:hover {
-            background: rgba(255, 255, 255, 0.2);
         }
 
         .bio-text {
@@ -545,11 +539,8 @@
                     </div>
                     
                     <div class="squad-bio-container">
-                        <div class="squad-bio" onclick="editBio()">
+                        <div class="squad-bio">
                             <span class="bio-text ${bioClass}">${bioText}</span>
-                            <button class="bio-edit-btn" ${editBtnDisplay}>
-                                <i class="fas fa-edit"></i>
-                            </button>
                         </div>
                     </div>
                 `;
@@ -662,7 +653,7 @@
                 Swal.fire({
                     icon: 'error',
                     title: 'غير مسموح',
-                    text: 'فقط مالك الشلة يمكنه تعديل النبذة',
+                    text: 'مالك الشلة بس تعديل النبذة',
                     confirmButtonColor: '#10b981'
                 });
                 return;

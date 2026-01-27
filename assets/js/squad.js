@@ -1,7 +1,7 @@
 import { supabase } from './supabaseClient.js';
 import { getCache, setCache, getSWR } from "./utils.js";
 import { generateAvatar, calculateLevel, getLevelColor } from './avatars.js';
-import { createLevelBadge, createLevelAvatar } from './level-badge.js';
+import { createLevelBadge, createLevelAvatar, createSquadLevelProgress } from './level-badge.js';
 import { GRADES, STREAMS } from "./constants.js";
 
 // State
@@ -89,6 +89,29 @@ async function setupSquadUI() {
     const previewBtn = document.getElementById('previewSquadBtn');
     if (previewBtn) {
         previewBtn.href = `squad-profile.html?id=${currentSquad.id}`;
+    }
+
+    // Update bio display
+    const bioDisplay = document.querySelector('#squadBioDisplay .bio-text');
+    if (bioDisplay) {
+        if (currentSquad.bio) {
+            bioDisplay.textContent = currentSquad.bio;
+            bioDisplay.classList.remove('empty');
+            bioDisplay.style.fontStyle = 'italic';
+            bioDisplay.style.opacity = '1';
+        } else {
+            bioDisplay.textContent = 'مفيش بايو';
+            bioDisplay.classList.add('empty');
+            bioDisplay.style.fontStyle = 'normal';
+            bioDisplay.style.opacity = '0.7';
+        }
+    }
+
+    // Update level progress
+    const levelProgressEl = document.getElementById('squadLevelProgress');
+    if (levelProgressEl) {
+        const progressHTML = createSquadLevelProgress(currentSquad.points || 0);
+        levelProgressEl.innerHTML = progressHTML;
     }
 
     // Load Sub-components
@@ -1285,50 +1308,97 @@ window.copySquadCode = () => {
 };
 
 window.editSquadName = async () => {
-    const { value: newName } = await Swal.fire({
-        title: 'تغيير اسم الشلة',
-        input: 'text',
-        inputValue: currentSquad.name,
-        inputPlaceholder: 'اكتب الاسم الجديد...',
+    const result = await Swal.fire({
+        title: 'إعدادات الشلة',
+        html: `
+            <div style="text-align: right;">
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #374151;">اسم الشلة</label>
+                    <input id="swal-squad-name" class="swal2-input" value="${currentSquad.name}" placeholder="اسم الشلة..." style="width: 100%; margin: 0;">
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #374151;">نبذة عن الشلة</label>
+                    <textarea id="swal-squad-bio" class="swal2-textarea" placeholder="صلي على النبي" rows="3" style="width: 100%; margin: 0; resize: vertical;">${currentSquad.bio || ''}</textarea>
+                </div>
+            </div>
+        `,
         showCancelButton: true,
         confirmButtonText: 'حفظ',
         cancelButtonText: 'إلغاء',
-        inputValidator: (value) => {
-            if (!value || !value.trim()) {
-                return 'لازم تكتب اسم للشلة!';
+        confirmButtonColor: '#10b981',
+        preConfirm: () => {
+            const name = document.getElementById('swal-squad-name').value;
+            const bio = document.getElementById('swal-squad-bio').value;
+
+            if (!name || !name.trim()) {
+                Swal.showValidationMessage('لازم تكتب اسم للشلة!');
+                return false;
             }
-            if (value.trim().length < 3) {
-                return 'الاسم لازم يكون 3 حروف على الأقل';
+            if (name.trim().length < 3) {
+                Swal.showValidationMessage('الاسم لازم يكون 3 حروف على الأقل');
+                return false;
             }
-            if (value.trim().length > 50) {
-                return 'الاسم طويل أوي! (أقصى حد 50 حرف)';
+            if (name.trim().length > 50) {
+                Swal.showValidationMessage('الاسم طويل أوي! (أقصى حد 50 حرف)');
+                return false;
             }
+
+            return { name: name.trim(), bio: bio.trim() };
         }
     });
 
-    if (newName && newName.trim() !== currentSquad.name) {
+    if (result.isConfirmed && result.value) {
+        const { name: newName, bio: newBio } = result.value;
+
+        // Check if anything changed
+        if (newName === currentSquad.name && newBio === (currentSquad.bio || '')) {
+            return; // No changes
+        }
+
         try {
             const { error } = await supabase
                 .from('squads')
-                .update({ name: newName.trim() })
+                .update({
+                    name: newName,
+                    bio: newBio || null
+                })
                 .eq('id', currentSquad.id);
 
             if (error) throw error;
 
             // Update local state
-            currentSquad.name = newName.trim();
-            document.getElementById('squadNameText').textContent = newName.trim();
+            currentSquad.name = newName;
+            currentSquad.bio = newBio;
+
+            // Update UI
+            document.getElementById('squadNameText').textContent = newName;
+
+            // Update bio display
+            const bioDisplay = document.querySelector('#squadBioDisplay .bio-text');
+            if (bioDisplay) {
+                if (newBio) {
+                    bioDisplay.textContent = newBio;
+                    bioDisplay.classList.remove('empty');
+                    bioDisplay.style.fontStyle = 'italic';
+                    bioDisplay.style.opacity = '1';
+                } else {
+                    bioDisplay.textContent = 'مفيش بايو';
+                    bioDisplay.classList.add('empty');
+                    bioDisplay.style.fontStyle = 'normal';
+                    bioDisplay.style.opacity = '0.7';
+                }
+            }
 
             Swal.fire({
                 icon: 'success',
                 title: 'تم التحديث!',
-                text: 'اسم الشلة اتغير بنجاح 🎉',
+                text: 'إعدادات الشلة اتحدثت بنجاح 🎉',
                 timer: 2000,
                 showConfirmButton: false
             });
         } catch (err) {
-            console.error('Error updating squad name:', err);
-            Swal.fire('خطأ', 'مقدرناش نغير الاسم.. جرب تاني', 'error');
+            console.error('Error updating squad settings:', err);
+            Swal.fire('خطأ', 'مقدرناش نحدث الإعدادات.. جرب تاني', 'error');
         }
     }
 };
