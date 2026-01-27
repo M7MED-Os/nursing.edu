@@ -452,8 +452,8 @@ async function calculateResult() {
             }
         }
 
-        // 2. Submit Result via New Complex RPC
-        const { data: resultData, error: rpcError } = await supabase.rpc('submit_exam_complex', {
+        // 2. Submit Result via New Secure RPC
+        const { data: resultData, error: rpcError } = await supabase.rpc('submit_exam_secure', {
             p_exam_id: examId,
             p_answers: userAnswers,
             p_time_spent: timeElapsed,
