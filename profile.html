@@ -259,79 +259,28 @@
                 </div>
 
 
-                <!-- Privacy Settings Card -->
-                <div class="profile-card" style="margin-bottom: 2rem;">
-                    <div style="position: relative; z-index: 1;">
-                        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.5rem;">
-                            <div
-                                style="width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);">
-                                <i class="fas fa-shield-alt" style="font-size: 1.5rem; color: white;"></i>
-                            </div>
-                            <h3 style="margin: 0; font-size: 1.25rem; font-weight: 700;">إعدادات الخصوصية</h3>
-                        </div>
-
-                        <div style="display: grid; gap: 1rem;">
-                            <div class="privacy-setting">
-                                <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: #374151;">
-                                    <i class="fas fa-user-circle" style="color: #8b5cf6; margin-left: 0.5rem;"></i>
-                                    الصورة الشخصية
-                                </label>
-                                <select id="privacyAvatar" class="form-control"
-                                    style="width: 100%; padding: 0.5rem; border-radius: 8px; border: 1px solid #e5e7eb;">
-                                    <option value="public">الكل - يمكن لأي شخص رؤيتها</option>
-                                    <option value="squad">الشلة فقط - فقط أعضاء شلتك</option>
-                                    <option value="private">أنا فقط - أنت فقط</option>
-                                </select>
-                            </div>
-
-                            <div class="privacy-setting">
-                                <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: #374151;">
-                                    <i class="fas fa-comment-dots" style="color: #8b5cf6; margin-left: 0.5rem;"></i>
-                                    النبذة الشخصية
-                                </label>
-                                <select id="privacyBio" class="form-control"
-                                    style="width: 100%; padding: 0.5rem; border-radius: 8px; border: 1px solid #e5e7eb;">
-                                    <option value="public">الكل - يمكن لأي شخص رؤيتها</option>
-                                    <option value="squad">الشلة فقط - فقط أعضاء شلتك</option>
-                                    <option value="private">أنا فقط - أنت فقط</option>
-                                </select>
-                            </div>
-
-                            <div class="privacy-setting">
-                                <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: #374151;">
-                                    <i class="fas fa-chart-bar" style="color: #8b5cf6; margin-left: 0.5rem;"></i>
-                                    الإحصائيات
-                                </label>
-                                <select id="privacyStats" class="form-control"
-                                    style="width: 100%; padding: 0.5rem; border-radius: 8px; border: 1px solid #e5e7eb;">
-                                    <option value="public">الكل - يمكن لأي شخص رؤيتها</option>
-                                    <option value="squad">الشلة فقط - فقط أعضاء شلتك</option>
-                                    <option value="private">أنا فقط - أنت فقط</option>
-                                </select>
-                            </div>
-
-                            <div class="privacy-setting">
-                                <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: #374151;">
-                                    <i class="fas fa-chart-line" style="color: #8b5cf6; margin-left: 0.5rem;"></i>
-                                    التقدم في المستوى
-                                </label>
-                                <select id="privacyProgress" class="form-control"
-                                    style="width: 100%; padding: 0.5rem; border-radius: 8px; border: 1px solid #e5e7eb;">
-                                    <option value="public">الكل - يمكن لأي شخص رؤيته</option>
-                                    <option value="squad">الشلة فقط - فقط أعضاء شلتك</option>
-                                    <option value="private">أنا فقط - أنت فقط</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <button id="savePrivacyBtn" onclick="savePrivacySettings()"
-                            style="width: 100%; margin-top: 1.5rem; padding: 0.75rem; background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color: white; border: none; border-radius: 8px; font-weight: 700; font-size: 0.95rem; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);"
-                            onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(139, 92, 246, 0.4)'"
-                            onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(139, 92, 246, 0.3)'">
-                            <i class="fas fa-save" style="margin-left: 0.5rem;"></i>
-                            حفظ إعدادات الخصوصية
-                        </button>
-                    </div>
+                <!-- Privacy Settings Button -->
+                <div style="margin-bottom: 2rem; text-align: center;">
+                    <button onclick="openPrivacyModal()" style="
+                        background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+                        color: white;
+                        border: none;
+                        padding: 0.875rem 2rem;
+                        border-radius: 12px;
+                        font-weight: 700;
+                        font-size: 0.95rem;
+                        cursor: pointer;
+                        transition: all 0.3s ease;
+                        box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+                        display: inline-flex;
+                        align-items: center;
+                        gap: 0.75rem;
+                    " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(139, 92, 246, 0.5)'"
+                        onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(139, 92, 246, 0.3)'">
+                        <i class="fas fa-shield-alt" style="font-size: 1.1rem;"></i>
+                        <span>إعدادات الخصوصية</span>
+                        <i class="fas fa-cog" style="font-size: 0.9rem; opacity: 0.8;"></i>
+                    </button>
                 </div>
 
                 <!-- Subscription Card -->
@@ -519,7 +468,13 @@
     <script type="module" src="assets/js/squad-notifications.js"></script>
     <script type="module" src="assets/js/profile.js"></script>
 
-
+    <!-- Privacy Modal Container -->
+    <div id="privacyModalContainer"></div>
+    <script>
+        fetch('components/privacy-modal.html')
+            .then(r => r.text())
+            .then(html => document.getElementById('privacyModalContainer').innerHTML = html);
+    </script>
 </body>
 
 </html>

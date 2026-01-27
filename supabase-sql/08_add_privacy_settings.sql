@@ -9,7 +9,8 @@ ALTER TABLE profiles
 ADD COLUMN IF NOT EXISTS privacy_avatar TEXT DEFAULT 'public' CHECK (privacy_avatar IN ('public', 'squad', 'private')),
 ADD COLUMN IF NOT EXISTS privacy_bio TEXT DEFAULT 'public' CHECK (privacy_bio IN ('public', 'squad', 'private')),
 ADD COLUMN IF NOT EXISTS privacy_stats TEXT DEFAULT 'public' CHECK (privacy_stats IN ('public', 'squad', 'private')),
-ADD COLUMN IF NOT EXISTS privacy_progress TEXT DEFAULT 'public' CHECK (privacy_progress IN ('public', 'squad', 'private'));
+ADD COLUMN IF NOT EXISTS privacy_progress TEXT DEFAULT 'public' CHECK (privacy_progress IN ('public', 'squad', 'private')),
+ADD COLUMN IF NOT EXISTS privacy_squad TEXT DEFAULT 'public' CHECK (privacy_squad IN ('public', 'squad', 'private'));
 
 -- Add privacy columns to squads table
 ALTER TABLE squads
@@ -23,6 +24,7 @@ COMMENT ON COLUMN profiles.privacy_avatar IS 'Avatar visibility: public (everyon
 COMMENT ON COLUMN profiles.privacy_bio IS 'Bio visibility: public (everyone), squad (squad members only), private (only me)';
 COMMENT ON COLUMN profiles.privacy_stats IS 'Stats visibility: public (everyone), squad (squad members only), private (only me)';
 COMMENT ON COLUMN profiles.privacy_progress IS 'Level progress visibility: public (everyone), squad (squad members only), private (only me)';
+COMMENT ON COLUMN profiles.privacy_squad IS 'Squad visibility: public (everyone), squad (squad members only), private (only me)';
 
 COMMENT ON COLUMN squads.privacy_avatar IS 'Squad avatar visibility: public (everyone), members (members only), private (owner only)';
 COMMENT ON COLUMN squads.privacy_bio IS 'Squad bio visibility: public (everyone), members (members only), private (owner only)';

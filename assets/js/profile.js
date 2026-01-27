@@ -433,15 +433,25 @@ async function loadPrivacySettings() {
     try {
         const { data: profile } = await supabase
             .from('profiles')
-            .select('privacy_avatar, privacy_bio, privacy_stats, privacy_progress')
+            .select('privacy_avatar, privacy_bio, privacy_stats, privacy_progress, privacy_squad')
             .eq('id', currentProfile.id)
             .single();
 
         if (profile) {
-            document.getElementById('privacyAvatar').value = profile.privacy_avatar || 'public';
-            document.getElementById('privacyBio').value = profile.privacy_bio || 'public';
-            document.getElementById('privacyStats').value = profile.privacy_stats || 'public';
-            document.getElementById('privacyProgress').value = profile.privacy_progress || 'public';
+            // Wait for modal to load if needed
+            setTimeout(() => {
+                const avatarEl = document.getElementById('privacyAvatar');
+                const bioEl = document.getElementById('privacyBio');
+                const statsEl = document.getElementById('privacyStats');
+                const progressEl = document.getElementById('privacyProgress');
+                const squadEl = document.getElementById('privacySquad');
+
+                if (avatarEl) avatarEl.value = profile.privacy_avatar || 'public';
+                if (bioEl) bioEl.value = profile.privacy_bio || 'public';
+                if (statsEl) statsEl.value = profile.privacy_stats || 'public';
+                if (progressEl) progressEl.value = profile.privacy_progress || 'public';
+                if (squadEl) squadEl.value = profile.privacy_squad || 'public';
+            }, 100);
         }
     } catch (err) {
         console.error('Error loading privacy settings:', err);
@@ -455,7 +465,8 @@ window.savePrivacySettings = async function () {
         privacy_avatar: document.getElementById('privacyAvatar').value,
         privacy_bio: document.getElementById('privacyBio').value,
         privacy_stats: document.getElementById('privacyStats').value,
-        privacy_progress: document.getElementById('privacyProgress').value
+        privacy_progress: document.getElementById('privacyProgress').value,
+        privacy_squad: document.getElementById('privacySquad').value
     };
 
     try {
@@ -466,10 +477,33 @@ window.savePrivacySettings = async function () {
 
         if (error) throw error;
 
+        // Close modal if it exists
+        if (typeof closePrivacyModal === 'function') {
+            closePrivacyModal();
+        }
+
         showToast('تم حفظ إعدادات الخصوصية بنجاح', 'success');
     } catch (err) {
         console.error('Error saving privacy settings:', err);
         showToast('حدث خطأ أثناء الحفظ', 'error');
+    }
+};
+
+// Modal control functions
+window.openPrivacyModal = function () {
+    const modal = document.getElementById('privacyModal');
+    if (modal) {
+        modal.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+        loadPrivacySettings();
+    }
+};
+
+window.closePrivacyModal = function () {
+    const modal = document.getElementById('privacyModal');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
     }
 };
 
