@@ -815,15 +815,14 @@ async function renderChat(msgs) {
         ` : '';
 
         // Sender level and color
-        const level = calculateLevel(m.profiles?.points || 0);
-        const levelColor = getLevelColor(level);
-        const levelBadgeHTML = createLevelBadge(m.profiles?.points || 0, 'xsmall');
-        const avatarUrl = m.profiles?.avatar_url || generateAvatar(m.profiles?.full_name || 'User', 'initials');
+        const level = m.profiles ? calculateLevel(m.profiles.points || 0) : 0;
+        const levelColor = m.profiles ? getLevelColor(level) : '#03A9F4';
+        const avatarUrl = m.profiles?.avatar_url || (m.profiles ? generateAvatar(m.profiles.full_name, 'initials') : 'assets/images/favicon-48x48.png');
 
         return `
             <div class="msg-wrapper ${m.sender_id === myId ? 'sent' : 'received'}">
                 <div class="chat-avatar-container">
-                    <img src="${avatarUrl}" class="chat-avatar" style="border-color: ${levelColor};" title="${m.profiles?.full_name}">
+                    <img src="${avatarUrl}" class="chat-avatar" style="border-color: ${levelColor};" title="${m.profiles?.full_name || 'System'}">
                 </div>
                 <div class="msg ${m.sender_id === myId ? 'sent' : 'received'}" 
                      ${m.sender_id === myId ? `onclick="showReadBy('${fullReaderNames}')"` : ''} 
