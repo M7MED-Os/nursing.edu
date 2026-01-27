@@ -432,28 +432,30 @@ function renderMembersUI(members) {
         return `
             <div class="member-item" data-userid="${m.profile_id}" style="display:flex; align-items:center; gap:12px;">
                 <div class="status-dot ${isOnline ? 'online' : ''}"></div>
-                <div style="position: relative; display: inline-block;">
-                    <img src="${avatarUrl}" alt="${m.profiles.full_name}" style="
-                        width: 45px;
-                        height: 45px;
-                        border-radius: 50%;
-                        object-fit: cover;
-                        border: 3px solid ${levelColor};
-                        box-shadow: 0 4px 12px ${levelColor}40;
-                    ">
-                    <div style="position: absolute; bottom: -2px; left: -2px; z-index: 10; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));">
-                        ${levelBadgeHTML}
+                <a href="student-profile.html?id=${m.profile_id}" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 12px; flex: 1;">
+                    <div style="position: relative; display: inline-block;">
+                        <img src="${avatarUrl}" alt="${m.profiles.full_name}" style="
+                            width: 45px;
+                            height: 45px;
+                            border-radius: 50%;
+                            object-fit: cover;
+                            border: 3px solid ${levelColor};
+                            box-shadow: 0 4px 12px ${levelColor}40;
+                        ">
+                        <div style="position: absolute; bottom: -2px; left: -2px; z-index: 10; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));">
+                            ${levelBadgeHTML}
+                        </div>
                     </div>
-                </div>
-                <div style="flex:1">
-                    <div style="font-weight:700; font-size:0.9rem;">${m.profiles.full_name}</div>
-                    <div style="font-size:0.75rem; color:#64748b; display: flex; gap: 10px;">
-                        <span>${m.profiles.points} نقطة</span>
-                        <span class="active-status" style="font-size: 0.7rem; color: ${isOnline ? '#10b981' : '#94a3b8'};">
-                            • ${activeText}
-                        </span>
+                    <div style="flex:1">
+                        <div style="font-weight:700; font-size:0.9rem;">${m.profiles.full_name}</div>
+                        <div style="font-size:0.75rem; color:#64748b; display: flex; gap: 10px;">
+                            <span>${m.profiles.points} نقطة</span>
+                            <span class="active-status" style="font-size: 0.7rem; color: ${isOnline ? '#10b981' : '#94a3b8'};">
+                                • ${activeText}
+                            </span>
+                        </div>
                     </div>
-                </div>
+                </a>
                 ${actions}
             </div>
         `;

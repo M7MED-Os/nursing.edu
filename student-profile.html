@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>بروفايل الطالب - Nursing Academy</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        .profile-container {
+            max-width: 900px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .profile-header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, #0288d1 100%);
+            border-radius: var(--radius-lg);
+            padding: 2rem;
+            text-align: center;
+            color: white;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(3, 169, 244, 0.3);
+        }
+
+        .profile-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+            animation: pulse 3s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+                opacity: 0.5;
+            }
+
+            50% {
+                transform: scale(1.1);
+                opacity: 0.8;
+            }
+        }
+
+        .profile-avatar-container {
+            position: relative;
+            display: inline-block;
+            margin-bottom: 1rem;
+            z-index: 1;
+        }
+
+        .profile-avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 5px solid white;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+        }
+
+        .profile-level-badge {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+        }
+
+        .profile-name {
+            font-size: 1.8rem;
+            font-weight: 900;
+            margin: 0.5rem 0;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .profile-grade {
+            font-size: 1rem;
+            opacity: 0.95;
+            font-weight: 600;
+        }
+
+        .profile-bio {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border-radius: var(--radius-md);
+            padding: 1rem;
+            margin-top: 1rem;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            font-style: italic;
+        }
+
+        .profile-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: var(--radius-md);
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+        }
+
+        .stat-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--primary-color), #0288d1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 900;
+            color: var(--text-dark);
+            margin: 0.5rem 0;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            font-weight: 600;
+        }
+
+        .profile-section {
+            background: white;
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            margin-top: 1.5rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .section-title {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: var(--text-dark);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .section-title i {
+            color: var(--primary-color);
+        }
+
+        .squad-link {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: var(--bg-light);
+            border-radius: var(--radius-md);
+            text-decoration: none;
+            color: var(--text-dark);
+            transition: all 0.3s ease;
+        }
+
+        .squad-link:hover {
+            background: var(--primary-color);
+            color: white;
+            transform: translateX(-5px);
+        }
+
+        .squad-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .squad-info {
+            flex: 1;
+        }
+
+        .squad-name {
+            font-weight: 700;
+            font-size: 1rem;
+        }
+
+        .squad-meta {
+            font-size: 0.8rem;
+            color: var(--text-light);
+            margin-top: 0.25rem;
+        }
+
+        .loading-skeleton {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+            border-radius: var(--radius-md);
+        }
+
+        @keyframes loading {
+            0% {
+                background-position: 200% 0;
+            }
+
+            100% {
+                background-position: -200% 0;
+            }
+        }
+
+        .back-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: white;
+            color: var(--primary-color);
+            border: 2px solid var(--primary-color);
+            border-radius: var(--radius-md);
+            text-decoration: none;
+            font-weight: 700;
+            transition: all 0.3s ease;
+            margin-bottom: 1rem;
+        }
+
+        .back-button:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .profile-header {
+                padding: 1.5rem 1rem;
+            }
+
+            .profile-avatar {
+                width: 100px;
+                height: 100px;
+            }
+
+            .profile-name {
+                font-size: 1.4rem;
+            }
+
+            .profile-stats {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="profile-container">
+        <a href="javascript:history.back()" class="back-button">
+            <i class="fas fa-arrow-right"></i>
+            رجوع
+        </a>
+
+        <!-- Profile Header -->
+        <div class="profile-header" id="profileHeader">
+            <div class="loading-skeleton" style="width: 120px; height: 120px; border-radius: 50%; margin: 0 auto 1rem;">
+            </div>
+            <div class="loading-skeleton" style="width: 200px; height: 30px; margin: 0 auto 0.5rem;"></div>
+            <div class="loading-skeleton" style="width: 150px; height: 20px; margin: 0 auto;"></div>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="profile-stats" id="profileStats">
+            <!-- Will be populated by JS -->
+        </div>
+
+        <!-- Squad Section -->
+        <div class="profile-section" id="squadSection" style="display: none;">
+            <h3 class="section-title">
+                <i class="fas fa-users"></i>
+                الشلة الحالية
+            </h3>
+            <div id="squadContent"></div>
+        </div>
+
+        <!-- Level Progress Section -->
+        <div class="profile-section" id="levelSection">
+            <h3 class="section-title">
+                <i class="fas fa-chart-line"></i>
+                التقدم في المستوى
+            </h3>
+            <div id="levelProgress"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { supabase } from './assets/js/supabaseClient.js';
+        import { generateAvatar, calculateLevel, getLevelColor } from './assets/js/avatars.js';
+        import { createLevelBadge, createLevelProgress } from './assets/js/level-badge.js';
+        import { GRADES, STREAMS, TERMS } from './assets/js/constants.js';
+
+        // Get student ID from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const studentId = urlParams.get('id');
+
+        if (!studentId) {
+            window.location.href = 'leaderboard.html';
+        }
+
+        async function loadStudentProfile() {
+            try {
+                // Fetch student data
+                const { data: student, error } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', studentId)
+                    .single();
+
+                if (error) throw error;
+
+                // Render profile header
+                renderProfileHeader(student);
+
+                // Fetch and render stats
+                await renderStats(student);
+
+                // Fetch and render squad info
+                await renderSquad(student.id);
+
+                // Render level progress
+                renderLevelProgress(student.points);
+
+            } catch (err) {
+                console.error('Error loading profile:', err);
+                document.getElementById('profileHeader').innerHTML = `
+                    <div style="text-align: center; color: white; padding: 2rem;">
+                        <i class="fas fa-exclamation-circle" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                        <p>عذراً، لم نتمكن من تحميل البروفايل</p>
+                    </div>
+                `;
+            }
+        }
+
+        function renderProfileHeader(student) {
+            const avatarUrl = student.avatar_url || generateAvatar(student.full_name, 'initials');
+            const level = calculateLevel(student.points || 0);
+            const levelColor = getLevelColor(level);
+            const levelBadgeHTML = createLevelBadge(student.points || 0, 'large');
+
+            const gradeText = GRADES[student.grade] || student.grade || 'غير محدد';
+            let additionalInfo = '';
+
+            if (student.grade === '3' || student.grade === '4') {
+                additionalInfo = STREAMS[student.stream] || student.stream || '';
+            } else if (student.term) {
+                additionalInfo = `الترم ${student.term}`;
+            }
+
+            const bioHTML = student.bio ? `
+                <div class="profile-bio">
+                    <i class="fas fa-quote-right" style="opacity: 0.7; margin-left: 0.5rem;"></i>
+                    ${student.bio}
+                    <i class="fas fa-quote-left" style="opacity: 0.7; margin-right: 0.5rem;"></i>
+                </div>
+            ` : '';
+
+            document.getElementById('profileHeader').innerHTML = `
+                <div class="profile-avatar-container">
+                    <img src="${avatarUrl}" alt="${student.full_name}" class="profile-avatar" style="border-color: ${levelColor};">
+                    <div class="profile-level-badge">
+                        ${levelBadgeHTML}
+                    </div>
+                </div>
+                <h1 class="profile-name">${student.full_name}</h1>
+                <p class="profile-grade">${gradeText}${additionalInfo ? ' - ' + additionalInfo : ''}</p>
+                ${bioHTML}
+            `;
+        }
+
+        async function renderStats(student) {
+            // Fetch user stats
+            const { data: statsData } = await supabase.rpc('get_user_stats', { p_user_id: student.id });
+            const stats = statsData || {};
+
+            const level = calculateLevel(student.points || 0);
+            const totalExams = stats.total_exams || 0;
+            const totalQuestions = stats.total_solved_questions || 0;
+            const accuracy = totalQuestions > 0
+                ? Math.round((stats.total_solved_questions / stats.total_possible_questions) * 100)
+                : 0;
+
+            document.getElementById('profileStats').innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-trophy"></i></div>
+                    <div class="stat-value">${student.points || 0}</div>
+                    <div class="stat-label">النقاط الإجمالية</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-star"></i></div>
+                    <div class="stat-value">${level}</div>
+                    <div class="stat-label">المستوى الحالي</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-file-alt"></i></div>
+                    <div class="stat-value">${totalExams}</div>
+                    <div class="stat-label">الامتحانات المحلولة</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-bullseye"></i></div>
+                    <div class="stat-value">${accuracy}%</div>
+                    <div class="stat-label">نسبة الدقة</div>
+                </div>
+            `;
+        }
+
+        async function renderSquad(userId) {
+            const { data: membership } = await supabase
+                .from('squad_members')
+                .select('squad_id, squads(*)')
+                .eq('profile_id', userId)
+                .limit(1)
+                .single();
+
+            if (membership && membership.squads) {
+                const squad = membership.squads;
+                const squadAvatar = squad.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(squad.name)}&background=10b981&color=fff&size=100`;
+
+                const { count: memberCount } = await supabase
+                    .from('squad_members')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('squad_id', squad.id);
+
+                document.getElementById('squadSection').style.display = 'block';
+                document.getElementById('squadContent').innerHTML = `
+                    <a href="squad-profile.html?id=${squad.id}" class="squad-link">
+                        <img src="${squadAvatar}" alt="${squad.name}" class="squad-avatar">
+                        <div class="squad-info">
+                            <div class="squad-name">${squad.name}</div>
+                            <div class="squad-meta">
+                                <i class="fas fa-users"></i> ${memberCount || 0} عضو
+                                • <i class="fas fa-trophy"></i> ${squad.points || 0} نقطة
+                            </div>
+                        </div>
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                `;
+            }
+        }
+
+        function renderLevelProgress(points) {
+            const progressHTML = createLevelProgress(points);
+            document.getElementById('levelProgress').innerHTML = progressHTML;
+        }
+
+        // Load profile on page load
+        loadStudentProfile();
+    </script>
+</body>
+
+</html>

@@ -237,7 +237,7 @@ img {
 /* Bottom Navigation Removed */
 
 /* Responsive Navbar */
-@media (max-width: 768px) {
+@media (max-width: 865px) {
   .menu-toggle {
     display: block;
   }

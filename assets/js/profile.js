@@ -62,6 +62,13 @@ function renderProfileUI(profile, user) {
     if (termField) termField.value = term;
     if (streamField) streamField.value = stream;
 
+    // Display Bio
+    const bioDisplay = document.getElementById('profileBioDisplay');
+    if (bioDisplay) {
+        bioDisplay.textContent = profile.bio || 'لم يتم إضافة نبذة بعد...';
+        bioDisplay.style.opacity = profile.bio ? '1' : '0.6';
+    }
+
 
     // 4. Subscription Card Logic (Show for all users)
     const subStart = document.getElementById('subStart');
@@ -346,6 +353,65 @@ if (changeAvatarBtn) {
             window.dispatchEvent(new CustomEvent('profileUpdated', { detail: currentProfile }));
         });
     });
+
+    // Edit Bio Button
+    const editBioBtn = document.getElementById('editBioBtn');
+    if (editBioBtn) {
+        editBioBtn.addEventListener('click', async () => {
+            if (!currentUser || !currentProfile) {
+                showToast('جاري تحميل البيانات...', 'info');
+                return;
+            }
+
+            const { value: newBio } = await Swal.fire({
+                title: 'تعديل النبذة المختصرة',
+                input: 'textarea',
+                inputLabel: 'اكتب نبذة مختصرة عنك (اختياري)',
+                inputPlaceholder: 'مثال: طالب طموح في كلية التمريض، أحب التعلم والتطوير...',
+                inputValue: currentProfile.bio || '',
+                inputAttributes: {
+                    maxlength: 200,
+                    'aria-label': 'النبذة المختصرة'
+                },
+                showCancelButton: true,
+                confirmButtonText: 'حفظ',
+                cancelButtonText: 'إلغاء',
+                confirmButtonColor: 'var(--primary-color)',
+                inputValidator: (value) => {
+                    if (value && value.length > 200) {
+                        return 'النبذة طويلة جداً! الحد الأقصى 200 حرف';
+                    }
+                }
+            });
+
+            if (newBio !== undefined) {
+                try {
+                    const { error } = await supabase
+                        .from('profiles')
+                        .update({ bio: newBio || null })
+                        .eq('id', currentUser.id);
+
+                    if (error) throw error;
+
+                    // Update UI
+                    const bioDisplay = document.getElementById('profileBioDisplay');
+                    if (bioDisplay) {
+                        bioDisplay.textContent = newBio || 'لم يتم إضافة نبذة بعد...';
+                        bioDisplay.style.opacity = newBio ? '1' : '0.6';
+                    }
+
+                    currentProfile.bio = newBio;
+                    showToast('تم تحديث النبذة بنجاح!', 'success');
+
+                    // Trigger global profile update
+                    window.dispatchEvent(new CustomEvent('profileUpdated', { detail: currentProfile }));
+                } catch (err) {
+                    console.error('Error updating bio:', err);
+                    showToast('حدث خطأ أثناء التحديث', 'error');
+                }
+            }
+        });
+    }
 }
 
 // Initialize
