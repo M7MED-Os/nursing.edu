@@ -849,7 +849,7 @@ function renderMessageContent(m, myId) {
         return `
             <div class="msg-exam-card" style="background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:12px; margin-top:8px; box-shadow:0 2px 4px rgba(0,0,0,0.05);">
                 <div style="color:var(--primary-color); font-weight:700; font-size:0.85rem; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
-                    <i class="fas fa-graduation-cap"></i> تحدي جماعي
+                    <i class="fas fa-graduation-cap"></i> امتحان جماعي
                 </div>
                 ${(() => {
                 // Calculate required members dynamic display
