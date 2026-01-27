@@ -81,8 +81,7 @@
         .profile-level-badge {
             position: absolute;
             bottom: 0;
-            left: 50%;
-            transform: translateX(-50%);
+            left: 0;
             z-index: 10;
         }
 
@@ -446,7 +445,7 @@
                 additionalInfo = `الترم ${student.term}`;
             }
 
-            const bioText = student.bio || 'لا توجد نبذة';
+            const bioText = student.bio || 'مفيش بايو';
             const bioClass = student.bio ? '' : 'empty';
 
             const headerEl = document.getElementById('profileHeader');

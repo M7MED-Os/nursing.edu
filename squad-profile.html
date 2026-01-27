@@ -67,8 +67,7 @@
         .squad-level-badge {
             position: absolute;
             bottom: 0;
-            left: 50%;
-            transform: translateX(-50%);
+            left: 0;
             z-index: 10;
         }
 
@@ -263,9 +262,26 @@
         }
 
         .member-points {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
             font-size: 0.8rem;
             color: var(--text-light);
             margin-top: 0.25rem;
+        }
+
+        .member-stat {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .member-stat i.fa-trophy {
+            color: #fbbf24;
+        }
+
+        .member-stat i.fa-star {
+            color: #8b5cf6;
         }
 
         .owner-badge {
@@ -429,7 +445,7 @@
     <script type="module">
         import { supabase } from './assets/js/supabaseClient.js';
         import { generateAvatar, calculateLevel, getLevelColor, calculateSquadLevel } from './assets/js/avatars.js';
-        import { createLevelBadge, createLevelProgress } from './assets/js/level-badge.js';
+        import { createLevelBadge, createLevelProgress, createSquadLevelProgress } from './assets/js/level-badge.js';
         import { GRADES, STREAMS } from './assets/js/constants.js';
         import { checkAuth } from './assets/js/auth.js';
 
@@ -509,7 +525,7 @@
             const levelColor = getLevelColor(level);
             const levelBadgeHTML = createLevelBadge(squad.points || 0, 'large');
 
-            const bioText = squad.bio || 'ضيف بايو';
+            const bioText = squad.bio || 'مفيش بايو';
             const bioClass = squad.bio ? '' : 'empty';
             const editBtnDisplay = isOwner ? '' : 'style="display: none;"';
 
@@ -616,8 +632,12 @@
                         <div class="member-info">
                             <div class="member-name">${profile.full_name}</div>
                             <div class="member-points">
-                                <i class="fas fa-trophy"></i> ${profile.points || 0} نقطة
-                                • <i class="fas fa-star"></i> مستوى ${level}
+                                <div class="member-stat">
+                                    <i class="fas fa-trophy"></i> ${profile.points || 0} نقطة
+                                </div>
+                                <div class="member-stat">
+                                    <i class="fas fa-star" style="color: ${levelColor}"></i> مستوى ${level}
+                                </div>
                             </div>
                         </div>
                         ${isSquadOwner ? '<span class="owner-badge"><i class="fas fa-crown"></i> المالك</span>' : ''}
@@ -629,7 +649,7 @@
         }
 
         function renderLevelProgress(points) {
-            const progressHTML = createLevelProgress(points);
+            const progressHTML = createSquadLevelProgress(points);
             const progressEl = document.getElementById('levelProgress');
             if (progressEl) {
                 progressEl.innerHTML = progressHTML;

@@ -4,7 +4,7 @@
 // عرض المستوى كـ Badge ملون جنب اسم الطالب/الشلة
 // ============================================
 
-import { calculateLevel, getLevelColor, getLevelBadge } from './avatars.js';
+import { calculateLevel, getLevelColor, getLevelBadge, calculateSquadLevel } from './avatars.js';
 
 /**
  * إنشاء HTML للـ Level Badge (دايرة صغيرة بالرقم فقط - زي الألعاب)
@@ -175,6 +175,56 @@ export function createLevelCard(points, userName) {
                 </div>
             </div>
             ${createLevelProgress(points)}
+        </div>
+    `;
+}
+
+/**
+ * إنشاء HTML لشريط التقدم لمستوى الشلة
+ * @param {number} currentPoints - النقاط الحالية
+ * @returns {string} HTML
+ */
+export function createSquadLevelProgress(currentPoints) {
+    const currentLevel = calculateSquadLevel(currentPoints);
+    const currentLevelPoints = Math.pow(currentLevel, 2) * 10;
+    const nextLevelPoints = Math.pow(currentLevel + 1, 2) * 10;
+    const progress = ((currentPoints - currentLevelPoints) / (nextLevelPoints - currentLevelPoints)) * 100;
+    const progressClamped = Math.min(Math.max(progress, 0), 100);
+    const pointsNeeded = nextLevelPoints - currentPoints;
+    const color = getLevelColor(currentLevel);
+    const nextColor = getLevelColor(currentLevel + 1);
+
+    return `
+        <div class="level-progress-card" style="margin-top: 1.5rem; background: rgba(255,255,255,0.05); padding: 1.25rem; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span style="font-size: 1.1rem; color: #fbbf24;">
+                        <i class="fas fa-crown"></i>
+                    </span>
+                    <span style="font-size: 0.95rem; color: rgba(255,255,255,0.9); font-weight: 700;">
+                        المستوى ${currentLevel}
+                    </span>
+                </div>
+                <span style="font-size: 0.8rem; color: ${nextColor}; font-weight: 700; background: rgba(255,255,255,0.1); padding: 4px 10px; border-radius: 20px;">
+                    فاضل ${pointsNeeded} نقطة
+                </span>
+            </div>
+            
+            <div style="position: relative; height: 16px; background: rgba(0,0,0,0.3); border-radius: 20px; overflow: hidden; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);">
+                <div style="
+                    width: ${progressClamped}%;
+                    height: 100%;
+                    background: linear-gradient(90deg, ${color} 0%, ${nextColor} 100%);
+                    border-radius: 20px;
+                    transition: width 1s ease-in-out;
+                    box-shadow: 0 0 15px ${nextColor}60;
+                "></div>
+            </div>
+            
+            <div style="display: flex; justify-content: space-between; margin-top: 0.5rem; font-size: 0.75rem; color: rgba(255,255,255,0.5); font-family: monospace;">
+                <span>${currentPoints} XP</span>
+                <span>${nextLevelPoints} XP</span>
+            </div>
         </div>
     `;
 }
