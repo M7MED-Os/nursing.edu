@@ -434,8 +434,8 @@ function renderMembersUI(members) {
                 <div class="status-dot ${isOnline ? 'online' : ''}"></div>
                 <div style="position: relative; display: inline-block;">
                     <img src="${avatarUrl}" alt="${m.profiles.full_name}" style="
-                        width: 35px;
-                        height: 35px;
+                        width: 45px;
+                        height: 45px;
                         border-radius: 50%;
                         object-fit: cover;
                         border: 3px solid ${levelColor};
