@@ -406,6 +406,17 @@
             if (auth) {
                 currentUserInfo = auth.profile;
 
+                // Fetch user's squad_id for privacy checks
+                const { data: squadMember } = await supabase
+                    .from('squad_members')
+                    .select('squad_id')
+                    .eq('profile_id', currentUserInfo.id)
+                    .maybeSingle();
+
+                if (squadMember) {
+                    currentUserInfo.squad_id = squadMember.squad_id;
+                }
+
                 // Sync UI on point changes
                 window.addEventListener('profileUpdated', (e) => {
                     currentUserInfo = e.detail;

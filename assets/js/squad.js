@@ -812,7 +812,7 @@ async function loadChat() {
         const [{ data: results }, { data: challenges }, { data: msgs }] = await Promise.all([
             supabase.from('results').select('exam_id, created_at').eq('user_id', currentProfile.id),
             supabase.from('squad_exam_challenges').select('id, status, squad_points_awarded').eq('squad_id', currentSquad.id),
-            supabase.from('squad_chat_messages').select('*, profiles!sender_id(full_name, avatar_url, points)').eq('squad_id', currentSquad.id).order('created_at', { ascending: false }).limit(50)
+            supabase.from('squad_chat_messages').select('*, profiles!sender_id(full_name, avatar_url, points, privacy_avatar)').eq('squad_id', currentSquad.id).order('created_at', { ascending: false }).limit(50)
         ]);
 
         const freshMsgs = (msgs || []).reverse();
@@ -879,7 +879,23 @@ async function renderChat(msgs) {
         // Sender level and color
         const level = m.profiles ? calculateLevel(m.profiles.points || 0) : 0;
         const levelColor = m.profiles ? getLevelColor(level) : '#03A9F4';
-        const avatarUrl = m.profiles?.avatar_url || (m.profiles ? generateAvatar(m.profiles.full_name, 'initials') : 'assets/images/favicon-48x48.png');
+
+        // Privacy check for avatar
+        let showAvatar = false;
+        if (m.sender_id === myId) {
+            // Always show own avatar
+            showAvatar = true;
+        } else if (!m.profiles?.privacy_avatar || m.profiles.privacy_avatar === 'public') {
+            // Public setting
+            showAvatar = true;
+        } else if (m.profiles.privacy_avatar === 'squad') {
+            // Squad-only: we're in the same squad, so show it
+            showAvatar = true;
+        }
+        // else: private, showAvatar stays false
+
+        const defaultAvatar = m.profiles ? generateAvatar(m.profiles.full_name, 'initials') : 'assets/images/favicon-48x48.png';
+        const avatarUrl = showAvatar && m.profiles?.avatar_url ? m.profiles.avatar_url : defaultAvatar;
 
         return `
             <div class="msg-wrapper ${m.sender_id === myId ? 'sent' : 'received'}">
