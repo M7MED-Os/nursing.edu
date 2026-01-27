@@ -1,6 +1,6 @@
 import { supabase } from './supabaseClient.js';
 import { getCache, setCache, getSWR } from "./utils.js";
-import { generateAvatar, calculateLevel } from './avatars.js';
+import { generateAvatar, calculateLevel, getLevelColor } from './avatars.js';
 import { createLevelBadge, createLevelAvatar } from './level-badge.js';
 import { GRADES, STREAMS } from "./constants.js";
 
@@ -402,7 +402,7 @@ function renderMembersUI(members) {
     });
 
     const list = document.getElementById('memberList');
-    document.getElementById('squadMemberCount').textContent = `${members.length} أعضاء`;
+    document.getElementById('squadMemberCount').textContent = `${members.length}`;
 
     const isOwner = currentSquad.owner_id === currentProfile.id;
 
@@ -423,9 +423,28 @@ function renderMembersUI(members) {
 
         let activeText = isOnline ? 'نشط الآن' : (m.profiles.updated_at ? timeAgo(m.profiles.updated_at) : 'غير نَشِط');
 
+        // Avatar and level
+        const avatarUrl = m.profiles.avatar_url || generateAvatar(m.profiles.full_name, 'initials');
+        const level = calculateLevel(m.profiles.points || 0);
+        const levelColor = getLevelColor(level);
+        const levelBadgeHTML = createLevelBadge(m.profiles.points || 0, 'xsmall');
+
         return `
-            <div class="member-item" data-userid="${m.profile_id}" style="display:flex; align-items:center; gap:10px;">
+            <div class="member-item" data-userid="${m.profile_id}" style="display:flex; align-items:center; gap:12px;">
                 <div class="status-dot ${isOnline ? 'online' : ''}"></div>
+                <div style="position: relative; display: inline-block;">
+                    <img src="${avatarUrl}" alt="${m.profiles.full_name}" style="
+                        width: 35px;
+                        height: 35px;
+                        border-radius: 50%;
+                        object-fit: cover;
+                        border: 3px solid ${levelColor};
+                        box-shadow: 0 4px 12px ${levelColor}40;
+                    ">
+                    <div style="position: absolute; bottom: -2px; left: -2px; z-index: 10; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));">
+                        ${levelBadgeHTML}
+                    </div>
+                </div>
                 <div style="flex:1">
                     <div style="font-weight:700; font-size:0.9rem;">${m.profiles.full_name}</div>
                     <div style="font-size:0.75rem; color:#64748b; display: flex; gap: 10px;">
@@ -795,17 +814,28 @@ async function renderChat(msgs) {
             </div>
         ` : '';
 
+        // Sender level and color
+        const level = calculateLevel(m.profiles?.points || 0);
+        const levelColor = getLevelColor(level);
+        const levelBadgeHTML = createLevelBadge(m.profiles?.points || 0, 'xsmall');
+        const avatarUrl = m.profiles?.avatar_url || generateAvatar(m.profiles?.full_name || 'User', 'initials');
+
         return `
-            <div class="msg ${m.sender_id === myId ? 'sent' : 'received'}" 
-                 ${m.sender_id === myId ? `onclick="showReadBy('${fullReaderNames}')"` : ''} 
-                 style="${m.sender_id === myId ? 'cursor:pointer;' : ''}">
-                <span class="msg-sender">${m.profiles ? m.profiles.full_name : 'M7MED'}</span>
-                <div class="msg-content">
-                    ${renderMessageContent(m, myId)}
+            <div class="msg-wrapper ${m.sender_id === myId ? 'sent' : 'received'}">
+                <div class="chat-avatar-container">
+                    <img src="${avatarUrl}" class="chat-avatar" style="border-color: ${levelColor};" title="${m.profiles?.full_name}">
                 </div>
-                <div class="msg-footer">
-                    <span class="msg-time">${time}</span>
-                    ${ticks}
+                <div class="msg ${m.sender_id === myId ? 'sent' : 'received'}" 
+                     ${m.sender_id === myId ? `onclick="showReadBy('${fullReaderNames}')"` : ''} 
+                     style="${m.sender_id === myId ? 'cursor:pointer;' : ''}">
+                    <span class="msg-sender">${m.profiles ? m.profiles.full_name : 'M7MED'}</span>
+                    <div class="msg-content">
+                        ${renderMessageContent(m, myId)}
+                    </div>
+                    <div class="msg-footer">
+                        <span class="msg-time">${time}</span>
+                        ${ticks}
+                    </div>
                 </div>
             </div>
         `;

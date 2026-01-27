@@ -17,6 +17,7 @@ export function createLevelBadge(points, size = 'small') {
     const color = getLevelColor(level);
 
     const sizes = {
+        xsmall: { width: '22px', height: '22px', fontSize: '0.65rem' },
         small: { width: '28px', height: '28px', fontSize: '0.75rem' },
         medium: { width: '36px', height: '36px', fontSize: '0.9rem' },
         large: { width: '44px', height: '44px', fontSize: '1.1rem' }
@@ -55,7 +56,7 @@ export function createLevelBadge(points, size = 'small') {
 export function createLevelAvatar(avatarUrl, points, size = '70px', showLevel = true) {
     const level = calculateLevel(points);
     const color = getLevelColor(level);
-    const levelBadgeSize = parseInt(size) > 80 ? 'medium' : 'small';
+    const levelBadgeSize = parseInt(size) > 80 ? 'medium' : parseInt(size) > 45 ? 'small' : 'xsmall';
 
     return `
         <div class="level-avatar" style="
@@ -99,30 +100,33 @@ export function createLevelProgress(currentPoints) {
     const progressClamped = Math.min(Math.max(progress, 0), 100);
     const pointsNeeded = nextLevelPoints - currentPoints;
     const color = getLevelColor(currentLevel);
+    const nextColor = getLevelColor(currentLevel + 1);
 
     return `
         <div class="level-progress" style="margin-top: 8px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                <span style="font-size: 0.75rem; color: #64748b; font-weight: 600;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <span style="font-size: 0.8rem; color: rgba(255,255,255,0.9); font-weight: 600;">
                     التقدم للمستوى ${currentLevel + 1}
                 </span>
-                <span style="font-size: 0.75rem; color: ${color}; font-weight: 700;">
-                    ${pointsNeeded} نقطة متبقية
+                <span style="font-size: 0.8rem; color: white; font-weight: 700; background: rgba(255,255,255,0.15); padding: 2px 8px; border-radius: 8px;">
+                    ${pointsNeeded} نقطة
                 </span>
             </div>
             <div style="
                 width: 100%;
-                height: 8px;
-                background: #e2e8f0;
+                height: 10px;
+                background: rgba(255,255,255,0.2);
                 border-radius: 10px;
                 overflow: hidden;
+                box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
             ">
                 <div style="
                     width: ${progressClamped}%;
                     height: 100%;
-                    background: linear-gradient(90deg, ${color} 0%, ${color}cc 100%);
+                    background: linear-gradient(90deg, ${nextColor} 0%, ${nextColor}dd 100%);
                     border-radius: 10px;
                     transition: width 0.3s ease;
+                    box-shadow: 0 0 10px ${nextColor}80;
                 "></div>
             </div>
         </div>

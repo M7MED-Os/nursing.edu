@@ -4,7 +4,7 @@ import { GRADES, TERMS, STREAMS } from "./constants.js";
 import { setButtonLoading } from "./utils/dom.js";
 import { openAvatarModal } from "./avatar-modal.js";
 import { generateAvatar, getLevelColor } from "./avatars.js";
-import { createLevelBadge } from "./level-badge.js";
+import { createLevelBadge, createLevelProgress } from "./level-badge.js";
 
 // ==========================
 // 1. Current State
@@ -122,7 +122,8 @@ function renderProfileUI(profile, user) {
         if (profile.points !== undefined) {
             const level = Math.floor(Math.sqrt(Math.max(profile.points || 0, 0) / 5));
             const color = getLevelColor(level);
-            // Keep white border for premium look
+            avatarImg.style.border = `5px solid ${color}`;
+            avatarImg.style.boxShadow = `0 8px 24px ${color}40`;
         }
     }
 
@@ -136,6 +137,12 @@ function renderProfileUI(profile, user) {
 
     if (emailDisplay) {
         emailDisplay.textContent = email || 'email@example.com';
+    }
+
+    // 6.5. Display Level Progress Bar
+    const levelProgressContainer = document.getElementById('profileLevelProgress');
+    if (levelProgressContainer && profile.points !== undefined) {
+        levelProgressContainer.innerHTML = createLevelProgress(profile.points);
     }
 
     // 7. Display Stats in Premium Cards

@@ -65,20 +65,26 @@ export function calculateSquadLevel(points) {
     return Math.floor(Math.sqrt(Math.max(points || 0, 0) / 10));
 }
 
-// الحصول على لون المستوى
+// الحصول على لون المستوى (نظام التدرج الطبيعي - 7 رتب)
 export function getLevelColor(level) {
-    if (level >= 10) return '#FFD700'; // ذهبي
-    if (level >= 7) return '#8B5CF6';  // بنفسجي
-    if (level >= 4) return '#03A9F4';  // أزرق
-    return '#94A3B8';                   // رمادي
+    if (level >= 25) return '#dc2626'; // أحمر داكن - أسطوري 🔥
+    if (level >= 20) return '#f97316'; // برتقالي - بطل 👑
+    if (level >= 15) return '#eab308'; // ذهبي - محترف 🏆
+    if (level >= 10) return '#22c55e'; // أخضر - متفوق 💎
+    if (level >= 7) return '#3b82f6'; // أزرق - متقدم ⭐
+    if (level >= 4) return '#8b5cf6'; // بنفسجي - نشط 🌟
+    return '#94a3b8';                  // رمادي - مبتدئ 🔰
 }
 
 // الحصول على أيقونة المستوى
 export function getLevelBadge(level) {
-    if (level >= 10) return '👑'; // تاج
-    if (level >= 7) return '💎';  // ماسة
-    if (level >= 4) return '⭐';  // نجمة
-    return '🔰';                   // مبتدئ
+    if (level >= 25) return '🔥'; // شعلة أسطورية
+    if (level >= 20) return '👑'; // تاج ذهبي
+    if (level >= 15) return '🏆'; // كأس
+    if (level >= 10) return '💎'; // ماسة
+    if (level >= 7) return '⭐'; // نجمة
+    if (level >= 4) return '🌟'; // نجمة لامعة
+    return '🔰';                  // مبتدئ
 }
 
 // حساب النقاط المطلوبة للمستوى التالي
