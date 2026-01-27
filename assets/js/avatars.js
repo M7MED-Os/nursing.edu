@@ -103,8 +103,3 @@ export function getLevelProgress(currentPoints) {
     const progress = ((currentPoints - currentLevelPoints) / (nextLevelPoints - currentLevelPoints)) * 100;
     return Math.min(Math.max(progress, 0), 100);
 }
-
-// حساب مستوى الشلة (معادلة مختلفة: النقاط / 10)
-export function calculateSquadLevel(points) {
-    return Math.floor(Math.sqrt(Math.max(points || 0, 0) / 10));
-}
