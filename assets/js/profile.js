@@ -2,6 +2,9 @@ import { supabase } from "./supabaseClient.js";
 import { showToast } from "./utils.js";
 import { GRADES, TERMS, STREAMS } from "./constants.js";
 import { setButtonLoading } from "./utils/dom.js";
+import { openAvatarModal } from "./avatar-modal.js";
+import { generateAvatar } from "./avatars.js";
+import { createLevelBadge } from "./level-badge.js";
 
 // ==========================
 // 1. Current State
@@ -145,6 +148,19 @@ function renderProfileUI(profile, user) {
         const bottomAdminBtn = document.getElementById("bottomAdminBtn");
         if (bottomAdminBtn) bottomAdminBtn.remove();
     }
+
+    // 6. Display Avatar and Level Badge
+    const avatarImg = document.getElementById('profileAvatar');
+    const levelBadgeContainer = document.getElementById('profileLevelBadge');
+
+    if (avatarImg) {
+        const avatarUrl = profile.avatar_url || generateAvatar(fullName, 'initials');
+        avatarImg.src = avatarUrl;
+    }
+
+    if (levelBadgeContainer && profile.points !== undefined) {
+        levelBadgeContainer.innerHTML = createLevelBadge(profile.points, 'medium');
+    }
 }
 
 // ==========================
@@ -264,6 +280,29 @@ if (logoutBtn) {
     logoutBtn.addEventListener("click", async () => {
         await supabase.auth.signOut();
         window.location.href = "login.html";
+    });
+}
+
+// Change Avatar Button
+const changeAvatarBtn = document.getElementById("changeAvatarBtn");
+if (changeAvatarBtn) {
+    changeAvatarBtn.addEventListener("click", async () => {
+        if (!currentProfile || !currentUser) {
+            showToast('جاري تحميل البيانات...', 'info');
+            return;
+        }
+
+        await openAvatarModal('user', currentUser.id, currentProfile.full_name, (newAvatarUrl) => {
+            // Update UI immediately
+            const avatarImg = document.getElementById('profileAvatar');
+            if (avatarImg) avatarImg.src = newAvatarUrl;
+
+            // Update current profile
+            currentProfile.avatar_url = newAvatarUrl;
+
+            // Trigger global profile update event
+            window.dispatchEvent(new CustomEvent('profileUpdated', { detail: currentProfile }));
+        });
     });
 }
 

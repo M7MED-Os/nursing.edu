@@ -505,15 +505,53 @@
     <div id="mainSquadView">
         <header class="page-header">
             <div class="container">
-                <h1 id="squadName" style="display: inline-flex; align-items: center; gap: 12px;">
-                    <span id="squadNameText">اسم الشلة</span>
-                    <i id="editSquadNameBtn" class="fas fa-edit" onclick="editSquadName()"
-                        style="font-size: 0.6em; cursor: pointer; opacity: 0.7; transition: all 0.2s; display: none;"
-                        onmouseover="this.style.opacity='1'; this.style.transform='scale(1.1)'"
-                        onmouseout="this.style.opacity='0.7'; this.style.transform='scale(1)'"></i>
-                </h1>
-                <p id="squadInfo" style="font-size: 0.9rem; opacity: 0.8; margin-top: 5px;">السنة الدراسية - القسم</p>
-                <div class="squad-stats-badges">
+                <div style="display: flex; align-items: center; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                    <!-- Squad Avatar -->
+                    <div style="position: relative;">
+                        <img id="squadAvatar"
+                            src="https://ui-avatars.com/api/?name=Squad&background=10b981&color=fff&size=80"
+                            alt="صورة الشلة"
+                            style="width: 70px; height: 70px; border-radius: 50%; border: 3px solid #10b981; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                        <button id="changeSquadAvatarBtn" style="
+                            position: absolute;
+                            bottom: 0;
+                            right: 0;
+                            background: #10b981;
+                            color: white;
+                            border: none;
+                            width: 24px;
+                            height: 24px;
+                            border-radius: 50%;
+                            cursor: pointer;
+                            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+                            display: none;
+                            align-items: center;
+                            justify-content: center;
+                            font-size: 0.7rem;
+                            transition: all 0.3s;
+                        " title="تغيير صورة الشلة">
+                            <i class="fas fa-camera"></i>
+                        </button>
+                    </div>
+
+                    <div style="text-align: center;">
+                        <h1 id="squadName"
+                            style="display: inline-flex; align-items: center; gap: 12px; margin-bottom: 0.5rem;">
+                            <span id="squadNameText">اسم الشلة</span>
+                            <i id="editSquadNameBtn" class="fas fa-edit" onclick="editSquadName()"
+                                style="font-size: 0.6em; cursor: pointer; opacity: 0.7; transition: all 0.2s; display: none;"
+                                onmouseover="this.style.opacity='1'; this.style.transform='scale(1.1)'"
+                                onmouseout="this.style.opacity='0.7'; this.style.transform='scale(1)'"></i>
+                        </h1>
+                        <p id="squadInfo" style="font-size: 0.9rem; opacity: 0.8; margin: 5px 0;">السنة الدراسية - القسم
+                        </p>
+                        <div id="squadLevelBadge" style="margin-top: 0.5rem;">
+                            <!-- Squad level badge will be inserted here -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="squad-stats-badges" style="margin-top: 1rem;">
                     <span class="rules-help-badge" onclick="showSquadRules()" title="دليل القواعد">
                         <i class="fas fa-info-circle"></i>
                     </span>

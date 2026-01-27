@@ -1,0 +1,167 @@
+// ============================================
+// Level Badge Component
+// ============================================
+// عرض المستوى كـ Badge ملون جنب اسم الطالب/الشلة
+// ============================================
+
+import { calculateLevel, getLevelColor, getLevelBadge } from './avatars.js';
+
+/**
+ * إنشاء HTML للـ Level Badge
+ * @param {number} points - النقاط
+ * @param {string} size - الحجم: 'small', 'medium', 'large'
+ * @returns {string} HTML
+ */
+export function createLevelBadge(points, size = 'small') {
+    const level = calculateLevel(points);
+    const color = getLevelColor(level);
+    const emoji = getLevelBadge(level);
+
+    const sizes = {
+        small: { fontSize: '0.7rem', padding: '2px 6px', iconSize: '0.8rem' },
+        medium: { fontSize: '0.85rem', padding: '4px 10px', iconSize: '1rem' },
+        large: { fontSize: '1rem', padding: '6px 14px', iconSize: '1.2rem' }
+    };
+
+    const s = sizes[size];
+
+    return `
+        <span class="level-badge" style="
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: ${color}15;
+            color: ${color};
+            border: 1.5px solid ${color};
+            border-radius: 12px;
+            padding: ${s.padding};
+            font-size: ${s.fontSize};
+            font-weight: 700;
+            white-space: nowrap;
+        ">
+            <span style="font-size: ${s.iconSize};">${emoji}</span>
+            <span>لفل ${level}</span>
+        </span>
+    `;
+}
+
+/**
+ * إنشاء HTML للأفاتار مع Border ملون حسب المستوى
+ * @param {string} avatarUrl - رابط الصورة
+ * @param {number} points - النقاط
+ * @param {string} size - الحجم بالـ px
+ * @returns {string} HTML
+ */
+export function createLevelAvatar(avatarUrl, points, size = '40px') {
+    const level = calculateLevel(points);
+    const color = getLevelColor(level);
+
+    return `
+        <div class="level-avatar" style="
+            position: relative;
+            width: ${size};
+            height: ${size};
+            border-radius: 50%;
+            padding: 3px;
+            background: linear-gradient(135deg, ${color} 0%, ${color}80 100%);
+            box-shadow: 0 2px 8px ${color}40;
+        ">
+            <img src="${avatarUrl}" alt="Avatar" style="
+                width: 100%;
+                height: 100%;
+                border-radius: 50%;
+                object-fit: cover;
+                border: 2px solid white;
+            ">
+        </div>
+    `;
+}
+
+/**
+ * إنشاء HTML لشريط التقدم للمستوى التالي
+ * @param {number} currentPoints - النقاط الحالية
+ * @returns {string} HTML
+ */
+export function createLevelProgress(currentPoints) {
+    const currentLevel = calculateLevel(currentPoints);
+    const currentLevelPoints = Math.pow(currentLevel, 2) * 5;
+    const nextLevelPoints = Math.pow(currentLevel + 1, 2) * 5;
+    const progress = ((currentPoints - currentLevelPoints) / (nextLevelPoints - currentLevelPoints)) * 100;
+    const progressClamped = Math.min(Math.max(progress, 0), 100);
+    const pointsNeeded = nextLevelPoints - currentPoints;
+    const color = getLevelColor(currentLevel);
+
+    return `
+        <div class="level-progress" style="margin-top: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <span style="font-size: 0.75rem; color: #64748b; font-weight: 600;">
+                    التقدم للمستوى ${currentLevel + 1}
+                </span>
+                <span style="font-size: 0.75rem; color: ${color}; font-weight: 700;">
+                    ${pointsNeeded} نقطة متبقية
+                </span>
+            </div>
+            <div style="
+                width: 100%;
+                height: 8px;
+                background: #e2e8f0;
+                border-radius: 10px;
+                overflow: hidden;
+            ">
+                <div style="
+                    width: ${progressClamped}%;
+                    height: 100%;
+                    background: linear-gradient(90deg, ${color} 0%, ${color}cc 100%);
+                    border-radius: 10px;
+                    transition: width 0.3s ease;
+                "></div>
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * إنشاء كارت كامل للمستوى (للبروفايل)
+ * @param {number} points - النقاط
+ * @param {string} userName - اسم المستخدم
+ * @returns {string} HTML
+ */
+export function createLevelCard(points, userName) {
+    const level = calculateLevel(points);
+    const color = getLevelColor(level);
+    const emoji = getLevelBadge(level);
+
+    return `
+        <div class="level-card" style="
+            background: linear-gradient(135deg, ${color}15 0%, ${color}05 100%);
+            border: 2px solid ${color}40;
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        ">
+            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                <div style="
+                    font-size: 3rem;
+                    width: 60px;
+                    height: 60px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    background: ${color}20;
+                    border-radius: 50%;
+                ">
+                    ${emoji}
+                </div>
+                <div>
+                    <h3 style="margin: 0; color: ${color}; font-size: 1.5rem; font-weight: 800;">
+                        المستوى ${level}
+                    </h3>
+                    <p style="margin: 0; color: #64748b; font-size: 0.9rem;">
+                        ${points} نقطة إجمالي
+                    </p>
+                </div>
+            </div>
+            ${createLevelProgress(points)}
+        </div>
+    `;
+}

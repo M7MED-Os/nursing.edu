@@ -1,5 +1,7 @@
-import { supabase } from "./supabaseClient.js";
+import { supabase } from './supabase.js';
 import { getCache, setCache, getSWR } from "./utils.js";
+import { generateAvatar, calculateLevel } from './avatars.js';
+import { createLevelBadge, createLevelAvatar } from './level-badge.js';
 import { GRADES, STREAMS } from "./constants.js";
 
 // State
@@ -106,6 +108,24 @@ async function setupSquadUI() {
         // Show End Challenge button (will be controlled by loadActiveChallenge)
         const endBtn = document.getElementById('endChallengeBtn');
         if (endBtn) endBtn.dataset.canEnd = 'true';
+
+        // Show Change Squad Avatar button
+        const changeAvatarBtn = document.getElementById('changeSquadAvatarBtn');
+        if (changeAvatarBtn) changeAvatarBtn.style.display = 'flex';
+    }
+
+    // Display Squad Avatar and Level Badge
+    const squadAvatarImg = document.getElementById('squadAvatar');
+    const squadLevelBadgeContainer = document.getElementById('squadLevelBadge');
+
+    if (squadAvatarImg) {
+        const avatarUrl = currentSquad.avatar_url || generateAvatar(currentSquad.name, 'bottts');
+        squadAvatarImg.src = avatarUrl;
+    }
+
+    if (squadLevelBadgeContainer && currentSquad.points !== undefined) {
+        const squadLevel = Math.floor(Math.sqrt(Math.max(currentSquad.points || 0, 0) / 10)); // Squad level formula
+        squadLevelBadgeContainer.innerHTML = createLevelBadge(currentSquad.points, 'medium');
     }
 }
 
@@ -698,7 +718,7 @@ async function loadChat() {
         const [{ data: results }, { data: challenges }, { data: msgs }] = await Promise.all([
             supabase.from('results').select('exam_id, created_at').eq('user_id', currentProfile.id),
             supabase.from('squad_exam_challenges').select('id, status, squad_points_awarded').eq('squad_id', currentSquad.id),
-            supabase.from('squad_chat_messages').select('*, profiles!sender_id(full_name)').eq('squad_id', currentSquad.id).order('created_at', { ascending: false }).limit(50)
+            supabase.from('squad_chat_messages').select('*, profiles!sender_id(full_name, avatar_url, points)').eq('squad_id', currentSquad.id).order('created_at', { ascending: false }).limit(50)
         ]);
 
         const freshMsgs = (msgs || []).reverse();
@@ -762,13 +782,34 @@ async function renderChat(msgs) {
             </div>
         ` : '';
 
+        // Avatar and Level
+        const senderProfile = m.profiles || {};
+        const avatarUrl = senderProfile.avatar_url || generateAvatar(senderProfile.full_name || 'User', 'initials');
+        const points = senderProfile.points || 0;
+        const levelBadge = createLevelBadge(points, 'small');
+
         return `
             <div class="msg ${m.sender_id === myId ? 'sent' : 'received'}" 
                  ${m.sender_id === myId ? `onclick="showReadBy('${fullReaderNames}')"` : ''} 
                  style="${m.sender_id === myId ? 'cursor:pointer;' : ''}">
-                <span class="msg-sender">${m.profiles ? m.profiles.full_name : 'M7MED'}</span>
-                <div class="msg-content">
-                    ${renderMessageContent(m, myId)}
+                <div style="display: flex; align-items: flex-start; gap: 8px; margin-bottom: 4px;">
+                    <img src="${avatarUrl}" alt="Avatar" style="
+                        width: 32px;
+                        height: 32px;
+                        border-radius: 50%;
+                        object-fit: cover;
+                        border: 2px solid var(--primary-color);
+                        flex-shrink: 0;
+                    ">
+                    <div style="flex: 1;">
+                        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
+                            <span class="msg-sender">${senderProfile.full_name || 'M7MED'}</span>
+                            ${levelBadge}
+                        </div>
+                        <div class="msg-content">
+                            ${renderMessageContent(m, myId)}
+                        </div>
+                    </div>
                 </div>
                 <div class="msg-footer">
                     <span class="msg-time">${time}</span>
@@ -1402,47 +1443,58 @@ window.joinSquadExamMessenger = async (event, examId, squadId, state = 'fresh', 
 // --- Rules Info Modal ---
 window.showSquadRules = () => {
     Swal.fire({
-        title: '💡ازاي النقط بتتحسب؟',
+        title: '💎 دليل المكافآت والنقاط',
         html: `
-            <div style="text-align: right; direction: rtl; font-size: 0.9rem; line-height: 1.6; color: #334155;">
+            <div class="rules-container" style="text-align: right; direction: rtl; font-family: 'Cairo', sans-serif;">
                 
-                <!-- Individual Rewards -->
-                <div style="margin-bottom: 1.5rem; background: #f0f9ff; padding: 12px; border-radius: 12px; border: 1px solid #bae6fd;">
-                    <h4 style="color: #0369a1; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
-                        <i class="fas fa-user-circle"></i>نقط لك انت:
-                    </h4>
-                    <ul style="list-style: none; padding: 0; display: flex; flex-direction: column; gap: 8px;">
-                        <li><b>مجهودك:</b> درجتك في الامتحان بتنضاف على طول لنقطك الشخصية (لو دي أول محاولة).</li>
-                        <li><b>بونص التقفيل:</b> لو جبت الدرجة النهائية، السيستم بيبعتلك <span style="color:#10b981; font-weight:800;">+10 نقط إضافية</span>.</li>
-                        <li><b>بونص الاستمرارية:</b> حل امتحان كل يوم، وكل 3 أيام ورا بعض هتاخد <span style="color:#f59e0b; font-weight:800;">+5 نقط إضافية</span>.</li>
+                <!-- 1. Individual Rewards -->
+                <div class="rule-card individual" style="border-right: 4px solid #03A9F4; background: #f0f9ff; padding: 15px; border-radius: 15px; margin-bottom: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                        <span style="background: #03A9F4; color: white; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-user-graduate"></i>
+                        </span>
+                        <h4 style="margin: 0; color: #0288d1; font-size: 1.1rem;">مكافآتك الشخصية</h4>
+                    </div>
+                    <ul style="list-style: none; padding: 0; margin: 0; font-size: 0.9rem; color: #334155; line-height: 1.7;">
+                        <li><i class="fas fa-check-circle" style="color: #03A9F4; margin-left:8px;"></i><b>الامتحانات:</b> درجتك بتتحول لنقط في أول محاولة.</li>
+                        <li><i class="fas fa-star" style="color: #FFC107; margin-left:8px;"></i><b>بونص التقفيل:</b> <span style="color:#10b981; font-weight:800;">+10 نقط</span> لو قفلت الامتحان (أول مرة).</li>
+                        <li><i class="fas fa-fire-alt" style="color: #FF5722; margin-left:8px;"></i><b>بونص الاستمرارية:</b> <span style="color:#f59e0b; font-weight:800;">+5 نقط</span> كل 3 أيام مذاكرة ورا بعض.</li>
                     </ul>
                 </div>
 
-                <!-- Squad Challenge Logic -->
-                <div style="margin-bottom: 1.5rem; background: #fff7ed; padding: 12px; border-radius: 12px; border: 1px solid #ffedd5;">
-                    <h4 style="color: #c2410c; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
-                        <i class="fas fa-bullseye"></i>نقط للشلة:
-                    </h4>
-                    <p style="margin-bottom: 10px; font-size: 0.85rem; color: #ea580c;">* النقط بتنضاف للشلة في نهاية الـ ${globalSquadSettings.join_mins} دقيقة بس!</p>
-                    <ul style="list-style: none; padding: 0; display: flex; flex-direction: column; gap: 8px;">
-                        <li><b>الشرط:</b> لازم <span style="color:#ef4444; font-weight:800;">${globalSquadSettings.success_threshold}%</span> من أعضاء الشلة يحلوا الامتحان قبل ما الوقت يخلص.</li>
-                        <li><b>النقط:</b> بنحسب متوسط درجاتكم + بونص تفاعل <span style="color:#10b981; font-weight:800;">(+5)</span>.</li>
-                        <li><b>الكل شارك:</b> لو 100% حلوا، البونص بيبقى <span style="color:#10b981; font-weight:800;">(+10)</span>.</li>
+                <!-- 2. Squad Rewards -->
+                <div class="rule-card squad" style="border-right: 4px solid #10b981; background: #ecfdf5; padding: 15px; border-radius: 15px; margin-bottom: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                        <span style="background: #10b981; color: white; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-users"></i>
+                        </span>
+                        <h4 style="margin: 0; color: #059669; font-size: 1.1rem;">مكافآت الشلة</h4>
+                    </div>
+                    <ul style="list-style: none; padding: 0; margin: 0; font-size: 0.9rem; color: #334155; line-height: 1.7;">
+                        <li><i class="fas fa-chart-line" style="color: #10b981; margin-left:8px;"></i><b>رصيد الشلة:</b> بنجمع متوسط درجاتكم وبنضربه في 2.</li>
+                        <li><i class="fas fa-users-cog" style="color: #059669; margin-left:8px;"></i><b>شرط النجاح:</b> لازم <span style="font-weight:800; color:#ef4444;">${globalSquadSettings.success_threshold}%</span> من الشلة يحلوا.</li>
+                        <li><i class="fas fa-gift" style="color: #8b5cf6; margin-left:8px;"></i><b>بونص المشاركة:</b> لو نجحتم، كل مشارك بياخد <span style="font-weight:800; color:#8b5cf6;">+3 نقط</span>.</li>
                     </ul>
                 </div>
 
-                <!-- Big Gift -->
-                <div style="background: #f5f3ff; padding: 12px; border-radius: 12px; border: 1px dashed #8b5cf6; text-align: center;">
-                    <h4 style="color: #6d28d9; margin-bottom: 5px;">🎁 هدية الـ 100% مشاركة</h4>
-                    <p>لو كل الشلة حلت الامتحان، النظام بيدي <span style="color:#7c3aed; font-weight:800;">+3 نقط بونص</span> لكل واحد فيكم في حسابه الشخصي!</p>
+                <!-- 3. Ultimate Bonus -->
+                <div class="rule-card ultimate" style="background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%); padding: 15px; border-radius: 15px; border: 2px dashed #8b5cf6; text-align: center;">
+                    <div style="color: #7c3aed; font-weight: 800; font-size: 1.2rem; margin-bottom: 8px;">
+                        <i class="fas fa-crown"></i> الإنجاز الأسطوري
+                    </div>
+                    <p style="margin: 0; font-size: 0.95rem; color: #5b21b6; font-weight: 600;">
+                        لو كل الشلة (100%) حلت الامتحان، البونص الشخصي بيوصل لـ <span style="font-size: 1.2rem; color: #10b981;">8 نقط</span> لكل واحد! 🔥
+                    </p>
                 </div>
 
             </div>
         `,
-        confirmButtonText: 'فهمت الدنيا، يلا بينا! 🚀',
-        confirmButtonColor: 'var(--primary-color)',
-        width: '450px',
-        padding: '1.25rem'
+        showConfirmButton: true,
+        confirmButtonText: 'فهمت، يلا بينا! 🚀',
+        confirmButtonColor: '#03A9F4',
+        customClass: {
+            container: 'modern-rules-modal'
+        }
     });
 };
 
@@ -1524,5 +1576,26 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     startSyncManager();
     await initSquad();
+
+    // Change Squad Avatar Button
+    const changeSquadAvatarBtn = document.getElementById('changeSquadAvatarBtn');
+    if (changeSquadAvatarBtn) {
+        changeSquadAvatarBtn.addEventListener('click', async () => {
+            if (!currentSquad || !currentProfile) {
+                showToast('جاري تحميل البيانات...', 'info');
+                return;
+            }
+
+            const { openAvatarModal } = await import('./avatar-modal.js');
+            await openAvatarModal('squad', currentSquad.id, currentSquad.name, (newAvatarUrl) => {
+                // Update UI immediately
+                const squadAvatarImg = document.getElementById('squadAvatar');
+                if (squadAvatarImg) squadAvatarImg.src = newAvatarUrl;
+
+                // Update current squad
+                currentSquad.avatar_url = newAvatarUrl;
+            });
+        });
+    }
 });
 
