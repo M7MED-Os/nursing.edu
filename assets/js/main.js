@@ -23,23 +23,30 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Smooth Scrolling for Anchor Links
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-        anchor.addEventListener('click', function (e) {
-            e.preventDefault();
-            const href = this.getAttribute('href');
-            if (href === '#') return; // Ignore empty anchors
-            const target = document.querySelector(href);
-            if (target) {
-                target.scrollIntoView({
-                    behavior: 'smooth'
+    try {
+        const anchors = document.querySelectorAll('a[href^="#"]');
+        if (anchors && anchors.length > 0) {
+            anchors.forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const href = this.getAttribute('href');
+                    if (href === '#') return; // Ignore empty anchors
+                    const target = document.querySelector(href);
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: 'smooth'
+                        });
+                        // Close mobile menu if open
+                        if (navLinks && navLinks.classList.contains('active')) {
+                            navLinks.classList.remove('active');
+                        }
+                    }
                 });
-                // Close mobile menu if open
-                if (navLinks.classList.contains('active')) {
-                    navLinks.classList.remove('active');
-                }
-            }
-        });
-    });
+            });
+        }
+    } catch (err) {
+        console.log('Smooth scroll not available on this page');
+    }
 
 
     // Contact Form Validation
