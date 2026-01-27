@@ -372,6 +372,7 @@
         import { GRADES, STREAMS } from "./assets/js/constants.js";
         import { calculateLevel, getLevelColor } from "./assets/js/avatars.js";
         import { createLevelBadge } from "./assets/js/level-badge.js";
+        import { shouldShowAvatar } from "./assets/js/privacy.js";
 
         // State
         let currentUserInfo = null;
@@ -663,19 +664,14 @@
                     const levelColor = getLevelColor(level);
                     const levelBadgeHTML = createLevelBadge(s.points || 0, 'xsmall');
 
-                    // Privacy Check - Enhanced to check squad membership
-                    let showAvatar = false;
-                    if (s.id === currentUserInfo.id) {
-                        // Always show own avatar
-                        showAvatar = true;
-                    } else if (!s.privacy_avatar || s.privacy_avatar === 'public') {
-                        // Public setting
-                        showAvatar = true;
-                    } else if (s.privacy_avatar === 'squad') {
-                        // Squad-only: check if in same squad
-                        showAvatar = s.squad_id && currentUserInfo.squad_id && s.squad_id === currentUserInfo.squad_id;
-                    }
-                    // else: private, showAvatar stays false
+                    // Privacy check for avatar using helper function
+                    const showAvatar = shouldShowAvatar(
+                        s.privacy_avatar,
+                        s.id,
+                        currentUserInfo.id,
+                        s.squad_id,
+                        currentUserInfo.squad_id
+                    );
 
                     const avatarHTML = showAvatar
                         ? `<img src="${avatarUrl}" alt="${s.full_name}" class="user-avatar" style="width: 100%; height: 100%; object-fit: cover; border: 3px solid ${levelColor}; box-shadow: 0 4px 12px ${levelColor}40;">`

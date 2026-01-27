@@ -144,6 +144,35 @@ export function createLockedAvatar() {
 }
 
 /**
+ * فحص إذا كان يجب إظهار الصورة الشخصية بناءً على إعدادات الخصوصية
+ * @param {string} privacyAvatar - إعداد خصوصية الصورة ('public', 'squad', 'private')
+ * @param {string} targetUserId - ID صاحب الصورة
+ * @param {string} currentUserId - ID المستخدم الحالي
+ * @param {string} targetSquadId - ID شلة صاحب الصورة (اختياري)
+ * @param {string} currentSquadId - ID شلة المستخدم الحالي (اختياري)
+ * @returns {boolean}
+ */
+export function shouldShowAvatar(privacyAvatar, targetUserId, currentUserId, targetSquadId = null, currentSquadId = null) {
+    // Always show own avatar
+    if (targetUserId === currentUserId) {
+        return true;
+    }
+
+    // Check privacy setting
+    if (!privacyAvatar || privacyAvatar === 'public') {
+        return true;
+    }
+
+    if (privacyAvatar === 'squad') {
+        // Squad-only: check if in same squad
+        return targetSquadId && currentSquadId && targetSquadId === currentSquadId;
+    }
+
+    // Private: don't show
+    return false;
+}
+
+/**
  * الخيارات المتاحة للخصوصية (للعرض في الواجهة)
  */
 export const PRIVACY_OPTIONS = {

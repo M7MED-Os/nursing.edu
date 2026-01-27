@@ -3,6 +3,7 @@ import { getCache, setCache, getSWR } from "./utils.js";
 import { generateAvatar, calculateLevel, getLevelColor } from './avatars.js';
 import { createLevelBadge, createLevelAvatar, createSquadLevelProgress } from './level-badge.js';
 import { GRADES, STREAMS } from "./constants.js";
+import { shouldShowAvatar } from './privacy.js';
 
 // State
 let readQueue = [];
@@ -461,19 +462,14 @@ function renderMembersUI(members) {
         const levelColor = getLevelColor(level);
         const levelBadgeHTML = createLevelBadge(m.profiles.points || 0, 'xsmall');
 
-        // Privacy check for avatar
-        let showAvatar = false;
-        if (m.profile_id === currentProfile.id) {
-            // Always show own avatar
-            showAvatar = true;
-        } else if (!m.profiles.privacy_avatar || m.profiles.privacy_avatar === 'public') {
-            // Public setting
-            showAvatar = true;
-        } else if (m.profiles.privacy_avatar === 'squad') {
-            // Squad-only: we're in the same squad, so show it
-            showAvatar = true;
-        }
-        // else: private, showAvatar stays false
+        // Privacy check for avatar using helper function
+        const showAvatar = shouldShowAvatar(
+            m.profiles.privacy_avatar,
+            m.profile_id,
+            currentProfile.id,
+            currentSquad.id, // All members are in the same squad
+            currentSquad.id
+        );
 
         const avatarUrl = m.profiles.avatar_url || generateAvatar(m.profiles.full_name, 'initials');
         const avatarHTML = showAvatar
@@ -880,19 +876,14 @@ async function renderChat(msgs) {
         const level = m.profiles ? calculateLevel(m.profiles.points || 0) : 0;
         const levelColor = m.profiles ? getLevelColor(level) : '#03A9F4';
 
-        // Privacy check for avatar
-        let showAvatar = false;
-        if (m.sender_id === myId) {
-            // Always show own avatar
-            showAvatar = true;
-        } else if (!m.profiles?.privacy_avatar || m.profiles.privacy_avatar === 'public') {
-            // Public setting
-            showAvatar = true;
-        } else if (m.profiles.privacy_avatar === 'squad') {
-            // Squad-only: we're in the same squad, so show it
-            showAvatar = true;
-        }
-        // else: private, showAvatar stays false
+        // Privacy check for avatar using helper function
+        const showAvatar = m.profiles ? shouldShowAvatar(
+            m.profiles.privacy_avatar,
+            m.sender_id,
+            myId,
+            currentSquad.id, // All chat members are in the same squad
+            currentSquad.id
+        ) : true;
 
         const defaultAvatar = m.profiles ? generateAvatar(m.profiles.full_name, 'initials') : 'assets/images/favicon-48x48.png';
         const avatarUrl = showAvatar && m.profiles?.avatar_url ? m.profiles.avatar_url : defaultAvatar;
