@@ -1,6 +1,17 @@
 import { showSuccessAlert, showWarningAlert } from './utils/alerts.js';
 
-document.addEventListener('DOMContentLoaded', () => {
+// Wait for DOM to be ready before checking for elements
+function initMainJS() {
+    // Only run if we're on a page that needs main.js functionality
+    const hasMainPageElements = document.querySelector('.menu-toggle') ||
+        document.querySelector('.nav-links') ||
+        document.getElementById('contactForm');
+
+    if (!hasMainPageElements) {
+        // Not a page that needs main.js, skip initialization
+        return;
+    }
+
     // Mobile Menu Toggle
     const menuToggle = document.querySelector('.menu-toggle');
     const navLinks = document.querySelector('.nav-links');
@@ -28,18 +39,23 @@ document.addEventListener('DOMContentLoaded', () => {
         if (anchors && anchors.length > 0) {
             anchors.forEach(anchor => {
                 anchor.addEventListener('click', function (e) {
-                    e.preventDefault();
                     const href = this.getAttribute('href');
-                    if (href === '#') return; // Ignore empty anchors
-                    const target = document.querySelector(href);
-                    if (target) {
-                        target.scrollIntoView({
-                            behavior: 'smooth'
-                        });
-                        // Close mobile menu if open
-                        if (navLinks && navLinks.classList.contains('active')) {
-                            navLinks.classList.remove('active');
+                    if (href === '#' || href === '#!') return; // Ignore empty anchors
+
+                    try {
+                        const target = document.querySelector(href);
+                        if (target) {
+                            e.preventDefault();
+                            target.scrollIntoView({
+                                behavior: 'smooth'
+                            });
+                            // Close mobile menu if open
+                            if (navLinks && navLinks.classList.contains('active')) {
+                                navLinks.classList.remove('active');
+                            }
                         }
+                    } catch (err) {
+                        // Invalid selector, ignore
                     }
                 });
             });
@@ -47,7 +63,6 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (err) {
         console.log('Smooth scroll not available on this page');
     }
-
 
     // Contact Form Validation
     const contactForm = document.getElementById('contactForm');
@@ -69,10 +84,15 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-});
+}
 
-
-
+// Initialize when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initMainJS);
+} else {
+    // DOM already loaded
+    initMainJS();
+}
 
 // PWA Service Worker Registration
 if ('serviceWorker' in navigator) {
