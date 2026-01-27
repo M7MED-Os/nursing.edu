@@ -399,7 +399,7 @@
                 // Fetch student data with privacy settings
                 const { data: student, error } = await supabase
                     .from('profiles')
-                    .select('*, privacy_avatar, privacy_bio, privacy_stats, privacy_progress')
+                    .select('*, privacy_avatar, privacy_bio, privacy_stats, privacy_progress, privacy_squad')
                     .eq('id', studentId)
                     .single();
 
@@ -420,7 +420,8 @@
                         avatar: student.privacy_avatar || 'public',
                         bio: student.privacy_bio || 'public',
                         stats: student.privacy_stats || 'public',
-                        progress: student.privacy_progress || 'public'
+                        progress: student.privacy_progress || 'public',
+                        squad: student.privacy_squad || 'public'
                     }
                 };
 

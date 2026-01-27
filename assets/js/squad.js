@@ -414,7 +414,7 @@ async function loadMembers() {
     getSWR(cacheKey, async () => {
         const { data } = await supabase
             .from('squad_members')
-            .select('profile_id, profiles(full_name, points, updated_at, avatar_url)')
+            .select('profile_id, profiles(full_name, points, updated_at, avatar_url, privacy_avatar)')
             .eq('squad_id', currentSquad.id);
         return data;
     }, 1, (members) => {
@@ -456,25 +456,52 @@ function renderMembersUI(members) {
 
         let activeText = isOnline ? 'نشط الآن' : (m.profiles.updated_at ? timeAgo(m.profiles.updated_at) : 'غير نَشِط');
 
-        // Avatar and level
-        const avatarUrl = m.profiles.avatar_url || generateAvatar(m.profiles.full_name, 'initials');
+        // Avatar and level with privacy check
         const level = calculateLevel(m.profiles.points || 0);
         const levelColor = getLevelColor(level);
         const levelBadgeHTML = createLevelBadge(m.profiles.points || 0, 'xsmall');
+
+        // Privacy check for avatar
+        let showAvatar = false;
+        if (m.profile_id === currentProfile.id) {
+            // Always show own avatar
+            showAvatar = true;
+        } else if (!m.profiles.privacy_avatar || m.profiles.privacy_avatar === 'public') {
+            // Public setting
+            showAvatar = true;
+        } else if (m.profiles.privacy_avatar === 'squad') {
+            // Squad-only: we're in the same squad, so show it
+            showAvatar = true;
+        }
+        // else: private, showAvatar stays false
+
+        const avatarUrl = m.profiles.avatar_url || generateAvatar(m.profiles.full_name, 'initials');
+        const avatarHTML = showAvatar
+            ? `<img src="${avatarUrl}" alt="${m.profiles.full_name}" style="
+                width: 45px;
+                height: 45px;
+                border-radius: 50%;
+                object-fit: cover;
+                border: 3px solid ${levelColor};
+                box-shadow: 0 4px 12px ${levelColor}40;
+            ">`
+            : `<div style="
+                width: 45px;
+                height: 45px;
+                border-radius: 50%;
+                background: #e2e8f0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border: 3px solid ${levelColor};
+            "><i class="fas fa-lock" style="color: #94a3b8; font-size: 1.1rem;"></i></div>`;
 
         return `
             <div class="member-item" data-userid="${m.profile_id}" style="display:flex; align-items:center; gap:12px;">
                 <div class="status-dot ${isOnline ? 'online' : ''}"></div>
                 <a href="student-profile.html?id=${m.profile_id}" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 12px; flex: 1;">
                     <div style="position: relative; display: inline-block;">
-                        <img src="${avatarUrl}" alt="${m.profiles.full_name}" style="
-                            width: 45px;
-                            height: 45px;
-                            border-radius: 50%;
-                            object-fit: cover;
-                            border: 3px solid ${levelColor};
-                            box-shadow: 0 4px 12px ${levelColor}40;
-                        ">
+                        ${avatarHTML}
                         <div style="position: absolute; bottom: -2px; left: -2px; z-index: 10; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));">
                             ${levelBadgeHTML}
                         </div>
