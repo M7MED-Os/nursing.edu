@@ -74,9 +74,10 @@ export function createLevelAvatar(avatarUrl, points, size = '70px', showLevel = 
             ${showLevel ? `
                 <div style="
                     position: absolute;
-                    bottom: -5px;
-                    right: 50%;
-                    transform: translateX(50%);
+                    bottom: 0;
+                    left: 0;
+                    z-index: 10;
+                    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
                 ">
                     ${createLevelBadge(points, levelBadgeSize)}
                 </div>
