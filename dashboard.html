@@ -187,7 +187,10 @@
 
         <!-- Quick Stats -->
         <div class="stats-grid">
-            <div class="stat-card" style="border-bottom: 3px solid var(--secondary-color);">
+            <div class="stat-card" style="border-bottom: 3px solid var(--secondary-color); position: relative;">
+                <i class="fas fa-info-circle" onclick="showPointsExplanation()"
+                    style="position: absolute; top: 10px; left: 10px; color: #cbd5e1; cursor: pointer; font-size: 0.9rem;"
+                    title="كيفية حساب النقاط"></i>
                 <span class="stat-number" id="stats-points">0</span>
                 <span class="stat-label">مجموع النقاط ✨</span>
             </div>

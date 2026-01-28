@@ -125,3 +125,40 @@ window.dismissAnnouncement = (id) => {
     dismissed.push(id);
     localStorage.setItem('dismissed_announcements', JSON.stringify(dismissed));
 };
+
+window.showPointsExplanation = () => {
+    Swal.fire({
+        title: '<span style="color: var(--primary-color);">إزاي تجمع نقط؟ 🎯</span>',
+        html: `
+            <div style="text-align: right; direction: rtl; line-height: 1.6; font-size: 0.95rem;">
+                <div style="background: #f0f9ff; padding: 12px; border-radius: 12px; margin-bottom: 15px; border-right: 4px solid var(--primary-color);">
+                    <strong>النقاط هي مستواك في المنصة!</strong><br>
+                    كل ما تجمع نقط أكتر، المستوى بتاعك هيزيد في المنصه، وبتظهر في قايمة الاوائل اللي ان شاء الله هيبقى فيها فلوس😂
+                </div>
+                
+                <ul style="list-style: none; padding: 0;">
+                    <li style="margin-bottom: 12px; display: flex; align-items: flex-start; gap: 10px;">
+                        <i class="fas fa-pen-nib" style="color: #03A9F4; margin-top: 5px;"></i>
+                        <span><strong>حل الامتحانات:</strong> بتاخد نقط على حسب درجتك في كل امتحان بتحله كل سؤال صح بتزيد نقطه (بس في حالة ان ده اول مره تحل الامتحان)</span>
+                    </li>
+                    <li style="margin-bottom: 12px; display: flex; align-items: flex-start; gap: 10px;">
+                        <i class="fas fa-crown" style="color: #FFD700; margin-top: 5px;"></i>
+                        <span><strong>بونص التقفيل:</strong> لو قفلت الامتحان من أول مرة بتاخد 10 نقط بونص فوق درجتك! 👑</span>
+                    </li>
+                    <li style="margin-bottom: 12px; display: flex; align-items: flex-start; gap: 10px;">
+                        <i class="fas fa-users" style="color: #10b981; margin-top: 5px;"></i>
+                        <span><strong>تحديات الشلة:</strong> حل الامتحان مع شلتك بتاخد بونص إضافي (3 أو 8 نقط).</span>
+                    </li>
+                    <li style="margin-bottom: 12px; display: flex; align-items: flex-start; gap: 10px;">
+                        <i class="fas fa-check-double" style="color: #f59e0b; margin-top: 5px;"></i>
+                        <span><strong>الالتزام اليومي:</strong> لو ذاكرت كل يوم و حليت امتحان هتاخد نقط زيادة بتفضل تزيد لحد ما تبطل تذاكر هتبدأ من الاول</span>
+                    </li>
+                </ul>
+            </div>
+        `,
+        confirmButtonText: 'تمام جاهز! 💪',
+        confirmButtonColor: '#03A9F4',
+        width: '500px',
+        padding: '1rem'
+    });
+};

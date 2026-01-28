@@ -55,14 +55,18 @@ export function generateAvatarOptions(userName, count = 12) {
     return options;
 }
 
+// الإعدادات الأساسية للمستويات (عشان نغير في مكان واحد بس)
+export const LEVEL_MULTIPLIER = 50;       // المعامل الشخصي
+export const SQUAD_LEVEL_MULTIPLIER = 100; // معامل الشلة
+
 // حساب المستوى من النقاط
 export function calculateLevel(points) {
-    return Math.floor(Math.sqrt(Math.max(points || 0, 0) / 5));
+    return Math.floor(Math.sqrt(Math.max(points || 0, 0) / LEVEL_MULTIPLIER));
 }
 
 // حساب مستوى الشلة
 export function calculateSquadLevel(points) {
-    return Math.floor(Math.sqrt(Math.max(points || 0, 0) / 10));
+    return Math.floor(Math.sqrt(Math.max(points || 0, 0) / SQUAD_LEVEL_MULTIPLIER));
 }
 
 // الحصول على لون المستوى (نظام التدرج الطبيعي - 7 رتب)
@@ -91,15 +95,20 @@ export function getLevelBadge(level) {
 export function getPointsForNextLevel(currentPoints) {
     const currentLevel = calculateLevel(currentPoints);
     const nextLevel = currentLevel + 1;
-    const pointsNeeded = Math.pow(nextLevel, 2) * 5;
+    const pointsNeeded = Math.pow(nextLevel, 2) * LEVEL_MULTIPLIER;
     return pointsNeeded - currentPoints;
 }
 
 // نسبة التقدم للمستوى التالي
 export function getLevelProgress(currentPoints) {
     const currentLevel = calculateLevel(currentPoints);
-    const currentLevelPoints = Math.pow(currentLevel, 2) * 5;
-    const nextLevelPoints = Math.pow(currentLevel + 1, 2) * 5;
-    const progress = ((currentPoints - currentLevelPoints) / (nextLevelPoints - currentLevelPoints)) * 100;
+    const currentLevelPoints = Math.pow(currentLevel, 2) * LEVEL_MULTIPLIER;
+    const nextLevelPoints = Math.pow(currentLevel + 1, 2) * LEVEL_MULTIPLIER;
+
+    // تجنب القسمة على صفر
+    const range = nextLevelPoints - currentLevelPoints;
+    if (range === 0) return 0;
+
+    const progress = ((currentPoints - currentLevelPoints) / range) * 100;
     return Math.min(Math.max(progress, 0), 100);
 }

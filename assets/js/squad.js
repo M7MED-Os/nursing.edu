@@ -1577,63 +1577,6 @@ window.joinSquadExamMessenger = async (event, examId, squadId, state = 'fresh', 
     }
 };
 
-// --- Rules Info Modal ---
-window.showSquadRules = () => {
-    Swal.fire({
-        title: '💎 دليل المكافآت والنقاط',
-        html: `
-            <div class="rules-container" style="text-align: right; direction: rtl; font-family: 'Cairo', sans-serif;">
-                
-                <!-- 1. Individual Rewards -->
-                <div class="rule-card individual" style="border-right: 4px solid #03A9F4; background: #f0f9ff; padding: 15px; border-radius: 15px; margin-bottom: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-                        <span style="background: #03A9F4; color: white; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
-                            <i class="fas fa-user-graduate"></i>
-                        </span>
-                        <h4 style="margin: 0; color: #0288d1; font-size: 1.1rem;">مكافآتك الشخصية</h4>
-                    </div>
-                    <ul style="list-style: none; padding: 0; margin: 0; font-size: 0.9rem; color: #334155; line-height: 1.7;">
-                        <li><i class="fas fa-check-circle" style="color: #03A9F4; margin-left:8px;"></i><b>الامتحانات:</b> درجتك بتتحول لنقط في أول محاولة.</li>
-                        <li><i class="fas fa-star" style="color: #FFC107; margin-left:8px;"></i><b>بونص التقفيل:</b> <span style="color:#10b981; font-weight:800;">+10 نقط</span> لو قفلت الامتحان (أول مرة).</li>
-                        <li><i class="fas fa-fire-alt" style="color: #FF5722; margin-left:8px;"></i><b>بونص الاستمرارية:</b> <span style="color:#f59e0b; font-weight:800;">+5 نقط</span> كل 3 أيام مذاكرة ورا بعض.</li>
-                    </ul>
-                </div>
-
-                <!-- 2. Squad Rewards -->
-                <div class="rule-card squad" style="border-right: 4px solid #10b981; background: #ecfdf5; padding: 15px; border-radius: 15px; margin-bottom: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-                        <span style="background: #10b981; color: white; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
-                            <i class="fas fa-users"></i>
-                        </span>
-                        <h4 style="margin: 0; color: #059669; font-size: 1.1rem;">مكافآت الشلة</h4>
-                    </div>
-                    <ul style="list-style: none; padding: 0; margin: 0; font-size: 0.9rem; color: #334155; line-height: 1.7;">
-                        <li><i class="fas fa-chart-line" style="color: #10b981; margin-left:8px;"></i><b>رصيد الشلة:</b> بنجمع متوسط درجاتكم وبنضربه في 2.</li>
-                        <li><i class="fas fa-users-cog" style="color: #059669; margin-left:8px;"></i><b>شرط النجاح:</b> لازم <span style="font-weight:800; color:#ef4444;">${globalSquadSettings.success_threshold}%</span> من الشلة يحلوا.</li>
-                        <li><i class="fas fa-gift" style="color: #8b5cf6; margin-left:8px;"></i><b>بونص المشاركة:</b> لو نجحتم، كل مشارك بياخد <span style="font-weight:800; color:#8b5cf6;">+3 نقط</span>.</li>
-                    </ul>
-                </div>
-
-                <!-- 3. Ultimate Bonus -->
-                <div class="rule-card ultimate" style="background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%); padding: 15px; border-radius: 15px; border: 2px dashed #8b5cf6; text-align: center;">
-                    <div style="color: #7c3aed; font-weight: 800; font-size: 1.2rem; margin-bottom: 8px;">
-                        <i class="fas fa-crown"></i> الإنجاز الأسطوري
-                    </div>
-                    <p style="margin: 0; font-size: 0.95rem; color: #5b21b6; font-weight: 600;">
-                        لو كل الشلة (100%) حلت الامتحان، البونص الشخصي بيوصل لـ <span style="font-size: 1.2rem; color: #10b981;">8 نقط</span> لكل واحد! 🔥
-                    </p>
-                </div>
-
-            </div>
-        `,
-        showConfirmButton: true,
-        confirmButtonText: 'فهمت، يلا بينا! 🚀',
-        confirmButtonColor: '#03A9F4',
-        customClass: {
-            container: 'modern-rules-modal'
-        }
-    });
-};
 
 // ==========================
 // --- Background Sync Manager (Senior Pattern) ---
@@ -1838,3 +1781,50 @@ window.saveSquadPrivacySettings = async function () {
     }
 };
 
+window.showSquadGuide = () => {
+    Swal.fire({
+        title: '<span style="color: var(--primary-color);">مرشد الشلة 👨‍🏫</span>',
+        html: `
+            <div style="text-align: right; direction: rtl; line-height: 1.6; font-size: 0.95rem;">
+                <div style="background: #f0f9ff; padding: 12px; border-radius: 12px; margin-bottom: 15px; border-right: 4px solid var(--primary-color);">
+                    <strong>ليه تكون في شلة؟</strong><br>
+                    المذاكرة مع الصحاب بتشجعك وتخليك تلتزم أكتر. ضيف صحابك ب الكود وذاكرو مع بعض وشوفوا مين بيذاكر ومين مكسل! 😉
+                </div>
+                
+                <ul style="list-style: none; padding: 0;">
+                    <li style="margin-bottom: 12px; display: flex; align-items: flex-start; gap: 10px;">
+                        <i class="fas fa-tasks" style="color: #03A9F4; margin-top: 5px;"></i>
+                        <span><strong>أهداف مشتركة:</strong> لما أي حد يخلص مهمة في الـ To-Do List بتظهر لكل الشلة على طول. وده بيحمس الكل يخلص اللي وراه.</span>
+                    </li>
+                    <li style="margin-bottom: 12px; display: flex; align-items: flex-start; gap: 10px;">
+                        <i class="fas fa-stopwatch" style="color: #f59e0b; margin-top: 5px;"></i>
+                        <span><strong>تايمر موحد:</strong> شغلوا التايمر مع بعض عشان تذاكروا في نفس الوقت (واحد بس يشغل التايمر هيظهر للكل و نفس النظام في ال todo list).</span>
+                    </li>
+                    <li style="margin-bottom: 12px; display: flex; align-items: flex-start; gap: 10px;">
+                        <i class="fas fa-graduation-cap" style="color: #10b981; margin-top: 5px;"></i>
+                        <span><strong>امتحانات الشلة:</strong> تقدروا تحلوا امتحانات مع بعض عشان تزودوا نقاط الشلة. رصيد الشلة بيتحسب كدة: (متوسط درجاتكم × 2) بس لازم تحققو الشرط اللي بيظهر اللي هو 75% من الشلة تحل الامتحان</span>
+                    </li>
+                    <li style="margin-bottom: 12px; display: flex; align-items: flex-start; gap: 10px;">
+                        <i class="fas fa-gift" style="color: #ef4444; margin-top: 5px;"></i>
+                        <span><strong>نقاط بونص ليك:</strong> 
+                            <br>• بتاخد <strong>3 نقط</strong> بونص لو حققتو الشرط و 75% من الشلة حلوا الامتحان.
+                            <br>• بتاخد <strong>8 نقط</strong> بونص لو كلكو (100%) حليتوا الامتحان.
+                        </span>
+                    </li>
+                    <li style="margin-bottom: 12px; display: flex; align-items: flex-start; gap: 10px;">
+                        <i class="fas fa-comments" style="color: #8b5cf6; margin-top: 5px;"></i>
+                        <span><strong>شات الشلة:</strong> هنا هيظهر تفاصيل كل امتحان هتحلوه مع بعض و الزرار اللي بيدخلكو الامتحان و كل ما واحد يحل بيتبعت رساله فاضل كام واحد عشان الشرط يتحقق و في الاخر يقولك حققتو الشرط ولا لا و بتاخدو النقط.</span>
+                    </li>
+                    <li style="margin-bottom: 12px; display: flex; align-items: flex-start; gap: 10px;">
+                        <i class="fas fa-user-clock" style="color: #10b981; margin-top: 5px;"></i>
+                        <span><strong>صحابك أونلاين:</strong> لو صاحبك خرج من صفحة الشلة هيظهر لك على طول انه بقى اوفلاين و مش بيذاكر😂</span>
+                    </li>
+                </ul>
+            </div>
+        `,
+        confirmButtonText: 'فهمت، يلا بينا! 🚀',
+        confirmButtonColor: '#03A9F4',
+        width: '500px',
+        padding: '1rem'
+    });
+};

@@ -4,7 +4,7 @@
 // عرض المستوى كـ Badge ملون جنب اسم الطالب/الشلة
 // ============================================
 
-import { calculateLevel, getLevelColor, getLevelBadge, calculateSquadLevel } from './avatars.js';
+import { calculateLevel, getLevelColor, getLevelBadge, calculateSquadLevel, LEVEL_MULTIPLIER, SQUAD_LEVEL_MULTIPLIER } from './avatars.js';
 
 /**
  * إنشاء HTML للـ Level Badge (دايرة صغيرة بالرقم فقط - زي الألعاب)
@@ -94,8 +94,8 @@ export function createLevelAvatar(avatarUrl, points, size = '70px', showLevel = 
  */
 export function createLevelProgress(currentPoints) {
     const currentLevel = calculateLevel(currentPoints);
-    const currentLevelPoints = Math.pow(currentLevel, 2) * 5;
-    const nextLevelPoints = Math.pow(currentLevel + 1, 2) * 5;
+    const currentLevelPoints = Math.pow(currentLevel, 2) * LEVEL_MULTIPLIER;
+    const nextLevelPoints = Math.pow(currentLevel + 1, 2) * LEVEL_MULTIPLIER;
     const progress = ((currentPoints - currentLevelPoints) / (nextLevelPoints - currentLevelPoints)) * 100;
     const progressClamped = Math.min(Math.max(progress, 0), 100);
     const pointsNeeded = nextLevelPoints - currentPoints;
@@ -186,8 +186,8 @@ export function createLevelCard(points, userName) {
  */
 export function createSquadLevelProgress(currentPoints) {
     const currentLevel = calculateSquadLevel(currentPoints);
-    const currentLevelPoints = Math.pow(currentLevel, 2) * 10;
-    const nextLevelPoints = Math.pow(currentLevel + 1, 2) * 10;
+    const currentLevelPoints = Math.pow(currentLevel, 2) * SQUAD_LEVEL_MULTIPLIER;
+    const nextLevelPoints = Math.pow(currentLevel + 1, 2) * SQUAD_LEVEL_MULTIPLIER;
     const progress = ((currentPoints - currentLevelPoints) / (nextLevelPoints - currentLevelPoints)) * 100;
     const progressClamped = Math.min(Math.max(progress, 0), 100);
     const pointsNeeded = nextLevelPoints - currentPoints;

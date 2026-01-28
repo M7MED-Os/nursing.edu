@@ -9,6 +9,11 @@ const subjectId = urlParams.get('id');
 const mode = urlParams.get('mode');
 const squadIdInUrl = urlParams.get('squad_id');
 
+let allExamGroups = [];
+let resultsOffset = 0;
+const resultsLimit = 3;
+let allSolvedExams = []; // Shared solved exams state
+
 async function loadSubjectContent() {
     if (!subjectId) {
         window.location.href = "dashboard.html";
@@ -31,11 +36,14 @@ async function loadSubjectContent() {
         APP_CONFIG.CACHE_TIME_SUBJECT_CONTENT,
         (data) => {
             if (data.subject) titleEl.textContent = data.subject.name_ar;
-            renderContent(data.chapters, data.lessons, data.exams, gridEl, mode, squadIdInUrl, data.solvedExams || []);
+            allSolvedExams = data.solvedExams || [];
+            renderContent(data.chapters, data.lessons, data.exams, gridEl, mode, squadIdInUrl, allSolvedExams);
             loadingEl.style.display = "none";
         }
     );
 }
+
+
 
 async function fetchSubjectFreshData(userId) {
     const { data: subject } = await supabase.from('subjects').select('name_ar').eq('id', subjectId).single();
@@ -427,14 +435,21 @@ window.selectSquadExam = async (examId, examTitle, squadId) => {
 };
 
 // Load Subject-Specific Results
+// Load Subject-Specific Results with Grouping and Pagination
 async function loadSubjectResults() {
+    const container = document.getElementById('subjectResultsContainer');
+    const section = document.getElementById('subjectResultsSection');
+    const btn = document.getElementById('loadMoreResultsBtn');
+    if (!container || !section) return;
+
+    resultsOffset = 0;
+    allExamGroups = [];
+    container.innerHTML = '<p style="text-align:center; color:#999;">جاري تحميل نتائجك...</p>';
+
     try {
-        // Get current user
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
 
-        if (userError || !user) return;
-
-        // Fetch results for this subject only
         const { data: results, error } = await supabase
             .from('results')
             .select(`
@@ -443,8 +458,6 @@ async function loadSubjectResults() {
                     id,
                     title,
                     subject_id,
-                    chapter_id,
-                    lesson_id,
                     chapters:chapter_id (title),
                     lessons:lesson_id (
                         title,
@@ -459,41 +472,47 @@ async function loadSubjectResults() {
         if (error) throw error;
 
         if (!results || results.length === 0) {
-            // No results for this subject yet
+            section.style.display = 'none';
             return;
         }
 
-        // Show results section
-        const resultsSection = document.getElementById('subjectResultsSection');
-        if (resultsSection) resultsSection.style.display = 'block';
-
         // Group by exam_id
-        const examGroups = {};
+        const examGroupsMap = {};
         results.forEach(result => {
-            if (!examGroups[result.exam_id]) {
-                examGroups[result.exam_id] = [];
+            if (!examGroupsMap[result.exam_id]) {
+                examGroupsMap[result.exam_id] = [];
             }
-            examGroups[result.exam_id].push(result);
+            examGroupsMap[result.exam_id].push(result);
         });
 
-        // Render results
-        renderSubjectResults(examGroups);
+        // Convert to array and sort by latest attempt descending
+        const groups = Object.values(examGroupsMap);
+        groups.sort((a, b) => new Date(b[0].created_at) - new Date(a[0].created_at));
+
+        allExamGroups = groups;
+        section.style.display = 'block';
+        container.innerHTML = '';
+        renderSubjectResults(false);
 
     } catch (err) {
         console.error("Error loading subject results:", err);
     }
 }
 
-function renderSubjectResults(examGroups) {
+function renderSubjectResults(append = false) {
     const container = document.getElementById('subjectResultsContainer');
+    const btn = document.getElementById('loadMoreResultsBtn');
     if (!container) return;
 
-    container.innerHTML = '';
+    if (append && btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري التحميل...';
+    }
 
-    Object.values(examGroups).forEach(attempts => {
-        // Sort by date: Newest first
-        attempts.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    const batch = allExamGroups.slice(resultsOffset, resultsOffset + resultsLimit);
 
+    batch.forEach(attempts => {
+        // attempts is already sorted newest first from the grouping logic if results were ordered desc
         const currentAttempt = attempts[0];
         const previousAttempt = attempts[1] || null;
 
@@ -504,7 +523,7 @@ function renderSubjectResults(examGroups) {
 
         const card = document.createElement('div');
         card.className = 'card';
-        card.style.cssText = 'margin-bottom: 1.5rem; padding: 1.5rem; border-right: 4px solid var(--primary-color);';
+        card.style.cssText = 'margin-bottom: 1.5rem; padding: 1.5rem; border-right: 4px solid var(--primary-color); animation: fadeIn 0.3s ease;';
 
         if (!previousAttempt) {
             // Single attempt
@@ -545,27 +564,27 @@ function renderSubjectResults(examGroups) {
                 <h4 style="font-size: 0.85rem; margin: 0 0 1rem 0; color: var(--text-light); font-weight: normal; line-height: 1.4;">
                     ${lessonTitle ? lessonTitle + ' - ' : ''}${examTitle}
                 </h4>
-                <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 1rem; align-items: center;">
+                <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 0.5rem; align-items: center;">
                     <!-- Previous Attempt -->
-                    <div style="text-align: center; padding: 1rem; background: var(--bg-light); border-radius: var(--radius-sm);">
-                        <div style="font-size: 0.75rem; color: var(--text-light); margin-bottom: 0.5rem;">المرة السابقة</div>
-                        <div style="font-size: 1.8rem; font-weight: 900; color: var(--text-dark);">${previousAttempt.percentage}%</div>
-                        <div style="font-size: 0.7rem; color: var(--text-light); margin-top: 0.3rem;">🕒 ${new Date(previousAttempt.created_at).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' })}</div>
+                    <div style="text-align: center; padding: 0.75rem; background: var(--bg-light); border-radius: var(--radius-sm);">
+                        <div style="font-size: 0.7rem; color: var(--text-light); margin-bottom: 0.3rem;">السابقة</div>
+                        <div style="font-size: 1.4rem; font-weight: 900; color: var(--text-dark);">${previousAttempt.percentage}%</div>
+                        <div style="font-size: 0.65rem; color: var(--text-light); margin-top: 0.2rem;">🕒 ${new Date(previousAttempt.created_at).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' })}</div>
                     </div>
 
                     <!-- Improvement Arrow -->
-                    <div style="text-align: center; font-size: 2rem;">
+                    <div style="text-align: center; font-size: 1.5rem; line-height: 1;">
                         ${icon}
-                        <div style="font-size: 0.9rem; font-weight: bold; color: ${color}; margin-top: 0.3rem;">
+                        <div style="font-size: 0.8rem; font-weight: bold; color: ${color}; margin-top: 0.2rem;">
                             ${sign}${diff}%
                         </div>
                     </div>
 
                     <!-- Current Attempt -->
-                    <div style="text-align: center; padding: 1rem; background: #f0fdf4; border-radius: var(--radius-sm); border: 2px solid var(--primary-color);">
-                        <div style="font-size: 0.75rem; color: var(--text-light); margin-bottom: 0.5rem;">آخر محاولة</div>
-                        <div style="font-size: 1.8rem; font-weight: 900; color: var(--primary-color);">${currentAttempt.percentage}%</div>
-                        <div style="font-size: 0.7rem; color: var(--text-light); margin-top: 0.3rem;">🆕 ${new Date(currentAttempt.created_at).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' })}</div>
+                    <div style="text-align: center; padding: 0.75rem; background: #f0fdf4; border-radius: var(--radius-sm); border: 2px solid var(--primary-color);">
+                        <div style="font-size: 0.7rem; color: var(--text-light); margin-bottom: 0.3rem;">الأخيرة</div>
+                        <div style="font-size: 1.4rem; font-weight: 900; color: var(--primary-color);">${currentAttempt.percentage}%</div>
+                        <div style="font-size: 0.65rem; color: var(--text-light); margin-top: 0.2rem;">🆕 ${new Date(currentAttempt.created_at).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' })}</div>
                     </div>
                 </div>
             `;
@@ -573,10 +592,27 @@ function renderSubjectResults(examGroups) {
 
         container.appendChild(card);
     });
-}
 
+    resultsOffset += batch.length;
+
+    // Load More visibility
+    if (btn) {
+        if (resultsOffset < allExamGroups.length) {
+            btn.style.display = 'inline-block';
+            btn.disabled = false;
+            btn.innerHTML = 'عرض المزيد <i class="fas fa-chevron-down" style="font-size: 0.7rem;"></i>';
+        } else {
+            btn.style.display = 'none';
+        }
+    }
+}
 
 document.addEventListener("DOMContentLoaded", () => {
     loadSubjectContent();
     loadSubjectResults();
+
+    const loadMoreBtn = document.getElementById('loadMoreResultsBtn');
+    if (loadMoreBtn) {
+        loadMoreBtn.onclick = () => renderSubjectResults(true);
+    }
 });
