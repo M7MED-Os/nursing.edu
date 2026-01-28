@@ -137,3 +137,24 @@ export function getLevelProgress(currentPoints) {
     const progress = ((currentPoints - currentLevelPoints) / range) * 100;
     return Math.min(Math.max(progress, 0), 100);
 }
+
+/**
+ * الحصول على قائمة المستويات كاملة لعرضها كدليل
+ */
+export function getLevelLegend() {
+    const tiers = [
+        { minLevel: 25, name: 'أسطورة', icon: '🔥', color: '#dc2626' },
+        { minLevel: 20, name: 'بطل', icon: '👑', color: '#f97316' },
+        { minLevel: 15, name: 'محترف', icon: '🏆', color: '#eab308' },
+        { minLevel: 10, name: 'متفوق', icon: '💎', color: '#22c55e' },
+        { minLevel: 7, name: 'متقدم', icon: '⭐', color: '#3b82f6' },
+        { minLevel: 4, name: 'نشط', icon: '🌟', color: '#8b5cf6' },
+        { minLevel: 0, name: 'مبتدئ', icon: '🔰', color: '#94a3b8' }
+    ];
+
+    return tiers.map(tier => ({
+        ...tier,
+        points: Math.pow(tier.minLevel, 2) * LEVEL_MULTIPLIER,
+        squadPoints: Math.pow(tier.minLevel, 2) * SQUAD_LEVEL_MULTIPLIER
+    }));
+}

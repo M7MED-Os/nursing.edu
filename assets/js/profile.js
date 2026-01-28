@@ -3,7 +3,7 @@ import { showToast } from "./utils.js";
 import { GRADES, TERMS, STREAMS } from "./constants.js";
 import { setButtonLoading } from "./utils/dom.js";
 import { openAvatarModal } from "./avatar-modal.js";
-import { generateAvatar, getLevelColor, calculateLevel, LEVEL_MULTIPLIER } from "./avatars.js";
+import { generateAvatar, getLevelColor, calculateLevel, LEVEL_MULTIPLIER, getLevelLegend } from "./avatars.js";
 import { createLevelBadge, createLevelProgress, getLevelBorderStyle } from "./level-badge.js";
 
 // ==========================
@@ -505,6 +505,65 @@ window.closePrivacyModal = function () {
         document.body.style.overflow = 'auto';
     }
 };
+
+// Level Guide Button
+const showLevelGuideBtn = document.getElementById('showLevelGuideBtn');
+if (showLevelGuideBtn) {
+    showLevelGuideBtn.addEventListener('click', () => {
+        const legend = getLevelLegend();
+
+        let html = `
+            <div style="text-align: right; direction: rtl;">
+                <p style="margin-bottom: 1.5rem; color: #64748b; font-size: 0.95rem;">
+                    دي قائمة بكل الرتب المتاحة في الأكاديمية ونقاط كل مستوى. حل امتحانات وجمع نقاط ترفع رتبتك! ✨
+                </p>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+        `;
+
+        legend.reverse().forEach(tier => {
+            html += `
+                <div style="
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    padding: 12px 15px;
+                    background: #f8fafc;
+                    border-radius: 12px;
+                    border-right: 5px solid ${tier.color};
+                ">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <span style="font-size: 1.5rem;">${tier.icon}</span>
+                        <div>
+                            <div style="font-weight: 800; color: #1e293b; font-size: 0.95rem;">${tier.name}</div>
+                            <div style="font-size: 0.75rem; color: #64748b;">من مستوى ${tier.minLevel}</div>
+                        </div>
+                    </div>
+                    <div style="text-align: left;">
+                        <div style="font-weight: 700; color: ${tier.color}; font-size: 0.9rem;">${tier.points.toLocaleString()} نقطة</div>
+                        <div style="font-size: 0.7rem; color: #94a3b8;">للشلة: ${tier.squadPoints.toLocaleString()}</div>
+                    </div>
+                </div>
+            `;
+        });
+
+        html += `
+                </div>
+                <div style="margin-top: 1.5rem; padding: 10px; background: #fffbeb; border-radius: 8px; border: 1px border-style: dashed; border-color: #fef3c7; font-size: 0.85rem; color: #92400e; text-align: center;">
+                    <i class="fas fa-info-circle"></i> النقاط = (المستوى × المستوى) × ${LEVEL_MULTIPLIER}
+                </div>
+            </div>
+        `;
+
+        Swal.fire({
+            title: 'دليل مستويات الأكاديمية 📈',
+            html: html,
+            showConfirmButton: true,
+            confirmButtonText: 'فهمت',
+            confirmButtonColor: '#03A9F4',
+            width: '450px'
+        });
+    });
+}
 
 // Initialize
 async function init() {
