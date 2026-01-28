@@ -3,8 +3,8 @@ import { showToast } from "./utils.js";
 import { GRADES, TERMS, STREAMS } from "./constants.js";
 import { setButtonLoading } from "./utils/dom.js";
 import { openAvatarModal } from "./avatar-modal.js";
-import { generateAvatar, getLevelColor } from "./avatars.js";
-import { createLevelBadge, createLevelProgress } from "./level-badge.js";
+import { generateAvatar, getLevelColor, calculateLevel, LEVEL_MULTIPLIER } from "./avatars.js";
+import { createLevelBadge, createLevelProgress, getLevelBorderStyle } from "./level-badge.js";
 
 // ==========================
 // 1. Current State
@@ -74,7 +74,7 @@ function renderProfileUI(profile, user) {
     // Preview Profile Button
     const previewBtn = document.getElementById('previewProfileBtn');
     if (previewBtn) {
-        previewBtn.href = `student-profile.html?id=${currentUser.id}`;
+        previewBtn.href = `student - profile.html ? id = ${currentUser.id} `;
     }
 
 
@@ -135,10 +135,9 @@ function renderProfileUI(profile, user) {
 
         // Update border color based on level
         if (profile.points !== undefined) {
-            const level = Math.floor(Math.sqrt(Math.max(profile.points || 0, 0) / 5));
-            const color = getLevelColor(level);
-            avatarImg.style.border = `5px solid ${color}`;
-            avatarImg.style.boxShadow = `0 8px 24px ${color}40`;
+            const borderStyle = getLevelBorderStyle(profile.points, '5px');
+            avatarImg.style.border = borderStyle.border;
+            avatarImg.style.boxShadow = borderStyle.boxShadow;
         }
     }
 
@@ -197,7 +196,7 @@ function renderProfileUI(profile, user) {
 
         // Points Card
         if (profile.points !== undefined) {
-            const level = Math.floor(Math.sqrt(Math.max(profile.points || 0, 0) / 5));
+            const level = calculateLevel(profile.points || 0);
             statsHtml += createStatCard(
                 'النقاط',
                 `${profile.points || 0} نقطة`,

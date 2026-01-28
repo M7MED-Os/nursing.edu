@@ -7,6 +7,33 @@
 import { calculateLevel, getLevelColor, getLevelBadge, calculateSquadLevel, LEVEL_MULTIPLIER, SQUAD_LEVEL_MULTIPLIER } from './avatars.js';
 
 /**
+ * الحصول على الـ style الموحد للبوردر والظل حسب النقاط
+ * @param {number} points - النقاط
+ * @param {string} borderWidth - عرض البوردر (مثل '3px', '5px')
+ * @returns {object} - كائن يحتوي على border و boxShadow
+ */
+export function getLevelBorderStyle(points, borderWidth = '3px') {
+    const level = calculateLevel(points);
+    const color = getLevelColor(level);
+    return {
+        border: `${borderWidth} solid ${color}`,
+        boxShadow: `0 4px 12px ${color}40`
+    };
+}
+
+/**
+ * نفس الـ function لكن للشلل
+ */
+export function getSquadLevelBorderStyle(points, borderWidth = '3px') {
+    const level = calculateSquadLevel(points);
+    const color = getLevelColor(level);
+    return {
+        border: `${borderWidth} solid ${color}`,
+        boxShadow: `0 4px 12px ${color}40`
+    };
+}
+
+/**
  * إنشاء HTML للـ Level Badge (دايرة صغيرة بالرقم فقط - زي الألعاب)
  * @param {number} points - النقاط
  * @param {string} size - الحجم: 'small', 'medium', 'large'
