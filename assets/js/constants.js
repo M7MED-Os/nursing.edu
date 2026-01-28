@@ -24,8 +24,10 @@ export const GRADE_STREAMS = {
 
 export const APP_CONFIG = {
     CACHE_VERSION: 'v2.2', // Changing this clears local caches for all users
-    CACHE_TIME_PROFILE: 5, // 5 minutes
-    CACHE_TIME_STATS: 10,  // Reduced from 6h to 10m for better sync
+    // OLD: CACHE_TIME_PROFILE: 5, // 5 minutes
+    CACHE_TIME_PROFILE: 1, // 1 minute
+    // OLD: CACHE_TIME_STATS: 10,  // Reduced from 6h to 10m for better sync
+    CACHE_TIME_STATS: 1,  // Reduced to 1m for better sync
     CACHE_TIME_SUBJECTS: 1440,
     CACHE_TIME_SUBJECT_CONTENT: 10,
     CACHE_TIME_LECTURES: 60,

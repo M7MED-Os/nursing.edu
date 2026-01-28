@@ -367,7 +367,7 @@
         import { GRADES, STREAMS } from "./assets/js/constants.js";
         import { calculateLevel, getLevelColor } from "./assets/js/avatars.js";
         import { createLevelBadge } from "./assets/js/level-badge.js";
-        import { shouldShowAvatar } from "./assets/js/privacy.js";
+        import { shouldShowAvatar, isVisible, isSquadMember } from "./assets/js/privacy.js";
 
         // State
         let currentUserInfo = null;
@@ -389,7 +389,8 @@
 
                 const val = data?.value || { top_students: 50, top_squads: 10, refresh_interval: 10 };
                 // Cache the settings themselves for 30 mins to avoid frequent settings lookups
-                setCache('app_leaderboard_settings', val, 30);
+                // OLD: setCache('app_leaderboard_settings', val, 30);
+                setCache('app_leaderboard_settings', val, 1);
                 return val;
             } catch (e) {
                 return { top_students: 50, top_squads: 10, refresh_interval: 10 };
@@ -570,6 +571,16 @@
                     const levelColor = getLevelColor(squadLevel);
                     const levelBadgeHTML = createLevelBadge(s.points || 0, 'xsmall');
 
+                    // Privacy Check for Squad Avatar
+                    const isMember = currentUserInfo.squad_id === s.id;
+                    const showAvatar = isVisible(s.privacy_avatar || 'public', false, isMember);
+
+                    const avatarHTML = showAvatar
+                        ? `<a href="squad-profile.html?id=${s.id}" style="display: block; width: 100%; height: 100%;">
+                               <img src="${avatarUrl}" alt="${s.name}" class="user-avatar" style="width: 100%; height: 100%; object-fit: cover; border: 3px solid ${levelColor}; box-shadow: 0 4px 12px ${levelColor}40; cursor: pointer;">
+                           </a>`
+                        : `<div class="user-avatar" style="width: 100%; height: 100%; background: #e2e8f0; display: flex; align-items: center; justify-content: center; border: 3px solid ${levelColor};"><i class="fas fa-lock" style="color: #94a3b8; font-size: 1.2rem;"></i></div>`;
+
                     return `
                     <tr>
                         <td class="rank-cell ${i < 3 ? 'rank-' + (i + 1) : ''}">
@@ -578,9 +589,7 @@
                         <td>
                             <div class="user-info-cell">
                                 <div style="position: relative; display: inline-block; width: 45px; height: 45px; min-width: 45px; min-height: 45px;">
-                                    <a href="squad-profile.html?id=${s.id}" style="display: block; width: 100%; height: 100%;">
-                                        <img src="${avatarUrl}" alt="${s.name}" class="user-avatar" style="width: 100%; height: 100%; object-fit: cover; border: 3px solid ${levelColor}; box-shadow: 0 4px 12px ${levelColor}40; cursor: pointer;">
-                                    </a>
+                                    ${avatarHTML}
                                     <div style="position: absolute; bottom: -2px; left: -2px; z-index: 10; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); pointer-events: none;">${levelBadgeHTML}</div>
                                 </div>
                                 <div class="user-name-box">
