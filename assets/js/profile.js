@@ -74,7 +74,7 @@ function renderProfileUI(profile, user) {
     // Preview Profile Button
     const previewBtn = document.getElementById('previewProfileBtn');
     if (previewBtn) {
-        previewBtn.href = `student - profile.html ? id = ${currentUser.id} `;
+        previewBtn.href = `student-profile.html?id=${currentUser.id}`;
     }
 
 
