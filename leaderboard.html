@@ -388,8 +388,7 @@
                     .maybeSingle();
 
                 const val = data?.value || { top_students: 50, top_squads: 10, refresh_interval: 10 };
-                // Cache the settings themselves for 30 mins to avoid frequent settings lookups
-                // OLD: setCache('app_leaderboard_settings', val, 30);
+                // Cache settings for 1 minute for reactivity
                 setCache('app_leaderboard_settings', val, 1);
                 return val;
             } catch (e) {
@@ -539,7 +538,7 @@
             const contextText = GRADES[currentUserInfo.grade] || '';
             headerP.textContent = `أقوى الشلل في ${contextText}`;
 
-            const cacheKey = `squad_leaderboard_${currentUserInfo.grade}`;
+            const cacheKey = `squad_leaderboard_${currentUserInfo.grade}_limit${settings.top_squads || 10}`;
             let squads = skipCache ? null : getCache(cacheKey);
 
             try {
@@ -622,7 +621,7 @@
             const oldMsg = document.getElementById('motivationMsg');
             if (oldMsg) oldMsg.remove();
 
-            const cacheKey = `leaderboard_${currentUserInfo.grade}_${currentUserInfo.term}_${currentFilterStream}`;
+            const cacheKey = `leaderboard_${currentUserInfo.grade}_${currentUserInfo.term}_${currentFilterStream}_limit${settings.top_students || 50}`;
             let data = skipCache ? null : getCache(cacheKey);
 
             try {
