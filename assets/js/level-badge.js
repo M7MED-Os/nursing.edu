@@ -10,14 +10,16 @@ import { calculateLevel, getLevelColor, getLevelBadge, calculateSquadLevel, LEVE
  * الحصول على الـ style الموحد للبوردر والظل حسب النقاط
  * @param {number} points - النقاط
  * @param {string} borderWidth - عرض البوردر (مثل '3px', '5px')
+ * @param {number} multiplier - المعامل (default: LEVEL_MULTIPLIER)
  * @returns {object} - كائن يحتوي على border و boxShadow
  */
-export function getLevelBorderStyle(points, borderWidth = '3px') {
-    const level = calculateLevel(points);
+export function getLevelBorderStyle(points, borderWidth = '3px', multiplier = LEVEL_MULTIPLIER) {
+    const level = Math.floor(Math.sqrt(Math.max(points || 0, 0) / multiplier));
     const color = getLevelColor(level);
     return {
         border: `${borderWidth} solid ${color}`,
-        boxShadow: `0 4px 12px ${color}40`
+        boxShadow: `0 4px 12px ${color}40`,
+        color: color
     };
 }
 
@@ -25,22 +27,14 @@ export function getLevelBorderStyle(points, borderWidth = '3px') {
  * نفس الـ function لكن للشلل
  */
 export function getSquadLevelBorderStyle(points, borderWidth = '3px') {
-    const level = calculateSquadLevel(points);
-    const color = getLevelColor(level);
-    return {
-        border: `${borderWidth} solid ${color}`,
-        boxShadow: `0 4px 12px ${color}40`
-    };
+    return getLevelBorderStyle(points, borderWidth, SQUAD_LEVEL_MULTIPLIER);
 }
 
 /**
  * إنشاء HTML للـ Level Badge (دايرة صغيرة بالرقم فقط - زي الألعاب)
- * @param {number} points - النقاط
- * @param {string} size - الحجم: 'small', 'medium', 'large'
- * @returns {string} HTML
  */
-export function createLevelBadge(points, size = 'small') {
-    const level = calculateLevel(points);
+export function createLevelBadge(points, size = 'small', multiplier = LEVEL_MULTIPLIER) {
+    const level = Math.floor(Math.sqrt(Math.max(points || 0, 0) / multiplier));
     const color = getLevelColor(level);
 
     const sizes = {
@@ -50,7 +44,7 @@ export function createLevelBadge(points, size = 'small') {
         large: { width: '44px', height: '44px', fontSize: '1.1rem' }
     };
 
-    const s = sizes[size];
+    const s = sizes[size] || sizes.small;
 
     return `
         <div class="level-badge-circle" style="
@@ -73,17 +67,19 @@ export function createLevelBadge(points, size = 'small') {
 }
 
 /**
- * إنشاء HTML للأفاتار مع Border ملون حسب المستوى + دايرة المستوى
- * @param {string} avatarUrl - رابط الصورة
- * @param {number} points - النقاط
- * @param {string} size - الحجم بالـ px
- * @param {boolean} showLevel - عرض دايرة المستوى
- * @returns {string} HTML
+ * إنشاء بادج الشلة
  */
-export function createLevelAvatar(avatarUrl, points, size = '70px', showLevel = true) {
-    const level = calculateLevel(points);
+export function createSquadLevelBadge(points, size = 'small') {
+    return createLevelBadge(points, size, SQUAD_LEVEL_MULTIPLIER);
+}
+
+/**
+ * إنشاء HTML للأفاتار مع Border ملون حسب المستوى + دايرة المستوى
+ */
+export function createLevelAvatar(avatarUrl, points, size = '70px', showLevel = true, multiplier = LEVEL_MULTIPLIER) {
+    const level = Math.floor(Math.sqrt(Math.max(points || 0, 0) / multiplier));
     const color = getLevelColor(level);
-    const levelBadgeSize = parseInt(size) > 80 ? 'medium' : parseInt(size) > 45 ? 'small' : 'xsmall';
+    const badgeSize = parseInt(size) > 80 ? 'medium' : parseInt(size) > 45 ? 'small' : 'xsmall';
 
     return `
         <div class="level-avatar" style="
@@ -107,11 +103,18 @@ export function createLevelAvatar(avatarUrl, points, size = '70px', showLevel = 
                     z-index: 10;
                     filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
                 ">
-                    ${createLevelBadge(points, levelBadgeSize)}
+                    ${createLevelBadge(points, badgeSize, multiplier)}
                 </div>
             ` : ''}
         </div>
     `;
+}
+
+/**
+ * إنشاء أفاتار الشلة
+ */
+export function createSquadLevelAvatar(avatarUrl, points, size = '70px', showLevel = true) {
+    return createLevelAvatar(avatarUrl, points, size, showLevel, SQUAD_LEVEL_MULTIPLIER);
 }
 
 /**
@@ -212,12 +215,16 @@ export function createLevelCard(points, userName) {
  * @returns {string} HTML
  */
 export function createSquadLevelProgress(currentPoints) {
-    const currentLevel = calculateSquadLevel(currentPoints);
-    const currentLevelPoints = Math.pow(currentLevel, 2) * SQUAD_LEVEL_MULTIPLIER;
-    const nextLevelPoints = Math.pow(currentLevel + 1, 2) * SQUAD_LEVEL_MULTIPLIER;
-    const progress = ((currentPoints - currentLevelPoints) / (nextLevelPoints - currentLevelPoints)) * 100;
+    const multiplier = SQUAD_LEVEL_MULTIPLIER;
+    const currentLevel = Math.floor(Math.sqrt(Math.max(currentPoints || 0, 0) / multiplier));
+    const currentLevelPoints = Math.pow(currentLevel, 2) * multiplier;
+    const nextLevelPoints = Math.pow(currentLevel + 1, 2) * multiplier;
+
+    const range = nextLevelPoints - currentLevelPoints;
+    const progress = range === 0 ? 100 : ((currentPoints - currentLevelPoints) / range) * 100;
     const progressClamped = Math.min(Math.max(progress, 0), 100);
     const pointsNeeded = nextLevelPoints - currentPoints;
+
     const color = getLevelColor(currentLevel);
     const nextColor = getLevelColor(currentLevel + 1);
 

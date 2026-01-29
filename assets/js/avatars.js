@@ -117,18 +117,18 @@ export function getLevelBadge(level) {
 }
 
 // حساب النقاط المطلوبة للمستوى التالي
-export function getPointsForNextLevel(currentPoints) {
-    const currentLevel = calculateLevel(currentPoints);
+export function getPointsForNextLevel(currentPoints, multiplier = LEVEL_MULTIPLIER) {
+    const currentLevel = Math.floor(Math.sqrt(Math.max(currentPoints || 0, 0) / multiplier));
     const nextLevel = currentLevel + 1;
-    const pointsNeeded = Math.pow(nextLevel, 2) * LEVEL_MULTIPLIER;
-    return pointsNeeded - currentPoints;
+    const pointsNeeded = Math.pow(nextLevel, 2) * multiplier;
+    return pointsNeeded - (currentPoints || 0);
 }
 
 // نسبة التقدم للمستوى التالي
-export function getLevelProgress(currentPoints) {
-    const currentLevel = calculateLevel(currentPoints);
-    const currentLevelPoints = Math.pow(currentLevel, 2) * LEVEL_MULTIPLIER;
-    const nextLevelPoints = Math.pow(currentLevel + 1, 2) * LEVEL_MULTIPLIER;
+export function getLevelProgress(currentPoints, multiplier = LEVEL_MULTIPLIER) {
+    const currentLevel = Math.floor(Math.sqrt(Math.max(currentPoints || 0, 0) / multiplier));
+    const currentLevelPoints = Math.pow(currentLevel, 2) * multiplier;
+    const nextLevelPoints = Math.pow(currentLevel + 1, 2) * multiplier;
 
     // تجنب القسمة على صفر
     const range = nextLevelPoints - currentLevelPoints;

@@ -365,8 +365,8 @@
         import { getCache, setCache } from "./assets/js/utils.js";
         import { checkAuth } from "./assets/js/auth.js";
         import { GRADES, STREAMS } from "./assets/js/constants.js";
-        import { calculateLevel, getLevelColor } from "./assets/js/avatars.js";
-        import { createLevelBadge } from "./assets/js/level-badge.js";
+        import { calculateLevel, getLevelColor, calculateSquadLevel } from "./assets/js/avatars.js";
+        import { createLevelBadge, createSquadLevelBadge } from "./assets/js/level-badge.js";
         import { shouldShowAvatar, isVisible, isSquadMember } from "./assets/js/privacy.js";
 
         // State
@@ -565,10 +565,10 @@
                     // Squad avatar URL or fallback
                     const avatarUrl = s.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(s.name || 'Squad')}&background=10b981&color=fff&size=80`;
 
-                    // Calculate squad level and color (squads use different formula)
-                    const squadLevel = Math.floor(Math.sqrt(Math.max(s.points || 0, 0) / 10));
+                    // Calculate squad level and color
+                    const squadLevel = calculateSquadLevel(s.points || 0);
                     const levelColor = getLevelColor(squadLevel);
-                    const levelBadgeHTML = createLevelBadge(s.points || 0, 'xsmall');
+                    const levelBadgeHTML = createSquadLevelBadge(s.points || 0, 'xsmall');
 
                     // Privacy Check for Squad Avatar
                     const isMember = currentUserInfo.squad_id === s.id;

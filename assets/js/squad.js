@@ -1,7 +1,7 @@
 import { supabase } from './supabaseClient.js';
 import { getCache, setCache, getSWR } from "./utils.js";
 import { generateAvatar, calculateLevel, getLevelColor, calculateSquadLevel } from './avatars.js';
-import { createLevelBadge, createLevelAvatar, createSquadLevelProgress } from './level-badge.js';
+import { createLevelBadge, createSquadLevelBadge, createLevelAvatar, createSquadLevelProgress, getSquadLevelBorderStyle } from './level-badge.js';
 import { GRADES, STREAMS } from "./constants.js";
 import { shouldShowAvatar } from './privacy.js';
 
@@ -108,6 +108,23 @@ async function setupSquadUI() {
         }
     }
 
+    // Update Avatar and Level Badge
+    const squadAvatarImg = document.getElementById('squadAvatar');
+    const squadLevelBadgeContainer = document.getElementById('squadLevelBadge');
+
+    if (squadAvatarImg) {
+        const avatarUrl = currentSquad.avatar_url || generateAvatar(currentSquad.name, 'bottts');
+        squadAvatarImg.src = avatarUrl;
+
+        // Update border color based on level
+        const style = getSquadLevelBorderStyle(currentSquad.points || 0, '4px');
+        squadAvatarImg.style.borderColor = style.color;
+    }
+
+    if (squadLevelBadgeContainer && currentSquad.points !== undefined) {
+        squadLevelBadgeContainer.innerHTML = createSquadLevelBadge(currentSquad.points, 'medium');
+    }
+
     // Update level progress
     const levelProgressEl = document.getElementById('squadLevelProgress');
     if (levelProgressEl) {
@@ -146,20 +163,6 @@ async function setupSquadUI() {
         // Show Privacy Settings button
         const privacyBtn = document.getElementById('squadPrivacyBtn');
         if (privacyBtn) privacyBtn.style.display = 'flex';
-    }
-
-    // Display Squad Avatar and Level Badge
-    const squadAvatarImg = document.getElementById('squadAvatar');
-    const squadLevelBadgeContainer = document.getElementById('squadLevelBadge');
-
-    if (squadAvatarImg) {
-        const avatarUrl = currentSquad.avatar_url || generateAvatar(currentSquad.name, 'bottts');
-        squadAvatarImg.src = avatarUrl;
-    }
-
-    if (squadLevelBadgeContainer && currentSquad.points !== undefined) {
-        const squadLevel = Math.floor(Math.sqrt(Math.max(currentSquad.points || 0, 0) / 10)); // Squad level formula
-        squadLevelBadgeContainer.innerHTML = createLevelBadge(currentSquad.points, 'medium');
     }
 
     // Display Squad Points

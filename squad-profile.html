@@ -439,7 +439,7 @@
     <script type="module">
         import { supabase } from './assets/js/supabaseClient.js';
         import { generateAvatar, calculateLevel, getLevelColor, calculateSquadLevel } from './assets/js/avatars.js';
-        import { createLevelBadge, createLevelProgress, createSquadLevelProgress } from './assets/js/level-badge.js';
+        import { createLevelBadge, createSquadLevelBadge, createLevelProgress, createSquadLevelProgress } from './assets/js/level-badge.js';
         import { GRADES, STREAMS } from './assets/js/constants.js';
         import { checkAuth } from './assets/js/auth.js';
         import { isVisible, createLockedElement, createLockedAvatar, isSquadMember } from './assets/js/privacy.js';
@@ -534,7 +534,7 @@
 
             const level = calculateSquadLevel(squad.points || 0);
             const levelColor = getLevelColor(level);
-            const levelBadgeHTML = createLevelBadge(squad.points || 0, 'large');
+            const levelBadgeHTML = createSquadLevelBadge(squad.points || 0, 'large');
 
             const bioText = squad.bio || 'مفيش بايو';
             const bioClass = squad.bio ? '' : 'empty';
