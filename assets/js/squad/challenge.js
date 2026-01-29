@@ -31,6 +31,9 @@ export async function loadActiveChallenge() {
     if (!activeChallenge) {
         defaultState.style.display = 'block';
         activeState.style.display = 'none';
+
+        // No active challenge, check for recently completed one to show summary
+        checkRecentlyCompletedChallenge();
         return;
     }
 
@@ -212,34 +215,55 @@ export async function loadActiveChallenge() {
             const avatarUrl = p.avatar_url || generateAvatar(p.name, 'initials');
             const scoreText = p.score === 'HIDDEN' ? '' : `${p.score}%`;
             const isTop1 = index === 0;
-            const isTop3 = index < 3;
+            const isTop2 = index === 1;
+            const isTop3 = index === 2;
+            const isTopRank = index < 3;
 
-            // Background and border logic
+            // High-intensity background and border logic
             let rowBg = `${levelColor}10`;
             let rowBorder = `${levelColor}25`;
             let animation = '';
+            let flameSize = 'small';
 
             if (isTop1) {
-                rowBg = 'linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%)';
-                rowBorder = '#F97316';
-                animation = 'fire-glow 2s infinite ease-in-out';
-            } else if (isTop3) {
+                rowBg = 'linear-gradient(-45deg, #fff7ed, #ffedd5, #fef3c7, #fff7ed)';
+                rowBorder = '#f97316';
+                animation = 'magma-flow 3s ease infinite, fire-glow 2s infinite ease-in-out';
+                flameSize = 'large';
+            } else if (isTopRank) {
+                rowBg = 'linear-gradient(to left, #fff7ed, #ffffff)';
+                rowBorder = isTop2 ? '#fb923c' : '#fdba74';
                 animation = 'fire-glow 3s infinite ease-in-out';
             }
 
             return `
-                                    <div style="display: flex; align-items: center; gap: 12px; background: ${rowBg}; padding: 10px; border-radius: 12px; border: 1px solid ${rowBorder}; animation: ${animation}; position: relative; overflow: hidden;">
-                                        ${isTop1 ? `<div style="position: absolute; left: 0; top: 0; height: 100%; width: 4px; background: #F97316;"></div>` : ''}
+                                    <div style="display: flex; align-items: center; gap: 12px; background: ${rowBg}; background-size: 400% 400%; padding: 12px 10px; border-radius: 14px; border: 2px solid ${rowBorder}; animation: ${animation}; position: relative; overflow: hidden; transition: all 0.3s ease;">
+                                        ${isTop1 ? `<div style="position: absolute; left: 0; top: 0; height: 100%; width: 6px; background: linear-gradient(to bottom, #f97316, #fbbf24);"></div>` : ''}
+                                        
                                         <div style="position: relative; display: inline-block;">
-                                            <img src="${avatarUrl}" style="width: ${isTop1 ? '48' : '42'}px; height: ${isTop1 ? '48' : '42'}px; border-radius: 50%; border: ${isTop1 ? '3px' : '2px'} solid ${isTop1 ? '#F97316' : levelColor}; object-fit: cover;" />
-                                            <div style="position: absolute; bottom: -2px; left: -2px; z-index: 5;">${levelBadgeHTML}</div>
+                                            <img src="${avatarUrl}" style="width: ${isTop1 ? '52' : '44'}px; height: ${isTop1 ? '52' : '44'}px; border-radius: 50%; border: ${isTop1 ? '4px' : '3px'} solid ${isTop1 ? '#f97316' : levelColor}; object-fit: cover; transition: transform 0.3s ease; ${isTop1 ? 'animation: pulse 2s infinite;' : ''}" />
+                                            <div style="position: absolute; bottom: -4px; left: -4px; z-index: 5;">${levelBadgeHTML}</div>
                                         </div>
-                                        <div style="flex: 1; display: flex; align-items: center; gap: 6px;">
-                                            <span style="font-size: ${isTop1 ? '1rem' : '0.9rem'}; color: #1e293b; font-weight: 800;">${p.name}</span>
-                                            ${isTop3 ? `<i class="fas fa-fire" style="color: #EF4444; font-size: ${isTop1 ? '1rem' : '0.9rem'}; animation: bounce 1s infinite alternate;"></i>` : ''}
+
+                                        <div style="flex: 1; display: flex; align-items: center; gap: 8px;">
+                                            <div style="display: flex; flex-direction: column;">
+                                                <span style="font-size: ${isTop1 ? '1.05rem' : '0.9rem'}; color: #1e293b; font-weight: 900;">${p.name}</span>
+                                                ${isTopRank ? `<div style="display: flex; align-items: center; gap: 4px; font-size: 0.65rem; color: #f97316; font-weight: 800; text-transform: uppercase;">
+                                                    <div class="squad-flame" style="width: 8px; height: 8px; box-shadow: 0 0 5px #f97316;"></div>
+                                                    ${index + 1}st Rank
+                                                </div>` : ''}
+                                            </div>
                                         </div>
-                                        <div style="text-align: left;">
-                                            ${scoreText ? `<span style="background: ${isTop1 ? '#F97316' : levelColor}; color: #fff; padding: 4px 10px; border-radius: 10px; font-size: 0.85rem; font-weight: 900; box-shadow: 0 2px 4px ${isTop1 ? '#F97316' : levelColor}40;">${scoreText}</span>` : '<i class="fas fa-check-circle" style="color: #10B981; font-size: 1.1rem;"></i>'}
+
+                                        <div style="display: flex; align-items: center; gap: 10px;">
+                                            ${isTop1 ? '<div class="squad-flame" style="margin-left: 5px;"></div>' : ''}
+                                            <div style="text-align: left;">
+                                                ${scoreText ? `
+                                                    <span style="background: linear-gradient(135deg, ${isTop1 ? '#f97316' : levelColor}, ${isTop1 ? '#ea580c' : levelColor}); color: #fff; padding: 6px 14px; border-radius: 12px; font-size: 0.95rem; font-weight: 900; box-shadow: 0 4px 6px ${isTop1 ? '#f9731650' : levelColor + '30'};">
+                                                        ${scoreText}
+                                                    </span>
+                                                ` : '<i class="fas fa-check-circle" style="color: #10B981; font-size: 1.25rem;"></i>'}
+                                            </div>
                                         </div>
                                     </div>
                                 `;
@@ -457,3 +481,123 @@ window.endActiveChallenge = async (challengeId) => {
         }
     }
 };
+
+/**
+ * Check for the most recently completed challenge and show summary popup once
+ */
+export async function checkRecentlyCompletedChallenge() {
+    try {
+        // Fetch the last 2 challenges (to ensure we find the latest completed one)
+        const { data: recentChallenges } = await supabase
+            .from('squad_exam_challenges')
+            .select(`
+                id, exam_id, created_at, status, squad_points_awarded,
+                exams(title, lessons(title, chapters(title, subjects(name_ar))))
+            `)
+            .eq('squad_id', currentSquad.id)
+            .neq('status', 'active')
+            .order('created_at', { ascending: false })
+            .limit(1);
+
+        if (!recentChallenges || recentChallenges.length === 0) return;
+
+        const lastChallenge = recentChallenges[0];
+        const storageKey = `squad_challenge_summary_${lastChallenge.id}`;
+
+        // If we already showed this summary, stop
+        if (localStorage.getItem(storageKey)) return;
+
+        // Fetch results for this specific challenge
+        const { data: cmdMessages } = await supabase
+            .from('squad_chat_messages')
+            .select('sender_id, text, profiles!sender_id(full_name, avatar_url, points, privacy_avatar)')
+            .eq('challenge_id', lastChallenge.id)
+            .like('text', '[CMD:%');
+
+        if (!cmdMessages) return;
+
+        // Process participants
+        const participants = {};
+        cmdMessages.forEach(msg => {
+            const userId = msg.sender_id;
+            const profile = msg.profiles || {};
+            const name = profile.full_name?.split(' ')[0] || 'طالب';
+            const avatarUrl = profile.avatar_url;
+            const points = profile.points || 0;
+            const privacyAvatar = profile.privacy_avatar;
+
+            if (msg.text === '[CMD:JOIN]') {
+                if (!participants[userId]) {
+                    participants[userId] = { user_id: userId, name, avatarUrl, points, privacyAvatar, status: 'joined' };
+                }
+            } else if (msg.text.startsWith('[CMD:FINISH:')) {
+                const score = msg.text.split(':')[2].replace(']', '');
+                participants[userId] = { user_id: userId, name, avatarUrl, points, privacyAvatar, status: 'finished', score };
+            }
+        });
+
+        const finishedList = Object.values(participants)
+            .filter(p => p.status === 'finished')
+            .sort((a, b) => (parseInt(b.score) || 0) - (parseInt(a.score) || 0));
+
+        if (finishedList.length === 0) return;
+
+        // Build Leaderboard HTML for the popup
+        const myId = currentProfile.id;
+        const examTitle = lastChallenge.exams?.title || 'امتحان الشلة';
+        const pointsAwarded = lastChallenge.squad_points_awarded > 0;
+
+        let leaderboardHtml = finishedList.map((p, index) => {
+            const level = calculateLevel(p.points);
+            const levelColor = getLevelColor(level);
+            const showAvatar = shouldShowAvatar(p.privacyAvatar, p.user_id, myId, currentSquad.id, currentSquad.id);
+            const avatarUrl = p.avatarUrl || generateAvatar(p.name, 'initials');
+            const isTop1 = index === 0;
+            const isTopRank = index < 3;
+
+            return `
+                <div style="display: flex; align-items: center; gap: 10px; background: ${isTop1 ? 'linear-gradient(135deg, #fff7ed, #fff)' : '#f8fafc'}; padding: 10px; border-radius: 12px; border: 1px solid ${isTop1 ? '#f97316' : '#e2e8f0'}; margin-bottom: 8px;">
+                    <div style="position: relative;">
+                        <img src="${avatarUrl}" style="width: 35px; height: 35px; border-radius: 50%; border: 2px solid ${levelColor};" />
+                    </div>
+                    <div style="flex: 1; text-align: right;">
+                        <span style="font-weight: 800; font-size: 0.85rem;">${p.name}</span>
+                        ${isTopRank ? '<i class="fas fa-fire" style="color: #ef4444; font-size: 0.7rem; margin-right: 4px;"></i>' : ''}
+                    </div>
+                    <span style="background: ${levelColor}; color: white; padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 800;">
+                        ${p.score === 'HIDDEN' ? '✓' : p.score + '%'}
+                    </span>
+                </div>
+            `;
+        }).join('');
+
+        // Show Swal Summary
+        await Swal.fire({
+            title: '🏁 نتيجة الامتحان الجماعي',
+            html: `
+                <div style="text-align: center; margin-bottom: 15px;">
+                    <div style="font-size: 0.9rem; color: #475569; margin-bottom: 10px;">${examTitle}</div>
+                    ${pointsAwarded
+                    ? '<div style="background: #ecfdf5; color: #065f46; padding: 8px; border-radius: 10px; font-weight: 700; font-size: 0.85rem;">✅ مبروك! الشلة حققت التحدي وأخدتوا النقط</div>'
+                    : '<div style="background: #fef2f2; color: #991b1b; padding: 8px; border-radius: 10px; font-weight: 700; font-size: 0.85rem;">😔 للأسف محققتوش الحد الأدنى من المشاركات</div>'}
+                </div>
+                <div style="max-height: 300px; overflow-y: auto; padding: 5px;">
+                    ${leaderboardHtml}
+                </div>
+            `,
+            confirmButtonText: 'عاش ياشباب 🔥',
+            confirmButtonColor: '#f97316',
+            background: '#ffffff',
+            customClass: {
+                popup: 'rounded-2xl',
+                title: 'text-xl font-black pt-4'
+            }
+        });
+
+        // Mark as seen
+        localStorage.setItem(storageKey, 'true');
+
+    } catch (err) {
+        console.error('Error in challenge summary popup:', err);
+    }
+}
