@@ -565,8 +565,8 @@ async function handleExamCompletionFlow(totalEarned, pointsExam, bonusPerfect, b
             text: 'تحب تشارك درجتك مع صحابك في الشلة؟ (درجتك هتظهر جوه كارت الامتحان)',
             icon: 'question',
             showCancelButton: true,
-            confirmButtonText: 'آيوة، وريهم شطارتي 😎',
-            cancelButtonText: 'لا، خليها مستورة 🙈',
+            confirmButtonText: 'ماشي',
+            cancelButtonText: 'لا',
             confirmButtonColor: '#10b981',
             cancelButtonColor: '#64748b'
         });

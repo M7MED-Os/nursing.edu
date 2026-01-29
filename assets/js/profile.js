@@ -3,7 +3,7 @@ import { showToast } from "./utils.js";
 import { GRADES, TERMS, STREAMS } from "./constants.js";
 import { setButtonLoading } from "./utils/dom.js";
 import { openAvatarModal } from "./avatar-modal.js";
-import { generateAvatar, calculateLevel, getLevelColor, getLevelLegend, getLevelMetadata } from './avatars.js';
+import { generateAvatar, calculateLevel, getLevelColor, getLevelLegend, getLevelMetadata, LEVEL_MULTIPLIER } from './avatars.js';
 import { createLevelBadge, createLevelProgress, applyLevelTheme } from './level-badge.js';
 
 // ==========================
