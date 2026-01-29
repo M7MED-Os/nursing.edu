@@ -43,7 +43,9 @@ export async function loadPomodoro() {
 function startLocalTimer(pomData) {
     if (pomodoroInterval) clearInterval(pomodoroInterval);
 
-    const isStarterOrOwner = pomData.started_by === currentProfile.id || currentSquad.owner_id === currentProfile.id;
+    const myId = currentProfile.id;
+    const isAdmin = currentSquad.owner_id === myId || currentSquad.admins?.includes(myId);
+    const isStarterOrOwner = pomData.started_by === myId || isAdmin;
 
     const stopBtn = document.getElementById('startPomodoroBtn');
     if (isStarterOrOwner) {

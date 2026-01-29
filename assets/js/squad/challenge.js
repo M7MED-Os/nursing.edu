@@ -15,12 +15,12 @@ export async function loadActiveChallenge() {
     const { data: activeChallenge } = await supabase
         .from('squad_exam_challenges')
         .select(`
-            id, exam_id, created_at, expires_at, status, squad_points_awarded,
-            exams(
-                title,
-                lessons(title, chapters(title, subjects(name_ar)))
-            )
-        `)
+                id, exam_id, created_at, expires_at, status, squad_points_awarded, created_by,
+                exams(
+                    title,
+                    lessons(title, chapters(title, subjects(name_ar)))
+                )
+            `)
         .eq('squad_id', currentSquad.id)
         .eq('status', 'active')
         .maybeSingle();
@@ -352,7 +352,7 @@ export async function loadActiveChallenge() {
                             ${config.disabled ? 'disabled' : ''}>
                         ${config.text}
                     </button>
-                    ${isAdmin ? `
+                    ${(isAdmin || activeChallenge.created_by === myId) ? `
                         <button class="btn btn-danger" 
                                 style="padding: 12px 24px; font-size: 0.85rem; font-weight: 700; border-radius: 12px; display: flex; align-items: center; gap: 6px;" 
                                 onclick="window.endActiveChallenge('${activeChallenge.id}')">
