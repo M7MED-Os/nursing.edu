@@ -1,7 +1,7 @@
 import { supabase } from './supabaseClient.js';
 import { getCache, setCache, getSWR } from "./utils.js";
 import { generateAvatar, calculateLevel, getLevelColor, calculateSquadLevel } from './avatars.js';
-import { createLevelBadge, createSquadLevelBadge, createLevelAvatar, createSquadLevelProgress, getSquadLevelBorderStyle } from './level-badge.js';
+import { createLevelBadge, createSquadLevelBadge, createSquadLevelProgress, getSquadLevelBorderStyle } from './level-badge.js';
 import { GRADES, STREAMS } from "./constants.js";
 import { shouldShowAvatar } from './privacy.js';
 

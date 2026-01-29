@@ -113,29 +113,6 @@ export function getLevelBadge(level) {
     if (level >= 10) return '💎'; // ماسة
     if (level >= 7) return '⭐'; // نجمة
     if (level >= 4) return '🌟'; // نجمة لامعة
-    return '🔰';                  // مبتدئ
-}
-
-// حساب النقاط المطلوبة للمستوى التالي
-export function getPointsForNextLevel(currentPoints, multiplier = LEVEL_MULTIPLIER) {
-    const currentLevel = Math.floor(Math.sqrt(Math.max(currentPoints || 0, 0) / multiplier));
-    const nextLevel = currentLevel + 1;
-    const pointsNeeded = Math.pow(nextLevel, 2) * multiplier;
-    return pointsNeeded - (currentPoints || 0);
-}
-
-// نسبة التقدم للمستوى التالي
-export function getLevelProgress(currentPoints, multiplier = LEVEL_MULTIPLIER) {
-    const currentLevel = Math.floor(Math.sqrt(Math.max(currentPoints || 0, 0) / multiplier));
-    const currentLevelPoints = Math.pow(currentLevel, 2) * multiplier;
-    const nextLevelPoints = Math.pow(currentLevel + 1, 2) * multiplier;
-
-    // تجنب القسمة على صفر
-    const range = nextLevelPoints - currentLevelPoints;
-    if (range === 0) return 0;
-
-    const progress = ((currentPoints - currentLevelPoints) / range) * 100;
-    return Math.min(Math.max(progress, 0), 100);
 }
 
 /**

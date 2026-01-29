@@ -86,50 +86,6 @@ export function createSquadLevelBadge(points, size = 'small') {
 }
 
 /**
- * إنشاء HTML للأفاتار مع Border ملون حسب المستوى + دايرة المستوى
- */
-export function createLevelAvatar(avatarUrl, points, size = '70px', showLevel = true, multiplier = LEVEL_MULTIPLIER) {
-    const meta = getLevelMetadata(points, multiplier);
-    const badgeSize = parseInt(size) > 80 ? 'medium' : parseInt(size) > 45 ? 'small' : 'xsmall';
-
-    return `
-        <div class="level-avatar" style="
-            position: relative;
-            width: ${size};
-            height: ${size};
-            --avatar-level-color: ${meta.color};
-        ">
-            <img src="${avatarUrl}" alt="Avatar" style="
-                width: 100%;
-                height: 100%;
-                border-radius: 50%;
-                object-fit: cover;
-                border: 4px solid var(--avatar-level-color);
-                box-shadow: 0 4px 12px ${meta.color}40;
-            ">
-            ${showLevel ? `
-                <div style="
-                    position: absolute;
-                    bottom: 0;
-                    left: 0;
-                    z-index: 10;
-                    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
-                ">
-                    ${createLevelBadge(points, badgeSize, multiplier)}
-                </div>
-            ` : ''}
-        </div>
-    `;
-}
-
-/**
- * إنشاء أفاتار الشلة
- */
-export function createSquadLevelAvatar(avatarUrl, points, size = '70px', showLevel = true) {
-    return createLevelAvatar(avatarUrl, points, size, showLevel, SQUAD_LEVEL_MULTIPLIER);
-}
-
-/**
  * إنشاء HTML لشريط التقدم للمستوى التالي
  * @param {number} currentPoints - النقاط الحالية
  * @returns {string} HTML
@@ -158,58 +114,12 @@ export function createLevelProgress(currentPoints, multiplier = LEVEL_MULTIPLIER
                 <div style="
                     width: ${meta.progress}%;
                     height: 100%;
-                    background: linear-gradient(90deg, ${meta.nextColor} 0%, ${meta.nextColor}dd 100%);
+                    background: linear-gradient(to left, ${meta.color} 0%, ${meta.nextColor} 100%);
                     border-radius: 10px;
                     transition: width 0.3s ease;
-                    box-shadow: 0 0 10px ${meta.nextColor}80;
+                    box-shadow: 0 0 10px ${meta.color}40;
                 "></div>
             </div>
-        </div>
-    `;
-}
-
-/**
- * إنشاء كارت كامل للمستوى (للبروفايل)
- * @param {number} points - النقاط
- * @param {string} userName - اسم المستخدم
- * @returns {string} HTML
- */
-export function createLevelCard(points, userName) {
-    const level = calculateLevel(points);
-    const color = getLevelColor(level);
-    const emoji = getLevelBadge(level);
-
-    return `
-        <div class="level-card" style="
-            background: linear-gradient(135deg, ${color}15 0%, ${color}05 100%);
-            border: 2px solid ${color}40;
-            border-radius: 16px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-        ">
-            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
-                <div style="
-                    font-size: 3rem;
-                    width: 60px;
-                    height: 60px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    background: ${color}20;
-                    border-radius: 50%;
-                ">
-                    ${emoji}
-                </div>
-                <div>
-                    <h3 style="margin: 0; color: ${color}; font-size: 1.5rem; font-weight: 800;">
-                        المستوى ${level}
-                    </h3>
-                    <p style="margin: 0; color: #64748b; font-size: 0.9rem;">
-                        ${points} نقطة إجمالي
-                    </p>
-                </div>
-            </div>
-            ${createLevelProgress(points)}
         </div>
     `;
 }
@@ -242,10 +152,10 @@ export function createSquadLevelProgress(currentPoints) {
                 <div style="
                     width: ${meta.progress}%;
                     height: 100%;
-                    background: linear-gradient(90deg, ${meta.color} 0%, ${meta.nextColor} 100%);
+                    background: linear-gradient(to left, ${meta.color} 0%, ${meta.nextColor} 100%);
                     border-radius: 20px;
                     transition: width 1s ease-in-out;
-                    box-shadow: 0 0 15px ${meta.nextColor}60;
+                    box-shadow: 0 0 15px ${meta.color}50;
                 "></div>
             </div>
             
