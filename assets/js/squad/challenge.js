@@ -566,7 +566,8 @@ export async function checkRecentlyCompletedChallenge() {
         const isSuccess = actualCount >= requiredCount;
 
         const myId = currentProfile.id;
-        const examTitle = lastChallenge.exams?.title || 'امتحان الشلة';
+        const subjectName = lastChallenge.exams?.lessons?.chapters?.subjects?.name_ar;
+        const examTitle = subjectName ? `مادة ${subjectName}` : (lastChallenge.exams?.title || 'امتحان الشلة');
         const pointsAdded = lastChallenge.squad_points_awarded || 0;
         const totalPoints = squadData?.points || currentSquad.points || 0;
 
@@ -617,7 +618,7 @@ export async function checkRecentlyCompletedChallenge() {
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px;">
                         <div style="background: #f8fafc; padding: 10px; border-radius: 12px; border: 1px solid #e2e8f0;">
                             <div style="font-size: 0.65rem; color: #64748b; font-weight: 800; text-transform: uppercase; margin-bottom: 4px;">المشاركة</div>
-                            <div style="font-size: 1.1rem; font-weight: 900; color: #1e293b;">${actualCount} <span style="font-size: 0.7rem; color: #94a3b8; font-weight: 600;">من ${requiredCount}</span></div>
+                            <div style="font-size: 1.1rem; font-weight: 900; color: #1e293b;">${actualCount} <span style="font-size: 0.7rem; color: #94a3b8; font-weight: 600;">من ${totalMembers}</span></div>
                         </div>
                         <div style="background: #f8fafc; padding: 10px; border-radius: 12px; border: 1px solid #e2e8f0;">
                             <div style="font-size: 0.65rem; color: #64748b; font-weight: 800; text-transform: uppercase; margin-bottom: 4px;">النقاط المكتسبة</div>
@@ -632,7 +633,7 @@ export async function checkRecentlyCompletedChallenge() {
                 </div>
 
                 <div style="max-height: 250px; overflow-y: auto; padding: 4px; border-top: 1px solid #f1f5f9; margin-top: 10px;">
-                    <div style="font-size: 0.75rem; color: #94a3b8; margin-bottom: 10px; text-align: right; font-weight: 800; padding-top: 8px;">🏆 ترتيب الأبطال:</div>
+                    <div style="font-size: 0.75rem; color: #94a3b8; margin-bottom: 10px; text-align: right; font-weight: 800; padding-top: 8px;">🏆 ترتيب المشاركين:</div>
                     ${leaderboardHtml}
                 </div>
             `,

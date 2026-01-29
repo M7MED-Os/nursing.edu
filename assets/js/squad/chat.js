@@ -67,10 +67,10 @@ async function renderChat(msgs) {
 
     // Filter out CMD signals and SQUAD_EXAM messages from chat display
     const chatMsgs = msgs.filter(m => {
-        // Hide CMD signals
-        if (m.challenge_id && m.text.startsWith('[CMD:')) return false;
+        // Hide CMD technical signals
+        if (m.text?.startsWith('[CMD:')) return false;
         // Hide SQUAD_EXAM messages
-        if (m.text.match(/\[SQUAD_EXAM:([a-z0-9-]+):?([a-z0-9-]+)?\]/i)) return false;
+        if (m.text?.match(/\[SQUAD_EXAM:([a-z0-9-]+):?([a-z0-9-]+)?\]/i)) return false;
         return true;
     });
 
