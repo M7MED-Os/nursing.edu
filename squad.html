@@ -541,18 +541,46 @@
 
         @keyframes fire-glow {
             0% {
-                box-shadow: 0 0 5px rgba(249, 115, 22, 0.2);
-                border-color: rgba(249, 115, 22, 0.3);
+                box-shadow: 0 0 5px rgba(249, 115, 11, 0.2);
+                border-color: rgba(249, 115, 11, 0.3);
             }
 
             50% {
-                box-shadow: 0 0 15px rgba(249, 115, 22, 0.5);
-                border-color: rgba(249, 115, 22, 0.6);
+                box-shadow: 0 0 25px rgba(249, 115, 11, 0.7);
+                border-color: rgba(249, 115, 11, 0.9);
             }
 
             100% {
-                box-shadow: 0 0 5px rgba(249, 115, 22, 0.2);
-                border-color: rgba(249, 115, 22, 0.3);
+                box-shadow: 0 0 5px rgba(249, 115, 11, 0.2);
+                border-color: rgba(249, 115, 11, 0.3);
+            }
+        }
+
+        @keyframes magma-flow {
+            0% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        @keyframes ember-pulse {
+            0% {
+                filter: brightness(1) drop-shadow(0 0 2px #f97311);
+            }
+
+            50% {
+                filter: brightness(1.4) drop-shadow(0 0 10px #f97311);
+            }
+
+            100% {
+                filter: brightness(1) drop-shadow(0 0 2px #f97311);
             }
         }
     </style>
