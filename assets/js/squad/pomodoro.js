@@ -141,6 +141,9 @@ export async function startPomodoroFlow() {
         sender_id: currentProfile.id,
         text: `مين جاي ${duration} دقيقة مذاكرة؟ 📚`
     });
+
+    // Refresh UI immediately so the user doesn't have to wait for sync or manual refresh
+    await loadPomodoro();
 }
 
 // Expose for global access

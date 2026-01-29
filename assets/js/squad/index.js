@@ -9,7 +9,7 @@
 import { initSquad } from './init.js';
 import { loadGlobalSettings } from './utils.js';
 import { setGlobalSquadSettings } from './state.js';
-import { startSyncManager, restoreCooldowns } from './sync.js';
+import { startSyncManager } from './sync.js';
 import { handleChatSubmit } from './chat.js';
 import './exams.js'; // Import to expose startSharedExam globally
 import './settings.js'; // Import to expose global functions
@@ -19,8 +19,6 @@ import './tasks.js'; // Import to expose global functions
 
 // Initialize on DOM ready
 document.addEventListener('DOMContentLoaded', async () => {
-    restoreCooldowns();
-
     // Critical: Load settings BEFORE rendering UI
     const settings = await loadGlobalSettings();
     setGlobalSquadSettings(settings);

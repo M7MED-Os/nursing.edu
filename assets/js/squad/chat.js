@@ -36,6 +36,12 @@ export async function loadChat() {
         setUserResults(data.results);
         window.currentChallenges = data.challenges;
         renderChat(data.msgs);
+
+        // Manage visibility of Clear Chat button (Owner/Admin only)
+        const myId = currentProfile.id;
+        const isAdmin = currentSquad.owner_id === myId || currentSquad.admins?.includes(myId) || currentProfile.role === 'admin';
+        const clearBtn = document.getElementById('clearChatBtn');
+        if (clearBtn) clearBtn.style.display = isAdmin ? 'flex' : 'none';
     });
 }
 
@@ -210,3 +216,47 @@ export async function handleChatSubmit(e) {
         await loadChat(); // Immediate update after sending
     }
 }
+
+/**
+ * Clear squad chat (Owner/Admin only)
+ */
+export async function clearSquadChat() {
+    const { isConfirmed } = await Swal.fire({
+        title: 'مسح الشات بالكامل؟',
+        text: "سيتم حذف جميع رسائل الشات الحالية نهائياً من قاعدة البيانات!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: 'نعم، امسح الكل',
+        cancelButtonText: 'تراجع'
+    });
+
+    if (!isConfirmed) return;
+
+    try {
+        const { error } = await supabase
+            .from('squad_chat_messages')
+            .delete()
+            .eq('squad_id', currentSquad.id);
+
+        if (error) throw error;
+
+        Swal.fire({
+            icon: 'success',
+            title: 'تم المسح',
+            text: 'تم حذف محادثات الشلة بنجاح.',
+            timer: 1500,
+            showConfirmButton: false
+        });
+
+        loadChat();
+
+    } catch (err) {
+        console.error('Clear chat error:', err);
+        Swal.fire('خطأ', 'فشل في مسح الشات: ' + err.message, 'error');
+    }
+}
+
+// Global exposure
+window.clearSquadChat = clearSquadChat;

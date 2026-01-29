@@ -879,12 +879,7 @@
                     <div class="squad-card-title">
                         <i class="fas fa-tasks" style="color: #03A9F4;"></i>
                         أهداف الشلة اليومية
-                        <div class="refresh-group">
-                            <button class="smart-refresh-btn" id="refreshTodoBtn" onclick="window.smartRefresh('todo')"
-                                title="تحديث الأهداف">
-                                <i class="fas fa-sync-alt"></i>
-                                <span class="cooldown-overlay"></span>
-                            </button>
+                        <div style="margin-right: auto; display: flex; gap: 8px; align-items: center;">
                             <button class="btn btn-outline" style="padding: 4px 10px; font-size: 0.8rem;"
                                 onclick="addSquadTask()">+
                                 هدف</button>
@@ -935,13 +930,8 @@
                     <div class="squad-card-title">
                         <i class="fas fa-comments" style="color: #10b981;"></i>
                         <span>شات الشلة (أخر 50 رسالة)</span>
-                        <div class="refresh-group">
-                            <button class="smart-refresh-btn" id="refreshChatBtn" onclick="window.smartRefresh('chat')"
-                                title="تحديث الشات">
-                                <i class="fas fa-sync-alt"></i>
-                                <span class="cooldown-overlay"></span>
-                            </button>
-                            <button id="clearChatBtn" class="btn-clear-chat" onclick="clearSquadChat()">
+                        <div style="margin-right: auto; display: flex; gap: 8px; align-items: center;">
+                            <button id="clearChatBtn" class="btn-clear-chat" onclick="window.clearSquadChat()">
                                 <i class="fas fa-trash-alt"></i>
                                 <span>مسح الشات</span>
                             </button>

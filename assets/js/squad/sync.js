@@ -9,33 +9,14 @@ import { loadActiveChallenge } from './challenge.js';
 import { loadGlobalSettings } from './utils.js';
 
 /**
- * Restore cooldowns from sessionStorage
- */
-export function restoreCooldowns() {
-    const keys = Object.keys(sessionStorage);
-    keys.forEach(k => {
-        if (k.startsWith('cooldown_')) {
-            const expiry = parseInt(sessionStorage.getItem(k), 10);
-            if (expiry > Date.now()) {
-                const remaining = Math.ceil((expiry - Date.now()) / 1000);
-                console.log(`Cooldown restored: ${k}, ${remaining}s left`);
-            } else {
-                sessionStorage.removeItem(k);
-            }
-        }
-    });
-}
-
-/**
- * Start Sync Manager - EXACT COPY
- * Orchestrates background synchronization for squad components.
+ * Start Sync Manager - Orchestrates background synchronization for squad components.
  */
 export function startSyncManager() {
     if (syncTimer) clearTimeout(syncTimer);
 
-    const FAST_INTERVAL = 20000; // 20s for Chat/Timer
-    const SLOW_INTERVAL = 60000; // 60s for Tasks/Members
-    const SETTINGS_INTERVAL = 300000; // 5 mins (Reduced from 1hr so users catch up faster on changes)
+    const FAST_INTERVAL = 20000; // 20s for all core data
+    const SLOW_INTERVAL = 30000; // Match fast interval as per user request
+    const SETTINGS_INTERVAL = 300000; // 5 mins
 
     let lastSlowSync = 0;
     let lastSettingsSync = 0;
