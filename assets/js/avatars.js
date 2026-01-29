@@ -139,6 +139,34 @@ export function getLevelProgress(currentPoints, multiplier = LEVEL_MULTIPLIER) {
 }
 
 /**
+ * الحصول على كافة بيانات المستوى المحسوبة في كائن واحد (Single Source of Truth)
+ * @param {number} points - النقاط
+ * @param {number} multiplier - المعامل (شخصي 25 أو شلة 50)
+ */
+export function getLevelMetadata(points, multiplier = LEVEL_MULTIPLIER) {
+    const safePoints = Math.max(points || 0, 0);
+    const level = Math.floor(Math.sqrt(safePoints / multiplier));
+    const nextLevel = level + 1;
+    const currentLevelPoints = Math.pow(level, 2) * multiplier;
+    const nextLevelPoints = Math.pow(nextLevel, 2) * multiplier;
+    const range = nextLevelPoints - currentLevelPoints;
+
+    const progress = range === 0 ? 100 : ((safePoints - currentLevelPoints) / range) * 100;
+
+    return {
+        level,
+        nextLevel,
+        points: safePoints,
+        pointsNeeded: Math.max(0, nextLevelPoints - safePoints),
+        nextLevelPoints,
+        progress: Math.min(Math.max(progress, 0), 100),
+        color: getLevelColor(level),
+        nextColor: getLevelColor(nextLevel),
+        badge: getLevelBadge(level)
+    };
+}
+
+/**
  * الحصول على قائمة المستويات كاملة لعرضها كدليل
  */
 export function getLevelLegend() {

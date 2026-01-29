@@ -3,8 +3,8 @@ import { showToast } from "./utils.js";
 import { GRADES, TERMS, STREAMS } from "./constants.js";
 import { setButtonLoading } from "./utils/dom.js";
 import { openAvatarModal } from "./avatar-modal.js";
-import { generateAvatar, getLevelColor, calculateLevel, LEVEL_MULTIPLIER, getLevelLegend } from "./avatars.js";
-import { createLevelBadge, createLevelProgress, getLevelBorderStyle } from "./level-badge.js";
+import { generateAvatar, calculateLevel, getLevelColor, getLevelLegend, getLevelMetadata } from './avatars.js';
+import { createLevelBadge, createLevelProgress, getLevelBorderStyle, applyLevelTheme } from './level-badge.js';
 
 // ==========================
 // 1. Current State
@@ -135,9 +135,9 @@ function renderProfileUI(profile, user) {
 
         // Update border color based on level
         if (profile.points !== undefined) {
-            const borderStyle = getLevelBorderStyle(profile.points, '5px');
-            avatarImg.style.border = borderStyle.border;
-            avatarImg.style.boxShadow = borderStyle.boxShadow;
+            const meta = applyLevelTheme(avatarImg, profile.points);
+            avatarImg.style.border = `5px solid var(--level-color)`;
+            avatarImg.style.boxShadow = `var(--level-shadow)`;
         }
     }
 
