@@ -62,9 +62,17 @@ async function initSquad() {
         if (memberRecord) setCache(`squad_member_${user.id}`, memberRecord, 1);
     }
 
-
     if (memberRecord && memberRecord.squads) {
         currentSquad = memberRecord.squads;
+
+        // Load members count immediately for accurate calculations
+        const { data: squadMembers } = await supabase
+            .from('squad_members')
+            .select('profile_id')
+            .eq('squad_id', currentSquad.id);
+
+        currentSquad.members = squadMembers || [];
+
         setupSquadUI();
         showView('mainSquad');
     } else {
@@ -140,6 +148,31 @@ async function setupSquadUI() {
     setupPresence();
     loadActiveChallenge(); // Check for active challenges
 
+    // Real-time subscription for challenge updates
+    supabase
+        .channel(`squad_challenge_${currentSquad.id}`)
+        .on('postgres_changes', {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'squad_chat_messages',
+            filter: `squad_id=eq.${currentSquad.id}`
+        }, (payload) => {
+            // Refresh challenge card if CMD signal received
+            if (payload.new.text && payload.new.text.startsWith('[CMD:')) {
+                loadActiveChallenge();
+            }
+        })
+        .on('postgres_changes', {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'squad_exam_challenges',
+            filter: `squad_id=eq.${currentSquad.id}`
+        }, () => {
+            // Refresh when challenge status changes
+            loadActiveChallenge();
+        })
+        .subscribe();
+
     // Show Clear Chat button to Squad Owner OR Global Admin
     const isOwner = currentSquad.owner_id === currentProfile.id;
     const isAdmin = currentProfile.role === 'admin';
@@ -183,47 +216,375 @@ async function setupSquadUI() {
 async function loadActiveChallenge() {
     const { data: activeChallenge } = await supabase
         .from('squad_exam_challenges')
-        .select('id, exam_id, created_at, expires_at, exams(title)')
+        .select(`
+            id, exam_id, created_at, expires_at, status, squad_points_awarded,
+            exams(
+                title,
+                lessons(title, chapters(title, subjects(name_ar)))
+            )
+        `)
         .eq('squad_id', currentSquad.id)
         .eq('status', 'active')
         .maybeSingle();
 
-    const activeChallengeCard = document.getElementById('activeChallengeCard');
-    const startChallengeCard = document.getElementById('startChallengeCard');
-    const activeChallengeInfo = document.getElementById('activeChallengeInfo');
-    const endChallengeBtn = document.getElementById('endChallengeBtn');
+    const defaultState = document.getElementById('defaultChallengeState');
+    const activeState = document.getElementById('activeChallengeState');
 
-    if (activeChallenge) {
-        // There's an active challenge
-        const examTitle = activeChallenge.exams?.title || 'امتحان';
-        const expiresAt = new Date(activeChallenge.expires_at);
-        const now = new Date();
-        const timeLeft = Math.max(0, Math.floor((expiresAt - now) / 1000 / 60));
+    if (!activeChallenge) {
+        defaultState.style.display = 'block';
+        activeState.style.display = 'none';
+        return;
+    }
 
-        activeChallengeInfo.innerHTML = `
-            <div style="margin-bottom: 8px;"><strong>📚 ${examTitle}</strong></div>
-            <div style="font-size: 0.85rem;">⏰ الوقت المتبقي: ${timeLeft} دقيقة</div>
-        `;
+    defaultState.style.display = 'none';
+    activeState.style.display = 'block';
 
-        activeChallengeCard.style.display = 'block';
-        startChallengeCard.style.display = 'none';
+    // Build exam hierarchy
+    const exam = activeChallenge.exams;
+    const lesson = exam?.lessons;
+    const chapter = lesson?.chapters;
+    const subject = chapter?.subjects;
 
-        // Show end button if user is admin/owner
-        if (endChallengeBtn.dataset.canEnd === 'true') {
-            endChallengeBtn.style.display = 'block';
-            endChallengeBtn.dataset.challengeId = activeChallenge.id;
+    // Fetch participants with profile data
+    const { data: cmdMessages } = await supabase
+        .from('squad_chat_messages')
+        .select('sender_id, text, profiles!sender_id(full_name, avatar_url)')
+        .eq('challenge_id', activeChallenge.id)
+        .like('text', '[CMD:%');
+
+    // Process participants
+    const participants = {};
+    (cmdMessages || []).forEach(msg => {
+        const userId = msg.sender_id;
+        const name = msg.profiles?.full_name?.split(' ')[0] || 'طالب';
+        const avatar_url = msg.profiles?.avatar_url;
+
+        if (msg.text === '[CMD:JOIN]') {
+            if (!participants[userId]) {
+                participants[userId] = { user_id: userId, name, avatar_url, status: 'joined' };
+            }
+        } else if (msg.text.startsWith('[CMD:FINISH:')) {
+            const score = msg.text.split(':')[2].replace(']', '');
+            participants[userId] = { user_id: userId, name, avatar_url, status: 'finished', score };
         }
-    } else {
-        // No active challenge
-        activeChallengeCard.style.display = 'none';
-        startChallengeCard.style.display = 'block';
+    });
+
+    const participantList = Object.values(participants);
+    const joinedList = participantList.filter(p => p.status === 'joined');
+    const finishedList = participantList.filter(p => p.status === 'finished');
+
+    // Calculate progress - Using Dynamic Settings from Database
+    const totalMembers = currentSquad.members?.length || 1;
+    const progressPercent = Math.min(100, Math.round((finishedList.length / totalMembers) * 100));
+
+    // Get success threshold from database settings (default to 50% if not set)
+    const successThresholdPercent = globalSquadSettings.success_threshold || 50;
+
+    // Calculate required number of finishers based on threshold percentage
+    const requiredFinishers = Math.ceil((successThresholdPercent / 100) * totalMembers);
+
+    // Time calculations
+    const expiresAt = new Date(activeChallenge.expires_at).getTime();
+    const now = Date.now();
+    const diff = expiresAt - now;
+    const isExpired = diff <= 0;
+    const mins = Math.floor(Math.max(0, diff) / (1000 * 60));
+    const secs = Math.floor((Math.max(0, diff) / 1000) % 60);
+
+    // Determine user status
+    const myId = currentProfile.id;
+    const myParticipation = participants[myId];
+    const isAdmin = currentSquad.owner_id === myId || currentSquad.admins?.includes(myId);
+    const resultsForThisExam = userResults.filter(r => r.exam_id === activeChallenge.exam_id);
+    const hasOldResult = resultsForThisExam.length > 0;
+
+    // Determine button state
+    let btnState = 'fresh';
+    if (isExpired) {
+        btnState = 'expired';
+    } else if (myParticipation?.status === 'finished') {
+        btnState = 'completed';
+    } else if (myParticipation?.status === 'joined') {
+        btnState = 'resume';
+    } else if (hasOldResult) {
+        btnState = 'help';
+    }
+
+    // Button configurations
+    const btnConfigs = {
+        'fresh': {
+            text: 'خش دلوقتي 🚀',
+            class: 'btn-primary',
+            disabled: false
+        },
+        'resume': {
+            text: 'كمل الامتحان ↩️',
+            class: 'btn-secondary',
+            disabled: false,
+            notice: '<div style="background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 10px; padding: 12px; margin-top: 12px; font-size: 0.85rem; color: #1E40AF; font-weight: 600; text-align: center;">💡 أنت سجلت دخول بالفعل.. كمل حلك</div>'
+        },
+        'help': {
+            text: 'خش ساعد 🤝',
+            class: 'btn-secondary',
+            disabled: false,
+            notice: '<div style="background: #F8FAFC; border: 1px solid #CBD5E1; border-radius: 10px; padding: 12px; margin-top: 12px; font-size: 0.85rem; color: #475569; font-weight: 600; text-align: center;">ℹ️ مش هتاخد النقط كاملة، هتاخد البونص بس</div>'
+        },
+        'completed': {
+            text: 'تم الحل ✅',
+            class: 'btn-outline',
+            disabled: true
+        },
+        'expired': {
+            text: 'الوقت خلص ⏱️',
+            class: 'btn-outline',
+            disabled: true
+        }
+    };
+
+    const config = btnConfigs[btnState];
+
+    // Build exam details (subject bold)
+    const examTitleParts = [];
+    if (subject?.name_ar) examTitleParts.push(`<strong style="font-weight: 800;">${subject.name_ar}</strong>`);
+    if (chapter?.title) examTitleParts.push(chapter.title);
+    if (lesson?.title) examTitleParts.push(lesson.title);
+    if (exam?.title) examTitleParts.push(exam.title);
+    const fullExamTitle = examTitleParts.join(' • ');
+
+    // Build participants HTML
+    let participantsHtml = '';
+    if (participantList.length > 0) {
+        participantsHtml = `
+            <div style="background: #fff; border-radius: 16px; padding: 20px; margin-top: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #E5E7EB;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-users" style="color: #6B7280; font-size: 1rem;"></i>
+                        <span style="font-size: 0.9rem; color: #1F2937; font-weight: 700;">المشاركين</span>
+                    </div>
+                    <span style="background: #E5E7EB; color: #4B5563; padding: 4px 12px; border-radius: 12px; font-size: 0.75rem; font-weight: 700;">${participantList.length}</span>
+                </div>
+
+                ${joinedList.length > 0 ? `
+                    <div style="margin-bottom: ${finishedList.length > 0 ? '16px' : '0'};">
+                        <div style="font-size: 0.75rem; color: #6B7280; font-weight: 700; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">
+                            <i class="fas fa-circle" style="font-size: 0.4rem; color: #3B82F6; margin-left: 6px; animation: pulse 2s infinite;"></i>
+                            بيحلوا دلوقتي (${joinedList.length})
+                        </div>
+                        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                            ${joinedList.map(p => {
+            const avatarUrl = p.avatar_url || generateAvatar(p.name, 'bottts');
+            return `
+                                    <div style="display: inline-flex; align-items: center; gap: 6px; background: #EFF6FF; padding: 6px 10px; border-radius: 20px; border: 1px solid #DBEAFE;">
+                                        <img src="${avatarUrl}" style="width: 20px; height: 20px; border-radius: 50%;" />
+                                        <span style="font-size: 0.75rem; color: #1E40AF; font-weight: 600;">${p.name}</span>
+                                    </div>
+                                `;
+        }).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+
+                ${finishedList.length > 0 ? `
+                    <div>
+                        <div style="font-size: 0.75rem; color: #6B7280; font-weight: 700; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">
+                            <i class="fas fa-check" style="font-size: 0.6rem; color: #10B981; margin-left: 6px;"></i>
+                            خلصوا (${finishedList.length})
+                        </div>
+                        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                            ${finishedList.map(p => {
+            const avatarUrl = p.avatar_url || generateAvatar(p.name, 'bottts');
+            const scoreText = p.score === 'HIDDEN' ? '✓' : `${p.score}%`;
+            const isPerfect = p.score === '100';
+            return `
+                                    <div style="display: inline-flex; align-items: center; gap: 6px; background: ${isPerfect ? '#FEF3C7' : '#ECFDF5'}; padding: 6px 10px; border-radius: 20px; border: 1px solid ${isPerfect ? '#FDE68A' : '#D1FAE5'};">
+                                        <img src="${avatarUrl}" style="width: 20px; height: 20px; border-radius: 50%;" />
+                                        <span style="font-size: 0.75rem; color: ${isPerfect ? '#92400E' : '#065F46'}; font-weight: 600;">${p.name}</span>
+                                        <span style="background: ${isPerfect ? '#F59E0B' : '#10B981'}; color: #fff; padding: 2px 6px; border-radius: 8px; font-size: 0.65rem; font-weight: 800;">${scoreText}</span>
+                                    </div>
+                                `;
+        }).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }
+
+    // Render active challenge UI - Clean Design
+    activeState.innerHTML = `
+        <div style="">
+            
+            <!-- Header -->
+            <div style="background: linear-gradient(135deg, #06B6D4, #0891B2); color: #fff; padding: 16px 20px; border-radius: 16px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); text-align: center;">
+                <div style="font-size: 0.85rem; font-weight: 700; opacity: 0.95; letter-spacing: 0.5px;">
+                    <i class="fas fa-fire-alt" style="margin-left: 6px;"></i>
+                    امتحان جماعي شغال دلوقتي
+                </div>
+            </div>
+
+            <!-- Exam Info + Timer (Side by Side) -->
+            <div style="display: grid; grid-template-columns: ${isExpired ? '1fr' : '1fr auto'}; gap: 12px; margin-bottom: 16px;">
+                
+                <!-- Exam Details -->
+                <div style="background: #fff; padding: 16px; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                    <div style="font-size: 0.75rem; color: #6B7280; font-weight: 700; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">
+                        <i class="fas fa-book-open" style="margin-left: 6px; color: #06B6D4;"></i>
+                        تفاصيل الامتحان
+                    </div>
+                    <div style="font-size: 0.9rem; color: #1F2937; font-weight: 600; line-height: 1.5;">
+                        ${fullExamTitle}
+                    </div>
+                </div>
+
+                <!-- Timer (if not expired) -->
+                ${!isExpired ? `
+                    <div style="background: #fff; padding: 16px; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 12px; min-width: 140px;">
+                        <i class="fas fa-clock" style="color: #3B82F6; font-size: 1.2rem;"></i>
+                        <div id="challenge-countdown" style="font-size: 1.5rem; color: #1F2937; font-weight: 900; font-family: 'Courier New', monospace; letter-spacing: 1px;">
+                            <span class="timer-val">${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}</span>
+                        </div>
+                    </div>
+                ` : `
+                    <div style="background: #fff; border: 1px solid #FCA5A5; padding: 16px; border-radius: 16px; text-align: center; grid-column: 1 / -1;">
+                        <i class="fas fa-hourglass-end" style="color: #DC2626;"></i>
+                        <div style="font-size: 0.85rem; color: #991B1B; font-weight: 700;">وقت الدخول خلص</div>
+                    </div>
+                `}
+            </div>
+
+            <!-- Progress Card -->
+            <div style="background: #fff; padding: 20px; border-radius: 16px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                
+                <!-- Progress Bar -->
+                <div style="position: relative; margin-bottom: 12px;">
+                    <div style="height: 16px; background: #F3F4F6; border-radius: 8px; overflow: visible; position: relative;">
+                        <div style="position: absolute; left: 0; top: 0; height: 100%; width: ${progressPercent}%; background: linear-gradient(to left, #10B981, #059669); border-radius: 8px; transition: width 1s ease;"></div>
+                        
+                        <!-- Threshold Marker - FIXED VISIBILITY -->
+                        <div style="position: absolute; left: ${successThresholdPercent}%; top: 50%; transform: translate(-50%, -50%); z-index: 100;">
+                            <div style="border: 7px solid; border-color: #EF4444 transparent transparent; position: relative; top: -7px;"></div>
+                            <div style="position: absolute; top: -26px; left: 50%; transform: translateX(-50%); background: #EF4444; color: #fff; padding: 3px 8px; border-radius: 6px; font-size: 0.65rem; font-weight: 800; white-space: nowrap;">
+                                ${successThresholdPercent}%
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 0.7rem; font-weight: 600; color: #6B7280;">
+                        <span>التقدم: ${progressPercent}%</span>
+                        <span>المطلوب: ${requiredFinishers}</span>
+                    </div>
+                </div>
+                
+                <!-- Action Buttons (Side by Side) -->
+                <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                    <button class="btn ${config.class}" 
+                            style="padding: 12px 24px; font-size: 0.9rem; font-weight: 800; border-radius: 12px; display: flex; align-items: center; gap: 6px;" 
+                            onclick="window.joinChallengeExam('${activeChallenge.exam_id}', '${activeChallenge.id}', '${btnState}')"
+                            ${config.disabled ? 'disabled' : ''}>
+                        ${config.text}
+                    </button>
+                    ${isAdmin ? `
+                        <button class="btn btn-danger" 
+                                style="padding: 12px 24px; font-size: 0.85rem; font-weight: 700; border-radius: 12px; display: flex; align-items: center; gap: 6px;" 
+                                onclick="window.endActiveChallenge('${activeChallenge.id}')">
+                            <i class="fas fa-times-circle"></i> انهي الامتحان
+                        </button>
+                    ` : ''}
+                </div>
+
+                ${config.notice || ''}
+            </div>
+
+            <!-- Participants -->
+            ${participantsHtml}
+        </div>
+    `;
+
+    // Start timer if not expired
+    if (!isExpired) {
+        startChallengeTimer(expiresAt, activeChallenge.id);
     }
 }
 
-window.endActiveChallenge = async () => {
-    const endBtn = document.getElementById('endChallengeBtn');
-    const challengeId = endBtn.dataset.challengeId;
+// Timer for challenge countdown
+let challengeTimerInterval = null;
+function startChallengeTimer(expiresAt, challengeId) {
+    if (challengeTimerInterval) clearInterval(challengeTimerInterval);
 
+    const updateTimer = () => {
+        const el = document.getElementById('challenge-countdown');
+        if (!el) {
+            clearInterval(challengeTimerInterval);
+            return;
+        }
+
+        const diff = expiresAt - Date.now();
+        if (diff <= 0) {
+            clearInterval(challengeTimerInterval);
+
+            // Trigger grace period check
+            const gracePeriod = expiresAt + (globalSquadSettings.grace_mins * 60 * 1000);
+            const checkGrace = async () => {
+                if (Date.now() > gracePeriod) {
+                    if (challengeId) {
+                        await supabase.rpc('finalize_squad_challenge', { p_challenge_id: challengeId });
+                        loadActiveChallenge();
+                    }
+                } else {
+                    setTimeout(checkGrace, 10000);
+                }
+            };
+            checkGrace();
+
+            el.innerHTML = '<span style="color:#ef4444;">وقت الدخول خلص</span>';
+            return;
+        }
+
+        const mins = Math.floor(diff / (1000 * 60));
+        const secs = Math.floor((diff / 1000) % 60);
+
+        const timerVal = el.querySelector('.timer-val');
+        if (timerVal) timerVal.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    };
+
+    updateTimer();
+    challengeTimerInterval = setInterval(updateTimer, 1000);
+}
+
+// Join challenge exam
+window.joinChallengeExam = async (examId, challengeId, state) => {
+    // Check if expired
+    const { data: challenge } = await supabase
+        .from('squad_exam_challenges')
+        .select('expires_at')
+        .eq('id', challengeId)
+        .single();
+
+    if (challenge && Date.now() > new Date(challenge.expires_at).getTime()) {
+        Swal.fire({
+            title: 'الوقت خلص⏱️',
+            text: 'معلش باب الانضمام قفل من شوية',
+            icon: 'warning',
+            confirmButtonText: 'ماشي'
+        });
+        return;
+    }
+
+    // Send CMD:JOIN signal if fresh join
+    if (state === 'fresh' || state === 'help') {
+        await supabase.from('squad_chat_messages').insert({
+            squad_id: currentSquad.id,
+            sender_id: currentProfile.id,
+            challenge_id: challengeId,
+            text: '[CMD:JOIN]'
+        });
+    }
+
+    // Redirect to exam
+    window.location.href = `exam.html?id=${examId}&squad_id=${currentSquad.id}&challenge_id=${challengeId}`;
+};
+
+window.endActiveChallenge = async (challengeId) => {
     if (!challengeId) return;
 
     const { isConfirmed } = await Swal.fire({
@@ -428,6 +789,9 @@ async function loadMembers() {
 
 function renderMembersUI(members) {
     if (!members) return;
+
+    // Update currentSquad.members for accurate calculations
+    currentSquad.members = members;
 
     // Sort: Online first, then by updated_at descending
     members.sort((a, b) => {
@@ -847,7 +1211,16 @@ async function renderChat(msgs) {
     const msgIds = msgs.map(m => m.id);
     const { data: allReads } = await supabase.from('squad_message_reads').select('message_id, profile_id, profiles!profile_id(full_name)').in('message_id', msgIds);
 
-    box.innerHTML = msgs.map(m => {
+    // Filter out CMD signals and SQUAD_EXAM messages from chat display
+    const chatMsgs = msgs.filter(m => {
+        // Hide CMD signals
+        if (m.challenge_id && m.text.startsWith('[CMD:')) return false;
+        // Hide SQUAD_EXAM messages
+        if (m.text.match(/\[SQUAD_EXAM:([a-z0-9-]+):?([a-z0-9-]+)?\]/i)) return false;
+        return true;
+    });
+
+    box.innerHTML = chatMsgs.map(m => {
         const time = new Date(m.created_at).toLocaleTimeString('ar-EG', {
             hour: '2-digit',
             minute: '2-digit',
@@ -901,7 +1274,7 @@ async function renderChat(msgs) {
                      style="${m.sender_id === myId ? 'cursor:pointer;' : ''}">
                     <span class="msg-sender">${m.profiles ? m.profiles.full_name : 'M7MED'}</span>
                     <div class="msg-content">
-                        ${renderMessageContent(m, myId)}
+                        ${m.text}
                     </div>
                     <div class="msg-footer">
                         <span class="msg-time">${time}</span>
@@ -914,155 +1287,6 @@ async function renderChat(msgs) {
     box.scrollTop = box.scrollHeight;
 }
 
-function renderMessageContent(m, myId) {
-    const examMatch = m.text.match(/\[SQUAD_EXAM:([a-z0-9-]+):?([a-z0-9-]+)?\]/i);
-    if (examMatch) {
-        const examId = examMatch[1];
-        const challengeId = examMatch[2] || null;
-        const textPart = m.text.split('[')[0].trim();
-
-        const resultsForThisExam = userResults.filter(r => r.exam_id === examId);
-        const challengeData = window.currentChallenges?.find(c => c.id === challengeId);
-        const isCompleted = challengeData?.status === 'completed' || challengeData?.squad_points_awarded > 0;
-
-        const msgAt = new Date(m.created_at);
-        const expiresAt = msgAt.getTime() + (globalSquadSettings.join_mins * 60 * 1000);
-        const gracePeriod = expiresAt + (globalSquadSettings.grace_mins * 60 * 1000);
-        const isExpired = Date.now() > expiresAt;
-        const isGraceEnded = Date.now() > gracePeriod;
-
-        const hasSessionResult = resultsForThisExam.some(r => new Date(r.created_at) > msgAt);
-        const hasOldResult = resultsForThisExam.length > 0;
-
-        let btnState = 'fresh'; // Default
-        if (isExpired) {
-            btnState = 'expired';
-        } else if (hasSessionResult) {
-            btnState = 'completed';
-        } else if (hasOldResult) {
-            btnState = 'help';
-        }
-
-        const btnConfigs = {
-            'fresh': { text: 'خش دلوقتي 🚀', class: 'btn-primary', onclick: `window.joinSquadExamMessenger(event, '${examId}', '${currentSquad.id}', 'fresh', ${expiresAt}, '${challengeId}')`, notice: '' },
-            'help': { text: 'خش ساعد 🤝', class: 'btn-secondary', onclick: `window.joinSquadExamMessenger(event, '${examId}', '${currentSquad.id}', 'help', ${expiresAt}, '${challengeId}')`, notice: '<div style="font-size: 0.7rem; color: #64748b; margin-top: 6px; text-align: center;">مش هتاخد النقط كامله هتاخد البونص بس</div>' },
-            'completed': { text: 'انت حليت الامتحان ✅', class: 'btn-outline', onclick: 'void(0)', disabled: true, notice: '' },
-            'expired': {
-                text: 'الوقت خلص⏱️',
-                class: 'btn-outline',
-                onclick: 'void(0)',
-                disabled: true,
-                notice: `<div style="font-size: 0.7rem; color: #ef4444; margin-top: 6px; text-align: center;">الامتحان بدأ من أكتر من ${globalSquadSettings.join_mins} دقيقة.</div>`
-            }
-        };
-
-        const config = btnConfigs[btnState];
-
-        // Timer runs until expired - Runs for everyone to track progress and send reminders
-        if (!isExpired && !isCompleted) {
-            setTimeout(() => startExamCardTimer(m.id, expiresAt, challengeId), 10);
-        }
-
-        let statusHtml = isCompleted ? `
-            <div style="font-size:0.75rem; color:#10b981; margin-bottom:8px; font-weight:700;">
-                <i class="fas fa-check-circle"></i>الهدف اتحقق لشلتكم! 🎉
-            </div>` : '';
-
-        let countdownHtml = '';
-        if (isGraceEnded) {
-            countdownHtml = `<div style="font-size:0.75rem; color:#ef4444; margin-bottom:8px; font-weight:700;"><i class="fas fa-hourglass-end"></i>الامتحان خلص</div>`;
-        } else if (isExpired) {
-            countdownHtml = `<div style="font-size:0.75rem; color:#ef4444; margin-bottom:8px; font-weight:700;"><i class="fas fa-user-clock"></i> الامتحان وقف - مستني اللي جوه يخلصوا</div>`;
-        } else if (!isCompleted) {
-            countdownHtml = `
-                <div id="countdown-${m.id}" style="font-size:0.75rem; color:#f59e0b; margin-bottom:8px; font-weight:700;">
-                    <i class="fas fa-clock"></i> ينتهي الانضمام خلال: <span class="timer-val">..:..</span>
-                </div>`;
-        }
-
-        return `
-            <div class="msg-exam-card" style="background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:12px; margin-top:8px; box-shadow:0 2px 4px rgba(0,0,0,0.05);">
-                <div style="color:var(--primary-color); font-weight:700; font-size:0.85rem; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
-                    <i class="fas fa-graduation-cap"></i> امتحان جماعي
-                </div>
-                ${(() => {
-                // Calculate required members dynamic display
-                const totalMembers = document.querySelectorAll('#memberList .member-item').length || 1;
-                const threshold = globalSquadSettings.success_threshold || 80;
-                const requiredCount = Math.ceil(totalMembers * (threshold / 100));
-                return `<div style="font-size:0.75rem; color:#64748b; margin-bottom:8px; font-weight:600;"><i class="fas fa-users-cog"></i> لازم على الأقل ${requiredCount} من ${totalMembers} يحلوه</div>`;
-            })()}
-                ${statusHtml}
-                ${countdownHtml}
-                <div style="font-size:0.9rem; color:#1e293b; line-height:1.5; margin-bottom:12px;">${textPart}</div>
-                <button class="btn ${config.class}" id="btn-exam-${m.id}" style="width:100%; padding:8px; font-size:0.85rem;" 
-                        onclick="event.stopPropagation(); ${config.onclick}" ${config.disabled ? 'disabled' : ''}>
-                    ${config.text}
-                </button>
-                ${config.notice}
-            </div>
-        `;
-    }
-
-    // Normal text message
-    return m.text;
-}
-
-function startExamCardTimer(msgId, expiresAt, challengeId) {
-    if (examTimers[msgId]) clearInterval(examTimers[msgId]);
-
-    const updateTimer = () => {
-        const el = document.getElementById(`countdown-${msgId}`);
-        if (!el) {
-            clearInterval(examTimers[msgId]);
-            return;
-        }
-
-        const diff = expiresAt - Date.now();
-        if (diff <= 0) {
-            clearInterval(examTimers[msgId]);
-
-            // Note: The actual points calculation happened in the background via RPC if everyone finished.
-            // If they didn't, we wait for a "Grace Period" (extra X mins) before sending failure alert.
-            const gracePeriod = expiresAt + (globalSquadSettings.grace_mins * 60 * 1000);
-            const checkGrace = async () => {
-                if (Date.now() > gracePeriod) {
-                    if (challengeId) {
-                        const { error } = await supabase.rpc('finalize_squad_challenge', { p_challenge_id: challengeId });
-                        // Ignore 409 Conflict (means already finalized by another peer)
-                        if (!error || error.code === '409' || error.status === 409) {
-                            loadChat();
-                        }
-                    }
-                } else {
-                    // Check again in 10s until grace is over
-                    setTimeout(checkGrace, 10000);
-                }
-            };
-            checkGrace();
-
-            el.innerHTML = '<span style="color:#ef4444;">قفل باب الانضمام 🚪</span>';
-            const btn = document.getElementById(`btn-exam-${msgId}`);
-            if (btn) {
-                btn.disabled = true;
-                btn.textContent = 'الوقت خلص⏱️';
-                btn.className = 'btn btn-outline';
-            }
-            return;
-        }
-
-        const mins = Math.floor(diff / (1000 * 60));
-        const secs = Math.floor((diff / 1000) % 60);
-
-        const timerVal = el.querySelector('.timer-val');
-        if (timerVal) timerVal.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    };
-
-    updateTimer();
-    examTimers[msgId] = setInterval(updateTimer, 1000);
-}
-
-// End of Exam Timers Logic
 
 window.showReadBy = (names) => {
     Swal.fire({
@@ -1547,38 +1771,6 @@ function restoreCooldowns() {
 }
 
 // Handler for joining squad exams via chat
-window.joinSquadExamMessenger = async (event, examId, squadId, state = 'fresh', expiresAt, challengeId) => {
-    if (event) event.stopPropagation();
-
-    // STRICT Joining Window Enforcement
-    if (expiresAt && Date.now() > expiresAt) {
-        Swal.fire({
-            title: 'الوقت خلص⏱️',
-            text: 'معلش باب الانضمام قفل من شوية، كان قدامكم ساعة واحدة بس من بداية التحدي.',
-            icon: 'warning',
-            confirmButtonText: 'ماشي'
-        });
-        return;
-    }
-
-    try {
-        // 1. Send Message "انا دخلت"
-        await supabase.from('squad_chat_messages').insert({
-            squad_id: squadId,
-            sender_id: currentProfile.id,
-            challenge_id: (challengeId && challengeId !== 'null' && challengeId !== 'undefined') ? challengeId : null,
-            text: `انا دخلت`
-        });
-
-        // 2. Redirect to exam
-        let url = `exam.html?id=${examId}&squad_id=${squadId}`;
-        if (challengeId && challengeId !== 'null' && challengeId !== 'undefined') url += `&challenge_id=${challengeId}`;
-        window.location.href = url;
-    } catch (err) {
-        console.error("Error joining exam via messenger:", err);
-        window.location.href = `exam.html?id=${examId}&squad_id=${squadId}`;
-    }
-};
 
 
 // ==========================

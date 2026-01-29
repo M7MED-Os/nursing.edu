@@ -561,18 +561,18 @@ async function handleExamCompletionFlow(totalEarned, pointsExam, bonusPerfect, b
     // 1. If Squad Mode, ask to share first
     if (squadId) {
         const { isConfirmed } = await Swal.fire({
-            title: 'قول لصحابك جبت كام',
-            text: 'تحب تشارك نتيجتك مع صحابك في الشلة؟',
+            title: 'عرض نتيجتك؟',
+            text: 'تحب تشارك درجتك مع صحابك في الشلة؟ (درجتك هتظهر جوه كارت الامتحان)',
             icon: 'question',
             showCancelButton: true,
-            confirmButtonText: 'ماشي',
-            cancelButtonText: 'لا، قول خلصت بس',
+            confirmButtonText: 'آيوة، وريهم شطارتي 😎',
+            cancelButtonText: 'لا، خليها مستورة 🙈',
             confirmButtonColor: '#10b981',
             cancelButtonColor: '#64748b'
         });
 
-        let shareText = isConfirmed ? `انا خلصت وجبت ${percentage}% 🎯` : 'انا خلصت ✅';
-        await shareResultInSquadChat(shareText);
+        const signal = isConfirmed ? `[CMD:FINISH:${percentage}]` : '[CMD:FINISH:HIDDEN]';
+        await shareResultInSquadChat(signal);
     }
 
     // 2. Show Points Reward Modal
@@ -601,7 +601,7 @@ async function shareResultInSquadChat(text) {
             squad_id: squadId,
             sender_id: user.id,
             challenge_id: challengeId,
-            text: text
+            text: text // text is the [CMD:...] signal
         });
     } catch (err) {
         console.error("Shared result error:", err);

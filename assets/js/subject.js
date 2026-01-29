@@ -409,19 +409,11 @@ window.selectSquadExam = async (examId, examTitle, squadId) => {
 
         if (challError) throw challError;
 
-        // 3. Notify in chat with Challenge ID
-        await supabase.from('squad_chat_messages').insert({
-            squad_id: squadId,
-            sender_id: user.id,
-            challenge_id: challenge.id,
-            text: `انا بدأت امتحان مين هيحل معايا؟ [SQUAD_EXAM:${examId}:${challenge.id}]`
-        });
-
-        // 4. Success & Redirect
+        // 3. Success & Redirect to squad page (challenge card will handle display)
         await Swal.fire({
             icon: 'success',
-            title: 'التحدي بدأ! 🚀',
-            text: 'أصحابك في الشلة هيوصلهم إشعار دلوقتي في الشات.',
+            title: 'الامتحان بدأ! 🚀',
+            text: 'روح خش الامتحان انت و صحابك من صفخة الشلة.',
             timer: 2000,
             showConfirmButton: false
         });
@@ -430,12 +422,11 @@ window.selectSquadExam = async (examId, examTitle, squadId) => {
 
     } catch (err) {
         console.error(err);
-        Swal.fire('خطأ', 'مقدرناش نبدأ التحدي.. جرب تاني', 'error');
+        Swal.fire('خطأ', 'مقدرناش نبدأ الامتحان.. جرب تاني', 'error');
     }
 };
 
 // Load Subject-Specific Results
-// Load Subject-Specific Results with Grouping and Pagination
 async function loadSubjectResults() {
     const container = document.getElementById('subjectResultsContainer');
     const section = document.getElementById('subjectResultsSection');
