@@ -1,6 +1,8 @@
 // Squad Challenge System Module
 import { supabase } from '../supabaseClient.js';
-import { generateAvatar } from '../avatars.js';
+import { generateAvatar, calculateLevel, getLevelColor } from '../avatars.js';
+import { createLevelBadge } from '../level-badge.js';
+import { shouldShowAvatar } from '../privacy.js';
 import {
     currentSquad, currentProfile, userResults, globalSquadSettings,
     challengeTimerInterval, setChallengeTimerInterval
@@ -44,7 +46,7 @@ export async function loadActiveChallenge() {
     // Fetch participants with profile data
     const { data: cmdMessages } = await supabase
         .from('squad_chat_messages')
-        .select('sender_id, text, profiles!sender_id(full_name, avatar_url)')
+        .select('sender_id, text, profiles!sender_id(full_name, avatar_url, points, privacy_avatar)')
         .eq('challenge_id', activeChallenge.id)
         .like('text', '[CMD:%');
 
@@ -52,22 +54,28 @@ export async function loadActiveChallenge() {
     const participants = {};
     (cmdMessages || []).forEach(msg => {
         const userId = msg.sender_id;
-        const name = msg.profiles?.full_name?.split(' ')[0] || 'طالب';
-        const avatar_url = msg.profiles?.avatar_url;
+        const profile = msg.profiles || {};
+        const name = profile.full_name?.split(' ')[0] || 'طالب';
+        const avatar_url = profile.avatar_url;
+        const points = profile.points || 0;
+        const privacy_avatar = profile.privacy_avatar;
 
         if (msg.text === '[CMD:JOIN]') {
             if (!participants[userId]) {
-                participants[userId] = { user_id: userId, name, avatar_url, status: 'joined' };
+                participants[userId] = { user_id: userId, name, avatar_url, points, privacy_avatar, status: 'joined' };
             }
         } else if (msg.text.startsWith('[CMD:FINISH:')) {
             const score = msg.text.split(':')[2].replace(']', '');
-            participants[userId] = { user_id: userId, name, avatar_url, status: 'finished', score };
+            participants[userId] = { user_id: userId, name, avatar_url, points, privacy_avatar, status: 'finished', score };
         }
     });
 
     const participantList = Object.values(participants);
     const joinedList = participantList.filter(p => p.status === 'joined');
     const finishedList = participantList.filter(p => p.status === 'finished');
+
+    // Sort finished list by score descending for leaderboard
+    finishedList.sort((a, b) => (parseInt(b.score) || 0) - (parseInt(a.score) || 0));
 
     // Calculate progress - Using Dynamic Settings from Database
     const totalMembers = currentSquad.members?.length || 1;
@@ -161,18 +169,27 @@ export async function loadActiveChallenge() {
                 </div>
 
                 ${joinedList.length > 0 ? `
-                    <div style="margin-bottom: ${finishedList.length > 0 ? '16px' : '0'};">
-                        <div style="font-size: 0.75rem; color: #6B7280; font-weight: 700; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">
-                            <i class="fas fa-circle" style="font-size: 0.4rem; color: #3B82F6; margin-left: 6px; animation: pulse 2s infinite;"></i>
+                    <div style="margin-bottom: ${finishedList.length > 0 ? '20px' : '0'};">
+                        <div style="font-size: 0.75rem; color: #6B7280; font-weight: 700; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-circle" style="font-size: 0.5rem; color: #3B82F6; animation: pulse 2s infinite;"></i>
                             بيحلوا دلوقتي (${joinedList.length})
                         </div>
-                        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                        <div style="display: flex; flex-direction: column; gap: 10px;">
                             ${joinedList.map(p => {
-            const avatarUrl = p.avatar_url || generateAvatar(p.name, 'bottts');
+            const level = calculateLevel(p.points);
+            const levelColor = getLevelColor(level);
+            const levelBadgeHTML = createLevelBadge(p.points, 'xsmall');
+            const showAvatar = shouldShowAvatar(p.privacy_avatar, p.user_id, myId, currentSquad.id, currentSquad.id);
+            const avatarUrl = p.avatar_url || generateAvatar(p.name, 'initials');
+
             return `
-                                    <div style="display: inline-flex; align-items: center; gap: 6px; background: #EFF6FF; padding: 6px 10px; border-radius: 20px; border: 1px solid #DBEAFE;">
-                                        <img src="${avatarUrl}" style="width: 20px; height: 20px; border-radius: 50%;" />
-                                        <span style="font-size: 0.75rem; color: #1E40AF; font-weight: 600;">${p.name}</span>
+                                    <div style="display: flex; align-items: center; gap: 12px; background: #F8FAFC; padding: 10px; border-radius: 12px; border: 1px solid #E2E8F0;">
+                                        <div style="position: relative; display: inline-block;">
+                                            <img src="${avatarUrl}" style="width: 38px; height: 38px; border-radius: 50%; border: 2px solid ${levelColor}; object-fit: cover; opacity: ${showAvatar ? '1' : '0.5'};" />
+                                            <div style="position: absolute; bottom: -2px; left: -2px; z-index: 5;">${levelBadgeHTML}</div>
+                                        </div>
+                                        <span style="font-size: 0.85rem; color: #1e293b; font-weight: 700; flex: 1;">${p.name}</span>
+                                        <span style="font-size: 0.7rem; color: #3B82F6; font-weight: 600; background: #DBEAFE; padding: 2px 8px; border-radius: 8px;">بيحل...</span>
                                     </div>
                                 `;
         }).join('')}
@@ -182,20 +199,48 @@ export async function loadActiveChallenge() {
 
                 ${finishedList.length > 0 ? `
                     <div>
-                        <div style="font-size: 0.75rem; color: #6B7280; font-weight: 700; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">
-                            <i class="fas fa-check" style="font-size: 0.6rem; color: #10B981; margin-left: 6px;"></i>
-                            خلصوا (${finishedList.length})
+                        <div style="font-size: 0.75rem; color: #6B7280; font-weight: 700; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-trophy" style="font-size: 0.8rem; color: #F59E0B;"></i>
+                            ترتيب النتائج (${finishedList.length})
                         </div>
-                        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-                            ${finishedList.map(p => {
-            const avatarUrl = p.avatar_url || generateAvatar(p.name, 'bottts');
-            const scoreText = p.score === 'HIDDEN' ? '✓' : `${p.score}%`;
-            const isPerfect = p.score === '100';
+                        <div style="display: flex; flex-direction: column; gap: 10px;">
+                            ${finishedList.map((p, index) => {
+            const level = calculateLevel(p.points);
+            const levelColor = getLevelColor(level);
+            const levelBadgeHTML = createLevelBadge(p.points, 'xsmall');
+            const showAvatar = shouldShowAvatar(p.privacy_avatar, p.user_id, myId, currentSquad.id, currentSquad.id);
+            const avatarUrl = p.avatar_url || generateAvatar(p.name, 'initials');
+            const scoreText = p.score === 'HIDDEN' ? '' : `${p.score}%`;
+            const isTop1 = index === 0;
+            const isTop3 = index < 3;
+
+            // Background and border logic
+            let rowBg = `${levelColor}10`;
+            let rowBorder = `${levelColor}25`;
+            let animation = '';
+
+            if (isTop1) {
+                rowBg = 'linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%)';
+                rowBorder = '#F97316';
+                animation = 'fire-glow 2s infinite ease-in-out';
+            } else if (isTop3) {
+                animation = 'fire-glow 3s infinite ease-in-out';
+            }
+
             return `
-                                    <div style="display: inline-flex; align-items: center; gap: 6px; background: ${isPerfect ? '#FEF3C7' : '#ECFDF5'}; padding: 6px 10px; border-radius: 20px; border: 1px solid ${isPerfect ? '#FDE68A' : '#D1FAE5'};">
-                                        <img src="${avatarUrl}" style="width: 20px; height: 20px; border-radius: 50%;" />
-                                        <span style="font-size: 0.75rem; color: ${isPerfect ? '#92400E' : '#065F46'}; font-weight: 600;">${p.name}</span>
-                                        <span style="background: ${isPerfect ? '#F59E0B' : '#10B981'}; color: #fff; padding: 2px 6px; border-radius: 8px; font-size: 0.65rem; font-weight: 800;">${scoreText}</span>
+                                    <div style="display: flex; align-items: center; gap: 12px; background: ${rowBg}; padding: 10px; border-radius: 12px; border: 1px solid ${rowBorder}; animation: ${animation}; position: relative; overflow: hidden;">
+                                        ${isTop1 ? `<div style="position: absolute; left: 0; top: 0; height: 100%; width: 4px; background: #F97316;"></div>` : ''}
+                                        <div style="position: relative; display: inline-block;">
+                                            <img src="${avatarUrl}" style="width: ${isTop1 ? '48' : '42'}px; height: ${isTop1 ? '48' : '42'}px; border-radius: 50%; border: ${isTop1 ? '3px' : '2px'} solid ${isTop1 ? '#F97316' : levelColor}; object-fit: cover;" />
+                                            <div style="position: absolute; bottom: -2px; left: -2px; z-index: 5;">${levelBadgeHTML}</div>
+                                        </div>
+                                        <div style="flex: 1; display: flex; align-items: center; gap: 6px;">
+                                            <span style="font-size: ${isTop1 ? '1rem' : '0.9rem'}; color: #1e293b; font-weight: 800;">${p.name}</span>
+                                            ${isTop3 ? `<i class="fas fa-fire" style="color: #EF4444; font-size: ${isTop1 ? '1rem' : '0.9rem'}; animation: bounce 1s infinite alternate;"></i>` : ''}
+                                        </div>
+                                        <div style="text-align: left;">
+                                            ${scoreText ? `<span style="background: ${isTop1 ? '#F97316' : levelColor}; color: #fff; padding: 4px 10px; border-radius: 10px; font-size: 0.85rem; font-weight: 900; box-shadow: 0 2px 4px ${isTop1 ? '#F97316' : levelColor}40;">${scoreText}</span>` : '<i class="fas fa-check-circle" style="color: #10B981; font-size: 1.1rem;"></i>'}
+                                        </div>
                                     </div>
                                 `;
         }).join('')}

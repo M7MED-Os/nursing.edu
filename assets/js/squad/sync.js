@@ -5,6 +5,7 @@ import { loadChat } from './chat.js';
 import { loadPomodoro } from './pomodoro.js';
 import { loadTasks } from './tasks.js';
 import { loadMembers } from './members.js';
+import { loadActiveChallenge } from './challenge.js';
 import { loadGlobalSettings } from './utils.js';
 
 /**
@@ -50,7 +51,7 @@ export function startSyncManager() {
         const shouldDoSettingsSync = (now - lastSettingsSync) >= SETTINGS_INTERVAL;
 
         try {
-            const tasks = [loadChat(), loadPomodoro()];
+            const tasks = [loadChat(), loadPomodoro(), loadActiveChallenge()];
 
             if (shouldDoSlowSync) {
                 tasks.push(loadTasks(), loadMembers());
