@@ -199,12 +199,11 @@ export async function showJoinSquadModal() {
         cancelButtonText: 'إلغاء'
     });
 
-    if (code) {
-        const { data: squads } = await supabase
-            .from('squads')
-            .select('*')
-            .ilike('id', `${code}%`)
-            .limit(1);
+    if (code && code.trim()) {
+        const searchCode = code.trim().toLowerCase();
+
+        // Use RPC to search by prefix (Fixes UUID casting error)
+        const { data: squads, error } = await supabase.rpc('get_squad_by_prefix', { p_prefix: searchCode });
 
         if (squads && squads.length > 0) {
             const squad = squads[0];

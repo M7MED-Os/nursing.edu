@@ -54,6 +54,22 @@ export async function copySquadCode() {
 }
 
 /**
+ * Share squad info on WhatsApp
+ */
+export function shareSquadOnWhatsapp() {
+    const squadCodeEl = document.getElementById('squadCode');
+    if (!squadCodeEl) return;
+
+    const code = squadCodeEl.textContent.trim();
+    const text = `انضم لشلتي في Nursing Academy! كود الشلة: ${code}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`);
+}
+
+// Global exposure
+window.copySquadCode = copySquadCode;
+window.shareSquadOnWhatsapp = shareSquadOnWhatsapp;
+
+/**
  * Show read-by modal
  */
 export function showReadBy(names) {
