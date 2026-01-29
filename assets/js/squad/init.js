@@ -168,6 +168,9 @@ async function setupSquadUI() {
 
         const privacyBtn = document.getElementById('squadPrivacyBtn');
         if (privacyBtn) privacyBtn.style.display = 'flex';
+
+        const editNameBtn = document.getElementById('editSquadNameBtn');
+        if (editNameBtn) editNameBtn.style.display = 'inline-block';
     }
 
     // Display Squad Points

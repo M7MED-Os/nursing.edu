@@ -3,82 +3,118 @@ import { supabase } from '../supabaseClient.js';
 import { currentSquad, currentProfile, setCurrentSquad } from './state.js';
 
 /**
- * Edit squad name
- * TODO: Extract full implementation from squad.js lines 1575-1669
+ * Edit squad info (Name & Bio combined)
  */
 export async function editSquadName() {
-    const { value: newName } = await Swal.fire({
-        title: 'تعديل اسم الشلة',
-        input: 'text',
-        inputValue: currentSquad.name,
-        inputPlaceholder: 'اسم الشلة الجديد',
+    const result = await Swal.fire({
+        title: 'إعدادات الشلة ⚙️',
+        html: `
+            <div style="text-align: right; direction: rtl;">
+                <div style="margin-bottom: 1.25rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #475569; font-size: 0.9rem;">اسم الشلة</label>
+                    <input id="swal-squad-name" class="swal2-input" value="${currentSquad.name}" placeholder="اسم الشلة..." style="width: 100%; margin: 0; height: 45px; font-size: 1rem; border-radius: 10px;">
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #475569; font-size: 0.9rem;">وصف الشلة (Bio)</label>
+                    <textarea id="swal-squad-bio" class="swal2-textarea" placeholder="صلي على النبي..." rows="3" style="width: 100%; margin: 0; resize: none; height: 100px; font-size: 0.95rem; border-radius: 12px; padding: 10px;">${currentSquad.bio || ''}</textarea>
+                </div>
+            </div>
+        `,
         showCancelButton: true,
-        confirmButtonText: 'حفظ',
-        cancelButtonText: 'إلغاء',
-        inputValidator: (value) => {
-            if (!value || value.trim().length < 3) {
-                return 'الاسم لازم يكون 3 حروف على الأقل';
+        confirmButtonText: 'حفظ التعديلات',
+        cancelButtonText: 'تراجع',
+        confirmButtonColor: '#10b981',
+        cancelButtonColor: '#64748b',
+        preConfirm: () => {
+            const name = document.getElementById('swal-squad-name').value;
+            const bio = document.getElementById('swal-squad-bio').value;
+
+            if (!name || !name.trim()) {
+                Swal.showValidationMessage('لازم تكتب اسم للشلة!');
+                return false;
             }
+            if (name.trim().length < 3) {
+                Swal.showValidationMessage('الاسم لازم يكون 3 حروف على الأقل');
+                return false;
+            }
+            if (name.trim().length > 50) {
+                Swal.showValidationMessage('الاسم طويل أوي! (أقصى حد 50 حرف)');
+                return false;
+            }
+
+            return { name: name.trim(), bio: bio.trim() };
         }
     });
 
-    if (newName) {
-        const { error } = await supabase
-            .from('squads')
-            .update({ name: newName.trim() })
-            .eq('id', currentSquad.id);
+    if (result.isConfirmed && result.value) {
+        const { name: newName, bio: newBio } = result.value;
 
-        if (!error) {
-            currentSquad.name = newName.trim();
+        // Check if anything changed
+        if (newName === currentSquad.name && newBio === (currentSquad.bio || '')) {
+            return;
+        }
+
+        try {
+            Swal.fire({
+                title: 'جاري الحفظ...',
+                allowOutsideClick: false,
+                didOpen: () => Swal.showLoading()
+            });
+
+            const { error } = await supabase
+                .from('squads')
+                .update({
+                    name: newName,
+                    bio: newBio || null
+                })
+                .eq('id', currentSquad.id);
+
+            if (error) throw error;
+
+            // Update local state
+            currentSquad.name = newName;
+            currentSquad.bio = newBio;
             setCurrentSquad(currentSquad);
-            document.getElementById('squadNameText').textContent = newName.trim();
-            Swal.fire('تم!', 'تم تحديث اسم الشلة', 'success');
-        } else {
-            Swal.fire('خطأ', 'حدث خطأ أثناء التحديث', 'error');
+
+            // Update UI
+            document.getElementById('squadNameText').textContent = newName;
+
+            // Update bio display in main UI
+            const bioDisplay = document.querySelector('#squadBioDisplay .bio-text');
+            if (bioDisplay) {
+                if (newBio) {
+                    bioDisplay.textContent = newBio;
+                    bioDisplay.classList.remove('empty');
+                    bioDisplay.style.fontStyle = 'italic';
+                    bioDisplay.style.opacity = '1';
+                } else {
+                    bioDisplay.textContent = 'مفيش بايو';
+                    bioDisplay.classList.add('empty');
+                    bioDisplay.style.fontStyle = 'normal';
+                    bioDisplay.style.opacity = '0.7';
+                }
+            }
+
+            Swal.fire({
+                icon: 'success',
+                title: 'تم الحفظ!',
+                text: 'إعدادات الشلة اتحدثت بنجاح 🎉',
+                timer: 1500,
+                showConfirmButton: false
+            });
+
+        } catch (err) {
+            console.error('Error updating squad settings:', err);
+            Swal.fire('خطأ', 'حصلت مشكلة وأحنا بنحفظ البيانات.. حاول تاني', 'error');
         }
     }
 }
 
 /**
- * Edit squad bio
+ * Legacy wrapper for bio edit button if kept
  */
 export async function editSquadBio() {
-    const { value: newBio } = await Swal.fire({
-        title: 'تعديل البايو',
-        input: 'textarea',
-        inputValue: currentSquad.bio || '',
-        inputPlaceholder: 'اكتب بايو الشلة...',
-        showCancelButton: true,
-        confirmButtonText: 'حفظ',
-        cancelButtonText: 'إلغاء'
-    });
-
-    if (newBio !== undefined) {
-        const { error } = await supabase
-            .from('squads')
-            .update({ bio: newBio.trim() })
-            .eq('id', currentSquad.id);
-
-        if (!error) {
-            currentSquad.bio = newBio.trim();
-            setCurrentSquad(currentSquad);
-
-            const bioDisplay = document.querySelector('#squadBioDisplay .bio-text');
-            if (bioDisplay) {
-                if (newBio.trim()) {
-                    bioDisplay.textContent = newBio.trim();
-                    bioDisplay.classList.remove('empty');
-                } else {
-                    bioDisplay.textContent = 'مفيش بايو';
-                    bioDisplay.classList.add('empty');
-                }
-            }
-
-            Swal.fire('تم!', 'تم تحديث البايو', 'success');
-        } else {
-            Swal.fire('خطأ', 'حدث خطأ أثناء التحديث', 'error');
-        }
-    }
+    await editSquadName();
 }
 
 /**
