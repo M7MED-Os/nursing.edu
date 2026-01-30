@@ -117,7 +117,8 @@ async function renderChat(msgs) {
         // Sender level and color (use RPC response format)
         const senderPoints = m.sender_points || 0;
         const level = calculateLevel(senderPoints);
-        const levelColor = getLevelColor(level);
+        // If system message (no sender_id), use site's primary blue color for border
+        const levelColor = m.sender_id ? getLevelColor(level) : '#03A9F4';
 
         // Privacy check for avatar using helper function
         const showAvatar = m.sender_id ? shouldShowAvatar(
@@ -126,16 +127,16 @@ async function renderChat(msgs) {
             myId,
             currentSquad.id,
             currentSquad.id
-        ) : false; // System messages don't show avatar
+        ) : false; // System messages don't show avatar (use fallback/favicon)
 
-        const senderName = m.sender_name || 'النظام';
+        const senderName = m.sender_name || 'M7MED';
         const defaultAvatar = m.sender_id ? generateAvatar(senderName, 'initials') : 'assets/images/favicon-48x48.png';
         const avatarUrl = (showAvatar && m.sender_avatar) ? m.sender_avatar : defaultAvatar;
 
         return `
             <div class="msg-wrapper ${m.sender_id === myId ? 'sent' : 'received'}">
                 <div class="chat-avatar-container">
-                    <img src="${avatarUrl}" class="chat-avatar" style="border-color: ${levelColor};" title="${senderName}">
+                    <img src="${avatarUrl}" class="chat-avatar" style="border-color: ${levelColor}; border-width: 2px; border-style: solid;" title="${senderName}">
                 </div>
                 <div class="msg ${m.sender_id === myId ? 'sent' : 'received'}" 
                      ${m.sender_id === myId ? `onclick="showReadBy('${fullReaderNames}')"` : ''} 
