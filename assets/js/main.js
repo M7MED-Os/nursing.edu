@@ -130,7 +130,6 @@ function showInstallBanner() {
             </div>
             <div class="pwa-banner-text">
                 <h3>نزل تطبيق تمريض بنها 📱</h3>
-                <p>عشان تذاكر أسرع وتوصل لامتحاناتك بضغطة واحدة</p>
             </div>
             <div class="pwa-banner-actions">
                 <button id="pwa-install-btn" class="btn btn-primary btn-sm">تثبيت الآن</button>
