@@ -94,15 +94,97 @@ if (document.readyState === 'loading') {
     initMainJS();
 }
 
+// PWA Installation Logic
+let deferredPrompt;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    // Prevent the mini-infobar from appearing on mobile
+    e.preventDefault();
+    // Stash the event so it can be triggered later.
+    deferredPrompt = e;
+    // Update UI notify the user they can install the PWA
+    showInstallBanner();
+});
+
+function showInstallBanner() {
+    // Check if we're already in standalone mode
+    if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) {
+        return;
+    }
+
+    // Only show on dashboard or index pages to avoid being annoying
+    const isHome = window.location.pathname === '/' || window.location.pathname.includes('index.html');
+    const isDashboard = window.location.pathname.includes('dashboard.html');
+    if (!isHome && !isDashboard) return;
+
+    // Check if user dismissed it this session
+    if (sessionStorage.getItem('pwa_banner_dismissed')) return;
+
+    const banner = document.createElement('div');
+    banner.id = 'pwa-install-banner';
+    banner.className = 'pwa-banner';
+    banner.innerHTML = `
+        <div class="pwa-banner-content">
+            <div class="pwa-banner-icon">
+                <img src="assets/images/logo-icon.webp" alt="App Icon">
+            </div>
+            <div class="pwa-banner-text">
+                <h3>نزل تطبيق تمريض بنها 📱</h3>
+                <p>عشان تذاكر أسرع وتوصل لامتحاناتك بضغطة واحدة</p>
+            </div>
+            <div class="pwa-banner-actions">
+                <button id="pwa-install-btn" class="btn btn-primary btn-sm">تثبيت الآن</button>
+                <button id="pwa-dismiss-btn" class="btn-close-banner"><i class="fas fa-times"></i></button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(banner);
+
+    // Install logic
+    document.getElementById('pwa-install-btn').addEventListener('click', async () => {
+        if (!deferredPrompt) return;
+
+        // Show the install prompt
+        deferredPrompt.prompt();
+
+        // Wait for the user to respond to the prompt
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log(`User response to the install prompt: ${outcome}`);
+
+        // We've used the prompt, and can't use it again
+        deferredPrompt = null;
+
+        // Hide the banner
+        banner.remove();
+    });
+
+    // Dismiss logic
+    document.getElementById('pwa-dismiss-btn').addEventListener('click', () => {
+        banner.remove();
+        sessionStorage.setItem('pwa_banner_dismissed', 'true');
+    });
+}
+
+window.addEventListener('appinstalled', (event) => {
+    console.log('👍', 'appinstalled', event);
+    // Clear the deferredPrompt so it can be garbage collected
+    deferredPrompt = null;
+    const banner = document.getElementById('pwa-install-banner');
+    if (banner) banner.remove();
+});
+
 // PWA Service Worker Registration
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js')
             .then(registration => {
-                console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                // console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                console.log("Successful")
             })
             .catch(err => {
-                console.log('ServiceWorker registration failed: ', err);
+                // console.log('ServiceWorker registration failed: ', err);
+                console.log('Failed')
             });
     });
 }

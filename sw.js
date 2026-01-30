@@ -1,4 +1,4 @@
-const CACHE_NAME = 'nursing-edu-v11';
+const CACHE_NAME = 'nursing-edu-v112';
 const STATIC_ASSETS = [
     './',
     './index.html',
