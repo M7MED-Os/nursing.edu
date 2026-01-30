@@ -792,7 +792,7 @@ async function loadSubjectsFromDB(grade) {
         return [];
     }
 
-    setCache(cacheKey, subjects, APP_CONFIG.CACHE_TIME_SUBJECTS); // Cache subjects for 24 hours
+    setCache(cacheKey, subjects, APP_CONFIG.CACHE_TIME_SUBJECTS); // Cache subjects for 5 minutes
     return subjects;
 }
 

@@ -47,16 +47,32 @@ self.addEventListener('activate', (event) => {
     self.clients.claim();
 });
 
-// 3. Fetch Strategy: Cache-First for static assets, Network-First for others
+// 3. Fetch Strategy: Cache-First for static assets, Network-First for API
 self.addEventListener('fetch', (event) => {
     const { request } = event;
     const url = new URL(request.url);
 
-    // Bypass Supabase API calls (we handle them with JSON caching in utils.js)
+    // Network-First for Supabase API calls (always get fresh data)
     if (url.hostname.includes('supabase.co')) {
+        event.respondWith(
+            fetch(request)
+                .then((networkResponse) => {
+                    // Optionally cache successful responses
+                    if (networkResponse.status === 200) {
+                        const cacheCopy = networkResponse.clone();
+                        caches.open(CACHE_NAME).then((cache) => cache.put(request, cacheCopy));
+                    }
+                    return networkResponse;
+                })
+                .catch(() => {
+                    // Fallback to cache if network fails
+                    return caches.match(request);
+                })
+        );
         return;
     }
 
+    // Cache-First for static assets (HTML, CSS, JS, images)
     event.respondWith(
         caches.match(request).then((cachedResponse) => {
             if (cachedResponse) return cachedResponse;
