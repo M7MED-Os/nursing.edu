@@ -20,19 +20,25 @@ export async function loadChat() {
     const cacheKey = `squad_chat_data_${currentSquad.id}`;
 
     getSWR(cacheKey, async () => {
-        const [{ data: results }, { data: challenges }, { data: msgs }] = await Promise.all([
-            supabase.from('results').select('exam_id, created_at').eq('user_id', currentProfile.id),
-            supabase.from('squad_exam_challenges').select('id, status, squad_points_awarded').eq('squad_id', currentSquad.id),
-            supabase.from('squad_chat_messages').select('*, profiles!sender_id(full_name, avatar_url, points, privacy_avatar)').eq('squad_id', currentSquad.id).order('created_at', { ascending: false }).limit(50)
-        ]);
+        // Use the new RPC function (1 call instead of 3!)
+        const { data, error } = await supabase.rpc('get_squad_chat_data', {
+            p_squad_id: currentSquad.id,
+            p_user_id: currentProfile.id
+        });
 
-        const freshMsgs = (msgs || []).reverse();
+        if (error) {
+            console.error('Chat data load error:', error);
+            return { results: [], challenges: [], msgs: [] };
+        }
+
+        // Parse the RPC response
+        const freshMsgs = (data.messages || []).reverse();
         return {
-            results: results || [],
-            challenges: challenges || [],
+            results: data.user_results || [],
+            challenges: data.challenges || [],
             msgs: freshMsgs
         };
-    }, 15, (data) => {
+    }, 0.25, (data) => {
         setUserResults(data.results);
         window.currentChallenges = data.challenges;
         renderChat(data.msgs);

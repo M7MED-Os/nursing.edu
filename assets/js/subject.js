@@ -46,30 +46,24 @@ async function loadSubjectContent() {
 
 
 async function fetchSubjectFreshData(userId) {
-    const { data: subject } = await supabase.from('subjects').select('name_ar').eq('id', subjectId).single();
-    const { data: chapters } = await supabase.from('chapters').select('*').eq('subject_id', subjectId).order('order_index', { ascending: true });
+    // Use the new RPC function (1 call instead of 4-5!)
+    const { data, error } = await supabase.rpc('get_subject_full_data', {
+        p_subject_id: subjectId,
+        p_user_id: userId
+    });
 
-    if (!chapters || chapters.length === 0) return { subject, chapters: [], lessons: [], exams: [], solvedExams: [] };
-
-    const chapterIds = chapters.map(c => c.id);
-    const { data: lessons } = await supabase.from('lessons').select('*').in('chapter_id', chapterIds).order('order_index', { ascending: true });
-
-    // Optimized Exam Query
-    const lessonIds = lessons.length ? lessons.map(l => l.id) : [];
-    const orFilter = `chapter_id.in.(${chapterIds.join(',')})${lessonIds.length ? `,lesson_id.in.(${lessonIds.join(',')})` : ''}`;
-
-    const { data: exams } = await supabase.from('exams')
-        .select('*')
-        .or(orFilter)
-        .order('order_index', { ascending: true });
-
-    let solvedExams = [];
-    if (userId) {
-        const { data: results } = await supabase.from('results').select('exam_id').eq('user_id', userId);
-        solvedExams = (results || []).map(r => r.exam_id);
+    if (error) {
+        console.error('Subject data load error:', error);
+        return { subject: null, chapters: [], lessons: [], exams: [], solvedExams: [] };
     }
 
-    return { subject, chapters, lessons, exams, solvedExams };
+    return {
+        subject: data.subject,
+        chapters: data.chapters || [],
+        lessons: data.lessons || [],
+        exams: data.exams || [],
+        solvedExams: data.solved_exams || []
+    };
 }
 
 function renderSkeletons(container) {
