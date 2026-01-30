@@ -114,31 +114,33 @@ async function renderChat(msgs) {
             </div>
         ` : '';
 
-        // Sender level and color
-        const level = m.profiles ? calculateLevel(m.profiles.points || 0) : 0;
-        const levelColor = m.profiles ? getLevelColor(level) : '#03A9F4';
+        // Sender level and color (use RPC response format)
+        const senderPoints = m.sender_points || 0;
+        const level = calculateLevel(senderPoints);
+        const levelColor = getLevelColor(level);
 
         // Privacy check for avatar using helper function
-        const showAvatar = m.profiles ? shouldShowAvatar(
-            m.profiles.privacy_avatar,
+        const showAvatar = m.sender_id ? shouldShowAvatar(
+            m.sender_privacy_avatar,
             m.sender_id,
             myId,
-            currentSquad.id, // All chat members are in the same squad
+            currentSquad.id,
             currentSquad.id
-        ) : true;
+        ) : false; // System messages don't show avatar
 
-        const defaultAvatar = m.profiles ? generateAvatar(m.profiles.full_name, 'initials') : 'assets/images/favicon-48x48.png';
-        const avatarUrl = showAvatar && m.profiles?.avatar_url ? m.profiles.avatar_url : defaultAvatar;
+        const senderName = m.sender_name || 'النظام';
+        const defaultAvatar = m.sender_id ? generateAvatar(senderName, 'initials') : 'assets/images/favicon-48x48.png';
+        const avatarUrl = (showAvatar && m.sender_avatar) ? m.sender_avatar : defaultAvatar;
 
         return `
             <div class="msg-wrapper ${m.sender_id === myId ? 'sent' : 'received'}">
                 <div class="chat-avatar-container">
-                    <img src="${avatarUrl}" class="chat-avatar" style="border-color: ${levelColor};" title="${m.profiles?.full_name || 'System'}">
+                    <img src="${avatarUrl}" class="chat-avatar" style="border-color: ${levelColor};" title="${senderName}">
                 </div>
                 <div class="msg ${m.sender_id === myId ? 'sent' : 'received'}" 
                      ${m.sender_id === myId ? `onclick="showReadBy('${fullReaderNames}')"` : ''} 
                      style="${m.sender_id === myId ? 'cursor:pointer;' : ''}">
-                    <span class="msg-sender">${m.profiles ? m.profiles.full_name : 'M7MED'}</span>
+                    <span class="msg-sender">${senderName}</span>
                     <div class="msg-content">
                         ${m.text}
                     </div>

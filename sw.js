@@ -1,4 +1,4 @@
-const CACHE_NAME = 'nursing-edu-v119';
+const CACHE_NAME = 'nursing-edu-v11';
 const STATIC_ASSETS = [
     './',
     './index.html',
@@ -13,7 +13,7 @@ const STATIC_ASSETS = [
     './assets/css/style.css',
     './assets/js/main.js',
     './assets/js/auth.js',
-    // './assets/js/squad.js', // Removed - now using modular squad/index.js
+    // './assets/js/squad.js',
     './assets/js/dashboard.js',
     './assets/js/subject.js',
     './assets/js/profile.js',

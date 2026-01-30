@@ -332,7 +332,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const updateGlobalProgress = () => {
         if (tasks.length === 0) {
             progressBar.style.width = '0%'; progressPercent.textContent = '0%';
-            summaryText.textContent = 'ابدأ بإضافة مهامك اليوم!'; return;
+            summaryText.textContent = 'ضيف مهامك اليوم!'; return;
         }
         let totalProgress = 0;
         const mainTaskWeight = 1 / tasks.length;
