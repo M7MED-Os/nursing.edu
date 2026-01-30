@@ -23,17 +23,17 @@ export const GRADE_STREAMS = {
 };
 
 export const APP_CONFIG = {
-    CACHE_VERSION: 'v2.4', // Changing this clears local caches for all users
-    // OLD: CACHE_TIME_PROFILE: 5, // 5 minutes
+    CACHE_VERSION: 'v2.5', // Changing this clears local caches for all users
     CACHE_TIME_PROFILE: 1, // 1 minute
-    // OLD: CACHE_TIME_STATS: 10,  // Reduced from 6h to 10m for better sync
-    CACHE_TIME_STATS: 1,  // Reduced to 1m for better sync
-    CACHE_TIME_SUBJECTS: 1440,
-    CACHE_TIME_SUBJECT_CONTENT: 10,
-    CACHE_TIME_LECTURES: 60,
-    CACHE_TIME_ANNOUNCEMENTS: 3,
-    CACHE_TIME_QUESTIONS: 3,
-    CACHE_TIME_LEADERBOARD: 1,
+    CACHE_TIME_STATS: 1,  // 1 minute for better sync
+    CACHE_TIME_SUBJECTS: 1440, // 24 hours (static content)
+    CACHE_TIME_SUBJECT_CONTENT: 60, // 1 hour (was 10 min) - content rarely changes
+    CACHE_TIME_LECTURES: 1440, // 24 hours (was 60 min) - static content
+    CACHE_TIME_ANNOUNCEMENTS: 3, // 3 minutes
+    CACHE_TIME_QUESTIONS: 3, // 3 minutes
+    CACHE_TIME_LEADERBOARD: 1, // 1 minute
+    CACHE_TIME_EXAMS: 60, // 1 hour - new cache for exam lists
+    CACHE_TIME_APP_CONFIGS: 1440, // 24 hours - new cache for app configs
     ACTIVE_CHECK_INTERVAL: 60000,
 };
 

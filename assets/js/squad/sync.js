@@ -14,8 +14,8 @@ import { loadGlobalSettings } from './utils.js';
 export function startSyncManager() {
     if (syncTimer) clearTimeout(syncTimer);
 
-    const FAST_INTERVAL = 20000; // 20s for all core data
-    const SLOW_INTERVAL = 30000; // Match fast interval as per user request
+    const FAST_INTERVAL = 60000; // 60s for all core data (was 20s) - reduced for performance
+    const SLOW_INTERVAL = 120000; // 120s for tasks/members (was 30s) - reduced for performance
     const SETTINGS_INTERVAL = 300000; // 5 mins
 
     let lastSlowSync = 0;
