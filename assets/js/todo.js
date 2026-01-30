@@ -397,7 +397,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 '25': '25 دقيقة',
                 '50': '50 دقيقة',
                 '60': 'ساعة كاملة',
-                '90': 'ساعة ونصف'
+                '90': 'ساعة ونصف',
+                '120': 'ساعتين',
+                '150': 'ساعتين ونصف',
+                '180': '3 ساعات',
+                '210': '3 ساعات ونصف',
+                '240': '4 ساعات',
             },
             inputPlaceholder: 'اختار الوقت...',
             showCancelButton: true,
@@ -414,7 +419,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         startLocalTimerDisplay();
 
         const btn = document.getElementById('startPomodoroBtn');
-        btn.textContent = 'إيقاف المذاكرة 🛑';
+        btn.textContent = 'وقف المذاكرة 🛑';
         btn.onclick = stopPomodoro;
     };
 
@@ -438,7 +443,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             if (diff <= 0) {
                 stopPomodoro();
-                Swal.fire('عاش يا بطل! 🎉', 'خلصت جلسة المذاكرة.', 'success');
+                Swal.fire('عاش يا بطل! 🎉', 'خلصت مذاكرة.', 'success');
                 return;
             }
 
