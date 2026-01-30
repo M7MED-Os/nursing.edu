@@ -1,4 +1,4 @@
-const CACHE_NAME = 'nursing-edu-v114';
+const CACHE_NAME = 'nursing-edu-v115';
 const STATIC_ASSETS = [
     './',
     './index.html',
@@ -52,23 +52,27 @@ self.addEventListener('fetch', (event) => {
     const { request } = event;
     const url = new URL(request.url);
 
-    // Network-First for Supabase API calls (always get fresh data)
+    // Network-First for Supabase API calls (GET only - fresh data)
     if (url.hostname.includes('supabase.co')) {
-        event.respondWith(
-            fetch(request)
-                .then((networkResponse) => {
-                    // Optionally cache successful responses
-                    if (networkResponse.status === 200) {
-                        const cacheCopy = networkResponse.clone();
-                        caches.open(CACHE_NAME).then((cache) => cache.put(request, cacheCopy));
-                    }
-                    return networkResponse;
-                })
-                .catch(() => {
-                    // Fallback to cache if network fails
-                    return caches.match(request);
-                })
-        );
+        // Only cache GET requests (POST/RPC cannot be cached)
+        if (request.method === 'GET') {
+            event.respondWith(
+                fetch(request)
+                    .then((networkResponse) => {
+                        // Cache successful GET responses
+                        if (networkResponse.status === 200) {
+                            const cacheCopy = networkResponse.clone();
+                            caches.open(CACHE_NAME).then((cache) => cache.put(request, cacheCopy));
+                        }
+                        return networkResponse;
+                    })
+                    .catch(() => {
+                        // Fallback to cache if network fails
+                        return caches.match(request);
+                    })
+            );
+        }
+        // For POST/RPC, just pass through (no caching)
         return;
     }
 
