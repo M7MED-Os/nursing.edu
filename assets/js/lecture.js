@@ -8,6 +8,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     const { user, profile } = await checkAuth();
     if (!user) return;
 
+    // Update Navigation UI
+    if (profile) {
+        // Admin Buttons
+        if (profile.role === 'admin') {
+            const adminNavBtn = document.getElementById('adminNavBtn');
+            if (adminNavBtn) adminNavBtn.style.display = 'block';
+        }
+    }
+
     // Get Lesson ID from URL
     const urlParams = new URLSearchParams(window.location.search);
     const lessonId = urlParams.get('id');

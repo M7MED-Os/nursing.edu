@@ -128,7 +128,7 @@ async function setupSquadUI() {
     }
 
     // Update level progress
-    const levelProgressEl = document.getElementById('squadLevelProgress');
+    const levelProgressEl = document.getElementById('squadLevelProgressHeader');
     if (levelProgressEl) {
         const progressHTML = createSquadLevelProgress(currentSquad.points || 0);
         levelProgressEl.innerHTML = progressHTML;

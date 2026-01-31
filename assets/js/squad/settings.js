@@ -293,15 +293,13 @@ async function loadSquadPrivacySettings() {
             setTimeout(() => {
                 const avatarEl = document.getElementById('squadPrivacyAvatar');
                 const bioEl = document.getElementById('squadPrivacyBio');
-                const statsEl = document.getElementById('squadPrivacyStats');
+                const levelEl = document.getElementById('squadPrivacyLevel');
                 const membersEl = document.getElementById('squadPrivacyMembers');
-                const progressEl = document.getElementById('squadPrivacyProgress');
 
                 if (avatarEl) avatarEl.value = squad.privacy_avatar || 'public';
                 if (bioEl) bioEl.value = squad.privacy_bio || 'public';
-                if (statsEl) statsEl.value = squad.privacy_stats || 'public';
+                if (levelEl) levelEl.value = squad.privacy_stats || 'public';
                 if (membersEl) membersEl.value = squad.privacy_members || 'public';
-                if (progressEl) progressEl.value = squad.privacy_progress || 'public';
             }, 50);
         }
     } catch (err) {
@@ -312,12 +310,13 @@ async function loadSquadPrivacySettings() {
 window.saveSquadPrivacySettings = async function () {
     if (!currentSquad) return;
 
+    const levelValue = document.getElementById('squadPrivacyLevel').value;
     const updates = {
         privacy_avatar: document.getElementById('squadPrivacyAvatar').value,
         privacy_bio: document.getElementById('squadPrivacyBio').value,
-        privacy_stats: document.getElementById('squadPrivacyStats').value,
-        privacy_members: document.getElementById('squadPrivacyMembers').value,
-        privacy_progress: document.getElementById('squadPrivacyProgress').value
+        privacy_stats: levelValue,
+        privacy_progress: levelValue,
+        privacy_members: document.getElementById('squadPrivacyMembers').value
     };
 
     try {
