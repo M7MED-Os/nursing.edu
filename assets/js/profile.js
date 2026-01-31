@@ -131,11 +131,23 @@ function renderProfileUI(profile, user) {
     const statsGrid = document.getElementById('profileStatsGrid');
 
     if (avatarImg) {
-        avatarImg.src = profile.avatar_url || generateAvatar(fullName, 'initials');
+        // Show cached avatar immediately if available
+        const cachedAvatar = localStorage.getItem(`avatar_${currentUser.id}`);
+        if (cachedAvatar && !avatarImg.src.includes('ui-avatars.com')) {
+            avatarImg.src = cachedAvatar;
+        }
+
+        const avatarUrl = profile.avatar_url || generateAvatar(fullName, 'initials');
+        avatarImg.src = avatarUrl;
+
+        // Cache the new avatar URL
+        if (profile.avatar_url) {
+            localStorage.setItem(`avatar_${currentUser.id}`, profile.avatar_url);
+        }
 
         // Update border color based on level
         if (profile.points !== undefined) {
-            const meta = applyLevelTheme(avatarImg, profile.points);
+            const levelMeta = applyLevelTheme(avatarImg, profile.points);
             avatarImg.style.border = `5px solid var(--level-color)`;
             avatarImg.style.boxShadow = `var(--level-shadow)`;
         }
@@ -196,7 +208,6 @@ function renderProfileUI(profile, user) {
 
         // Points Card
         if (profile.points !== undefined) {
-            const level = calculateLevel(profile.points || 0);
             statsHtml += createStatCard(
                 'النقاط',
                 `${profile.points || 0} نقطة`,
@@ -207,13 +218,16 @@ function renderProfileUI(profile, user) {
         }
 
         statsGrid.innerHTML = statsHtml;
+
+        // Ensure grid centering on small screens
+        statsGrid.style.justifyContent = 'center';
     }
 }
 
 // Helper function to create stat cards
 function createStatCard(label, value, icon, color, gradient) {
     return `
-        <div style="
+        <div class="stat-card" style="
             background: white;
             border-radius: 16px;
             padding: 1.25rem;
@@ -223,6 +237,9 @@ function createStatCard(label, value, icon, color, gradient) {
             border: 2px solid transparent;
             position: relative;
             overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            min-width: 140px;
         "
         onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 8px 20px rgba(0,0,0,0.12)'; this.style.borderColor='${color}'"
         onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.08)'; this.style.borderColor='transparent'">
@@ -441,14 +458,13 @@ async function loadPrivacySettings() {
             setTimeout(() => {
                 const avatarEl = document.getElementById('privacyAvatar');
                 const bioEl = document.getElementById('privacyBio');
-                const statsEl = document.getElementById('privacyStats');
-                const progressEl = document.getElementById('privacyProgress');
+                const levelEl = document.getElementById('privacyLevel');
                 const squadEl = document.getElementById('privacySquad');
 
                 if (avatarEl) avatarEl.value = profile.privacy_avatar || 'public';
                 if (bioEl) bioEl.value = profile.privacy_bio || 'public';
-                if (statsEl) statsEl.value = profile.privacy_stats || 'public';
-                if (progressEl) progressEl.value = profile.privacy_progress || 'public';
+                // Consolidate level/stats/progress settings
+                if (levelEl) levelEl.value = profile.privacy_stats || 'public';
                 if (squadEl) squadEl.value = profile.privacy_squad || 'public';
             }, 100);
         }
@@ -460,11 +476,13 @@ async function loadPrivacySettings() {
 window.savePrivacySettings = async function () {
     if (!currentProfile) return;
 
+    const levelValue = document.getElementById('privacyLevel').value;
+
     const privacySettings = {
         privacy_avatar: document.getElementById('privacyAvatar').value,
         privacy_bio: document.getElementById('privacyBio').value,
-        privacy_stats: document.getElementById('privacyStats').value,
-        privacy_progress: document.getElementById('privacyProgress').value,
+        privacy_stats: levelValue,
+        privacy_progress: levelValue,
         privacy_squad: document.getElementById('privacySquad').value
     };
 
@@ -515,7 +533,7 @@ if (showLevelGuideBtn) {
         let html = `
             <div style="text-align: right; direction: rtl;">
                 <p style="margin-bottom: 1.5rem; color: #64748b; font-size: 0.95rem;">
-                    دي قائمة بكل الرتب المتاحة في الأكاديمية ونقاط كل مستوى. حل امتحانات وجمع نقاط ترفع رتبتك! ✨
+                    دي قائمة بكل المستويات ونقاط كل مستوى. حل امتحانات وجمع نقاط ترفع مستواك! ✨
                 </p>
                 <div style="display: flex; flex-direction: column; gap: 10px;">
         `;
@@ -555,7 +573,7 @@ if (showLevelGuideBtn) {
         `;
 
         Swal.fire({
-            title: 'دليل مستويات الأكاديمية 📈',
+            title: 'دليل المستويات 📈',
             html: html,
             showConfirmButton: true,
             confirmButtonText: 'فهمت',

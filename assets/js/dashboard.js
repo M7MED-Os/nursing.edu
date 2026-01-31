@@ -156,7 +156,7 @@ window.showPointsExplanation = () => {
                 </ul>
             </div>
         `,
-        confirmButtonText: 'تمام جاهز! 💪',
+        confirmButtonText: 'تمام',
         confirmButtonColor: '#03A9F4',
         width: '500px',
         padding: '1rem'

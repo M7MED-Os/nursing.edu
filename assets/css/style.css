@@ -1775,7 +1775,8 @@ div:where(.swal2-container) button.swal2-styled:hover {
 /* --- PWA Install Banner (Premium) --- */
 .pwa-banner {
   position: fixed;
-  bottom: 80px; /* Above bottom nav */
+  bottom: 80px;
+  /* Above bottom nav */
   left: 50%;
   transform: translateX(-50%) translateY(100px);
   width: calc(100% - 2rem);
@@ -1788,7 +1789,8 @@ div:where(.swal2-container) button.swal2-styled:hover {
   z-index: 2000;
   border: 1px solid rgba(3, 169, 244, 0.1);
   animation: banner-enter 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  animation-delay: 2s; /* Give user some time before showing */
+  animation-delay: 2s;
+  /* Give user some time before showing */
 }
 
 @keyframes banner-enter {
@@ -1866,5 +1868,17 @@ div:where(.swal2-container) button.swal2-styled:hover {
 @media (min-width: 866px) {
   .pwa-banner {
     bottom: 2rem;
+  }
+}
+
+/* --- Profile Stats Mobile Alignment --- */
+@media (max-width: 768px) {
+  #profileStatsGrid {
+    justify-content: center !important;
+  }
+
+  .stat-card {
+    align-items: center !important;
+    text-align: center !important;
   }
 }

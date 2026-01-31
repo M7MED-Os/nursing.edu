@@ -1,4 +1,4 @@
-<!-- Privacy Settings Modal - Premium Design -->
+<!-- Privacy Settings Modal - Premium Redesign -->
 <div id="privacyModal" style="
     display: none;
     position: fixed;
@@ -6,8 +6,9 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.75);
-    backdrop-filter: blur(8px);
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     z-index: 10000;
     animation: fadeIn 0.3s ease;
 ">
@@ -16,177 +17,187 @@
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
-        border-radius: 24px;
-        padding: 0;
-        max-width: 600px;
-        width: 90%;
+        background: white;
+        border-radius: 28px;
+        max-width: 550px;
+        width: 92%;
+        height: auto;
         max-height: 85vh;
+        display: flex;
+        flex-direction: column;
         overflow: hidden;
-        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
-        border: 1px solid rgba(139, 92, 246, 0.3);
-        animation: slideUp 0.4s ease;
+        box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.25), 0 18px 36px -18px rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     ">
         <!-- Modal Header -->
         <div style="
-            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            background: linear-gradient(135deg, #03A9F4 0%, #0288D1 100%);
             padding: 1.75rem 2rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
             position: relative;
+            flex-shrink: 0;
+            color: white;
         ">
-            <div style="display: flex; align-items: center; gap: 1rem;">
+            <!-- Background Decoration -->
+            <div
+                style="position: absolute; top: -20px; right: -20px; width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%;">
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 1.25rem; position: relative; z-index: 1;">
                 <div style="
-                    width: 56px;
-                    height: 56px;
+                    width: 52px;
+                    height: 52px;
                     border-radius: 16px;
                     background: rgba(255, 255, 255, 0.2);
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+                    backdrop-filter: blur(4px);
+                    border: 1px solid rgba(255, 255, 255, 0.3);
                 ">
-                    <i class="fas fa-shield-alt" style="font-size: 1.75rem; color: white;"></i>
+                    <i class="fas fa-user-shield" style="font-size: 1.6rem; color: white;"></i>
                 </div>
                 <div style="flex: 1;">
-                    <h2 style="margin: 0; font-size: 1.5rem; font-weight: 800; color: white;">إعدادات الخصوصية</h2>
-                    <p style="margin: 0.25rem 0 0 0; font-size: 0.875rem; color: rgba(255, 255, 255, 0.8);">تحكم في من
-                        يمكنه رؤية معلوماتك</p>
+                    <h2 style="margin: 0; font-size: 1.4rem; font-weight: 800; letter-spacing: -0.5px;">خصوصية الحساب
+                    </h2>
+                    <p style="margin: 0.25rem 0 0 0; font-size: 0.85rem; opacity: 0.9; font-weight: 500;">تحكم في من يرى
+                        بياناتك التعليمية</p>
                 </div>
                 <button onclick="closePrivacyModal()" style="
-                    background: rgba(255, 255, 255, 0.2);
+                    background: rgba(0, 0, 0, 0.1);
                     border: none;
-                    width: 40px;
-                    height: 40px;
-                    border-radius: 10px;
+                    width: 36px;
+                    height: 36px;
+                    border-radius: 50%;
                     color: white;
                     cursor: pointer;
                     transition: all 0.2s ease;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                " onmouseover="this.style.background='rgba(255, 255, 255, 0.3)'"
-                    onmouseout="this.style.background='rgba(255, 255, 255, 0.2)'">
-                    <i class="fas fa-times" style="font-size: 1.25rem;"></i>
+                " onmouseover="this.style.background='rgba(0, 0, 0, 0.2)'"
+                    onmouseout="this.style.background='rgba(0, 0, 0, 0.1)'">
+                    <i class="fas fa-times" style="font-size: 1.1rem;"></i>
                 </button>
             </div>
         </div>
 
-        <!-- Modal Body -->
+        <!-- Modal Body (Scrollable) -->
         <div style="
             padding: 2rem;
-            max-height: calc(85vh - 180px);
             overflow-y: auto;
-            color: white;
+            background: #fcfdfe;
+            flex: 1;
+            scroll-behavior: smooth;
         ">
-            <div style="display: grid; gap: 1.5rem;">
-                <!-- Avatar Privacy -->
-                <div class="privacy-option">
-                    <label
-                        style="display: block; font-weight: 600; margin-bottom: 0.75rem; color: #e0e7ff; font-size: 1rem;">
-                        <i class="fas fa-user-circle" style="color: #a78bfa; margin-left: 0.5rem;"></i>
+            <div style="display: grid; gap: 1.25rem;">
+                <!-- 1. Avatar -->
+                <div class="privacy-card">
+                    <label class="privacy-label">
+                        <span class="privacy-icon-wrapper">
+                            <i class="fas fa-camera"></i>
+                        </span>
                         الصورة الشخصية
                     </label>
-                    <select id="privacyAvatar" class="privacy-select">
+                    <select id="privacyAvatar" class="privacy-select-opt">
                         <option value="public">🌍 الكل</option>
                         <option value="squad">👥 الشلة فقط</option>
-                        <option value="private">🔒 أنا فقط</option>
+                        <option value="private">🔒 انا فقط</option>
                     </select>
                 </div>
 
-                <!-- Bio Privacy -->
-                <div class="privacy-option">
-                    <label
-                        style="display: block; font-weight: 600; margin-bottom: 0.75rem; color: #e0e7ff; font-size: 1rem;">
-                        <i class="fas fa-comment-dots" style="color: #a78bfa; margin-left: 0.5rem;"></i>
-                        النبذة الشخصية
+                <!-- 2. Bio -->
+                <div class="privacy-card">
+                    <label class="privacy-label">
+                        <span class="privacy-icon-wrapper">
+                            <i class="fas fa-quote-right"></i>
+                        </span>
+                        البايو
                     </label>
-                    <select id="privacyBio" class="privacy-select">
+                    <select id="privacyBio" class="privacy-select-opt">
                         <option value="public">🌍 الكل</option>
                         <option value="squad">👥 الشلة فقط</option>
-                        <option value="private">🔒 أنا فقط</option>
+                        <option value="private">🔒 انا فقط</option>
                     </select>
                 </div>
 
-                <!-- Stats Privacy -->
-                <div class="privacy-option">
-                    <label
-                        style="display: block; font-weight: 600; margin-bottom: 0.75rem; color: #e0e7ff; font-size: 1rem;">
-                        <i class="fas fa-chart-bar" style="color: #a78bfa; margin-left: 0.5rem;"></i>
-                        الإحصائيات
+                <!-- 3. Level (Consolidated) -->
+                <div class="privacy-card">
+                    <label class="privacy-label">
+                        <span class="privacy-icon-wrapper">
+                            <i class="fas fa-chart-line"></i>
+                        </span>
+                        المستوى
                     </label>
-                    <select id="privacyStats" class="privacy-select">
+                    <select id="privacyLevel" class="privacy-select-opt">
                         <option value="public">🌍 الكل</option>
                         <option value="squad">👥 الشلة فقط</option>
-                        <option value="private">🔒 أنا فقط</option>
+                        <option value="private">🔒 انا فقط</option>
                     </select>
                 </div>
 
-                <!-- Progress Privacy -->
-                <div class="privacy-option">
-                    <label
-                        style="display: block; font-weight: 600; margin-bottom: 0.75rem; color: #e0e7ff; font-size: 1rem;">
-                        <i class="fas fa-chart-line" style="color: #a78bfa; margin-left: 0.5rem;"></i>
-                        التقدم في المستوى
+                <!-- 4. Squad -->
+                <div class="privacy-card">
+                    <label class="privacy-label">
+                        <span class="privacy-icon-wrapper">
+                            <i class="fas fa-users"></i>
+                        </span>
+                        شلتي
                     </label>
-                    <select id="privacyProgress" class="privacy-select">
+                    <select id="privacySquad" class="privacy-select-opt">
                         <option value="public">🌍 الكل</option>
                         <option value="squad">👥 الشلة فقط</option>
-                        <option value="private">🔒 أنا فقط</option>
-                    </select>
-                </div>
-
-                <!-- Squad Privacy -->
-                <div class="privacy-option">
-                    <label
-                        style="display: block; font-weight: 600; margin-bottom: 0.75rem; color: #e0e7ff; font-size: 1rem;">
-                        <i class="fas fa-users" style="color: #a78bfa; margin-left: 0.5rem;"></i>
-                        الشلة الحالية
-                    </label>
-                    <select id="privacySquad" class="privacy-select">
-                        <option value="public">🌍 الكل</option>
-                        <option value="squad">👥 الشلة فقط</option>
-                        <option value="private">🔒 أنا فقط</option>
+                        <option value="private">🔒 انا فقط</option>
                     </select>
                 </div>
             </div>
         </div>
 
-        <!-- Modal Footer -->
+        <!-- Modal Footer (Sticky) -->
         <div style="
             padding: 1.5rem 2rem;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            background: rgba(0, 0, 0, 0.2);
+            border-top: 1px solid #edf2f7;
+            background: white;
             display: flex;
             gap: 1rem;
-            justify-content: flex-end;
+            flex-shrink: 0;
+            box-shadow: 0 -10px 20px rgba(0,0,0,0.02);
         ">
             <button onclick="closePrivacyModal()" style="
-                background: rgba(255, 255, 255, 0.1);
-                border: 1px solid rgba(255, 255, 255, 0.2);
-                color: white;
-                padding: 0.75rem 1.5rem;
-                border-radius: 10px;
-                font-weight: 600;
+                flex: 1;
+                background: #f1f5f9;
+                border: 1px solid #e2e8f0;
+                color: #64748b;
+                padding: 0.875rem 1rem;
+                border-radius: 14px;
+                font-weight: 700;
                 cursor: pointer;
-                transition: all 0.2s ease;
-            " onmouseover="this.style.background='rgba(255, 255, 255, 0.15)'"
-                onmouseout="this.style.background='rgba(255, 255, 255, 0.1)'">
+                transition: all 0.3s ease;
+                font-family: inherit;
+            " onmouseover="this.style.background='#e2e8f0'; this.style.color='#475569'"
+                onmouseout="this.style.background='#f1f5f9'; this.style.color='#64748b'">
                 إلغاء
             </button>
             <button onclick="savePrivacySettings()" style="
-                background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                flex: 1.8;
+                background: linear-gradient(135deg, #03A9F4 0%, #0091ea 100%);
                 border: none;
                 color: white;
-                padding: 0.75rem 2rem;
-                border-radius: 10px;
-                font-weight: 700;
+                padding: 0.875rem 1rem;
+                border-radius: 14px;
+                font-weight: 800;
                 cursor: pointer;
-                transition: all 0.2s ease;
-                box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-            " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(16, 185, 129, 0.4)'"
-                onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(16, 185, 129, 0.3)'">
-                <i class="fas fa-save" style="margin-left: 0.5rem;"></i>
-                حفظ التغييرات
+                transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                box-shadow: 0 8px 24px rgba(3, 169, 244, 0.3);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0.6rem;
+                font-family: inherit;
+            " onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 12px 28px rgba(3, 169, 244, 0.4)'"
+                onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 8px 24px rgba(3, 169, 244, 0.3)'">
+                <i class="fas fa-check-circle" style="font-size: 1.1rem;"></i>
+                حفظ التحديثات
             </button>
         </div>
     </div>
@@ -206,37 +217,87 @@
     @keyframes slideUp {
         from {
             opacity: 0;
-            transform: translate(-50%, -45%);
+            transform: translate(-50%, -40%) scale(0.95);
         }
 
         to {
             opacity: 1;
-            transform: translate(-50%, -50%);
+            transform: translate(-50%, -50%) scale(1);
         }
     }
 
-    .privacy-select {
+    .privacy-card {
+        background: white;
+        padding: 1.25rem;
+        border-radius: 16px;
+        border: 1px solid #edf2f7;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+        transition: all 0.3s ease;
+    }
+
+    .privacy-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.04);
+        border-color: #e0f2fe;
+    }
+
+    .privacy-label {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 700;
+        margin-bottom: 1rem;
+        color: #1e293b;
+        font-size: 0.95rem;
+    }
+
+    .privacy-icon-wrapper {
+        width: 32px;
+        height: 32px;
+        background: #e0f2fe;
+        color: #03a9f4;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+    }
+
+    .privacy-card:hover .privacy-icon-wrapper {
+        background: #03a9f4;
+        color: white;
+        transform: rotate(-10deg);
+    }
+
+    .privacy-select-opt {
         width: 100%;
         padding: 0.875rem 1rem;
         border-radius: 12px;
-        border: 2px solid rgba(139, 92, 246, 0.3);
-        background: rgba(255, 255, 255, 0.05);
-        color: white;
+        border: 2px solid #f1f5f9;
+        background: #f8fafc;
+        color: #334155;
         font-size: 0.95rem;
-        font-weight: 500;
+        font-weight: 700;
         cursor: pointer;
         transition: all 0.2s ease;
+        -webkit-appearance: none;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: left 1rem center;
+        background-size: 1.25rem;
+        font-family: 'Cairo', sans-serif;
     }
 
-    .privacy-select:focus {
+    .privacy-select-opt:focus {
         outline: none;
-        border-color: #8b5cf6;
-        background: rgba(139, 92, 246, 0.1);
+        border-color: #03A9F4;
+        background: white;
+        box-shadow: 0 0 0 4px rgba(3, 169, 244, 0.1);
     }
 
-    .privacy-select option {
-        background: #1e1b4b;
-        color: white;
-        padding: 0.5rem;
+    .privacy-select-opt option {
+        padding: 1rem;
+        font-weight: 600;
     }
 </style>

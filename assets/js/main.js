@@ -77,10 +77,10 @@ function initMainJS() {
 
             if (name && email && message) {
                 // Simulate submission
-                showSuccessAlert('تم الإرسال', 'شكراً لتواصلك معنا! سنقوم بالرد عليك في أقرب وقت.');
+                showSuccessAlert('تم الإرسال', 'شكراً لتواصلك معنا! هنرد عليك في أقرب وقت.');
                 contactForm.reset();
             } else {
-                showWarningAlert('تنبيه', 'يرجى ملء جميع الحقول المطلوبة.');
+                showWarningAlert('تنبيه', 'املى كل الحقول المطلوبه');
             }
         });
     }

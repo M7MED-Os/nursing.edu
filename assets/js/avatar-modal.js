@@ -211,12 +211,60 @@ export async function openAvatarModal(type = 'user', entityId, entityName, onSuc
 }
 
 /**
+ * ضغط الصورة وتصغير حجمها قبل الرفع
+ * @param {File} file - الملف الأصلي
+ * @returns {Promise<Blob>} - الصورة المضغوطة
+ */
+async function compressImage(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (event) => {
+            const img = new Image();
+            img.src = event.target.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+
+                // أقصى عرض أو طول 400px
+                const MAX_SIZE = 400;
+                if (width > height) {
+                    if (width > MAX_SIZE) {
+                        height *= MAX_SIZE / width;
+                        width = MAX_SIZE;
+                    }
+                } else {
+                    if (height > MAX_SIZE) {
+                        width *= MAX_SIZE / height;
+                        height = MAX_SIZE;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+
+                // تحويل لـ Blob بجودة 0.7
+                canvas.toBlob((blob) => {
+                    resolve(blob);
+                }, 'image/jpeg', 0.7);
+            };
+            img.onerror = (err) => reject(err);
+        };
+        reader.onerror = (err) => reject(err);
+    });
+}
+
+/**
  * حفظ الأفاتار في قاعدة البيانات
  */
 async function saveAvatar(type, entityId, avatarUrl, file, onSuccess) {
     try {
         Swal.fire({
             title: 'جاري الحفظ...',
+            text: file ? 'يتم ضغط الصورة ورفعها...' : 'جاري التحديث...',
             allowOutsideClick: false,
             didOpen: () => Swal.showLoading()
         });
@@ -225,14 +273,18 @@ async function saveAvatar(type, entityId, avatarUrl, file, onSuccess) {
 
         // لو في ملف مرفوع، نرفعه على Storage
         if (file) {
-            const fileExt = file.name.split('.').pop();
+            // 1. ضغط الصورة أولاً
+            const compressedBlob = await compressImage(file);
+
+            const fileExt = 'jpg'; // دايماً بنحول لـ jpg بعد الضغط
             const fileName = `${type}-${entityId}-${Date.now()}.${fileExt}`;
 
             const { error: uploadError } = await supabase.storage
                 .from('avatars')
-                .upload(fileName, file, {
+                .upload(fileName, compressedBlob, {
                     cacheControl: '3600',
-                    upsert: true
+                    upsert: true,
+                    contentType: 'image/jpeg'
                 });
 
             if (uploadError) throw uploadError;
