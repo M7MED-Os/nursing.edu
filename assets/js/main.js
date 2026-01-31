@@ -173,17 +173,47 @@ window.addEventListener('appinstalled', (event) => {
     if (banner) banner.remove();
 });
 
-// PWA Service Worker Registration
+// PWA Service Worker Registration with Fully Automatic Updates
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js')
-            .then(registration => {
-                // console.log('ServiceWorker registration successful with scope: ', registration.scope);
-                console.log("Successful")
+            .then(reg => {
+                console.log('Service Worker Registered');
+
+                reg.addEventListener('updatefound', () => {
+                    const newWorker = reg.installing;
+                    newWorker.addEventListener('statechange', () => {
+                        // If new worker is installed and there's an existing controlled page
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            // Automatically skip waiting to activate the new worker
+                            newWorker.postMessage({ type: 'SKIP_WAITING' });
+
+                            // Optionally show a quick non-blocking notification
+                            Swal.fire({
+                                title: 'تحديث تلقائي ⚡',
+                                text: 'جاري تطبيق تحسينات جديدة...',
+                                icon: 'info',
+                                toast: true,
+                                position: 'top-end',
+                                showConfirmButton: false,
+                                timer: 2000,
+                                timerProgressBar: true
+                            });
+                        }
+                    });
+                });
             })
-            .catch(err => {
-                // console.log('ServiceWorker registration failed: ', err);
-                console.log('Failed')
-            });
+            .catch(err => console.log('SW Registration Failed:', err));
+    });
+
+    // Handle controller change (reload the page once the new SW takes over)
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (refreshing) return;
+        refreshing = true;
+        // Small delay to let the user see the toast if it was just shown
+        setTimeout(() => {
+            window.location.reload();
+        }, 1000);
     });
 }
