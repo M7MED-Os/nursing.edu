@@ -442,10 +442,11 @@
         import { createLevelBadge, createSquadLevelBadge, createLevelProgress, createSquadLevelProgress } from './assets/js/level-badge.js';
         import { GRADES, STREAMS } from './assets/js/constants.js';
         import { checkAuth } from './assets/js/auth.js';
-        import { isVisible, createLockedElement, createLockedAvatar, isSquadMember } from './assets/js/privacy.js';
+        import { isVisible, createLockedElement, createLockedAvatar, isSquadMember, shouldShowAvatar } from './assets/js/privacy.js';
 
         let currentSquad = null;
         let isOwner = false;
+        let currentUser = null;
 
         // Wait for DOM
         if (document.readyState === 'loading') {
@@ -471,7 +472,7 @@
             try {
                 // Check if user is logged in
                 const auth = await checkAuth({ forceRefresh: false });
-                const currentUser = auth ? auth.user : null;
+                currentUser = auth ? auth.user : null;
 
                 // Fetch squad data
                 const { data: squad, error } = await supabase
@@ -658,7 +659,7 @@
 
             const { data: members } = await supabase
                 .from('squad_members')
-                .select('profile_id, profiles(full_name, points, avatar_url)')
+                .select('profile_id, profiles(full_name, points, avatar_url, privacy_avatar, privacy_stats)')
                 .eq('squad_id', squad.id)
                 .order('profiles(points)', { ascending: false });
 
@@ -674,22 +675,53 @@
 
             const membersHTML = members.map(m => {
                 const profile = m.profiles;
+                const isSquadOwner = m.profile_id === squad.owner_id;
+                const currentUserId = currentUser ? currentUser.id : null;
+
+                // Privacy Checks
+                const showAvatar = shouldShowAvatar(
+                    profile.privacy_avatar,
+                    m.profile_id,
+                    currentUserId,
+                    squad.id,
+                    ctx.isMember ? squad.id : null
+                );
+
+                const showMemberStats = isVisible(
+                    profile.privacy_stats || 'public',
+                    m.profile_id === currentUserId,
+                    ctx.isMember
+                );
+
                 const avatarUrl = profile.avatar_url || generateAvatar(profile.full_name, 'initials');
                 const level = calculateLevel(profile.points || 0);
                 const levelColor = getLevelColor(level);
-                const isSquadOwner = m.profile_id === squad.owner_id;
+
+                const avatarHTML = showAvatar
+                    ? `<img src="${avatarUrl}" alt="${profile.full_name}" class="member-avatar" style="border: 3px solid ${levelColor};">`
+                    : `<div class="member-avatar locked" style="border: 3px solid ${levelColor}; background: #1e293b; display: flex; align-items: center; justify-content: center;">
+                         <i class="fas fa-lock" style="color: rgba(255,255,255,0.3);"></i>
+                       </div>`;
+
+                const pointsHTML = showMemberStats
+                    ? `<i class="fas fa-trophy"></i> ${profile.points || 0} نقطة`
+                    : `<i class="fas fa-lock" style="font-size: 0.7rem; opacity: 0.5;"></i> مخفي`;
+
+                const levelHTML = showMemberStats
+                    ? `<i class="fas fa-star" style="color: ${levelColor}"></i> مستوى ${level}`
+                    : `<i class="fas fa-lock" style="font-size: 0.7rem; opacity: 0.5;"></i> مخفي`;
 
                 return `
                     <a href="student-profile.html?id=${m.profile_id}" class="member-card">
-                        <img src="${avatarUrl}" alt="${profile.full_name}" class="member-avatar" style="border: 3px solid ${levelColor};">
+                        ${avatarHTML}
                         <div class="member-info">
                             <div class="member-name">${profile.full_name}</div>
                             <div class="member-points">
                                 <div class="member-stat">
-                                    <i class="fas fa-trophy"></i> ${profile.points || 0} نقطة
+                                    ${pointsHTML}
                                 </div>
                                 <div class="member-stat">
-                                    <i class="fas fa-star" style="color: ${levelColor}"></i> مستوى ${level}
+                                    ${levelHTML}
                                 </div>
                             </div>
                         </div>
