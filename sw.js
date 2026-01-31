@@ -1,4 +1,4 @@
-const CACHE_NAME = 'nursing-edu-v121';
+const CACHE_NAME = 'nursing-edu-v122';
 const STATIC_ASSETS = [
     './',
     './index.html',
@@ -32,7 +32,6 @@ self.addEventListener('install', (event) => {
             return cache.addAll(STATIC_ASSETS);
         })
     );
-    self.skipWaiting();
 });
 
 // 2. Activate - Cleanup Old Caches
