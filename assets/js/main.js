@@ -173,32 +173,24 @@ window.addEventListener('appinstalled', (event) => {
     if (banner) banner.remove();
 });
 
-// PWA Service Worker Registration with Fully Automatic Updates
+// PWA Service Worker Registration with Update Notification
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js')
             .then(reg => {
                 console.log('Service Worker Registered');
 
+                // 1. Check if there is already a waiting worker on load
+                if (reg.waiting) {
+                    showUpdateToast(reg);
+                }
+
+                // 2. Listen for future updates
                 reg.addEventListener('updatefound', () => {
                     const newWorker = reg.installing;
                     newWorker.addEventListener('statechange', () => {
-                        // If new worker is installed and there's an existing controlled page
                         if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                            // Automatically skip waiting to activate the new worker
-                            newWorker.postMessage({ type: 'SKIP_WAITING' });
-
-                            // Optionally show a quick non-blocking notification
-                            Swal.fire({
-                                title: 'تحديث تلقائي ⚡',
-                                text: 'جاري تطبيق تحسينات جديدة...',
-                                icon: 'info',
-                                toast: true,
-                                position: 'top-end',
-                                showConfirmButton: false,
-                                timer: 2000,
-                                timerProgressBar: true
-                            });
+                            showUpdateToast(reg);
                         }
                     });
                 });
@@ -211,9 +203,78 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.addEventListener('controllerchange', () => {
         if (refreshing) return;
         refreshing = true;
-        // Small delay to let the user see the toast if it was just shown
-        setTimeout(() => {
-            window.location.reload();
-        }, 1000);
+        window.location.reload();
+    });
+}
+
+/**
+ * Show a persistent custom toast for updates
+ */
+function showUpdateToast(reg) {
+    // 1. Get or Create Container
+    let container = document.querySelector(".toast-container");
+    if (!container) {
+        container = document.createElement("div");
+        container.className = "toast-container";
+        document.body.appendChild(container);
+    }
+
+    // 2. Prevent duplicate update toasts
+    if (document.getElementById('update-toast')) return;
+
+    // 3. Create Toast Element
+    const toast = document.createElement("div");
+    toast.id = "update-toast";
+    toast.className = `toast success`;
+    toast.style.cssText = `
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        min-width: 300px;
+        padding: 0.8rem 1.2rem;
+        cursor: default;
+    `;
+
+    toast.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 10px; flex: 1;">
+            <i class="fas fa-magic" style="color: var(--primary-color);"></i>
+            <span class="toast-message" style="font-size: 0.9rem;">في تحديث جديد</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <button id="apply-update-btn" style="
+                background: var(--primary-color);
+                color: white;
+                border: none;
+                padding: 5px 12px;
+                border-radius: 8px;
+                font-size: 0.8rem;
+                font-weight: 700;
+                cursor: pointer;
+            ">تحديث</button>
+            <button id="close-update-toast" style="
+                background: none;
+                border: none;
+                color: #94a3b8;
+                cursor: pointer;
+                padding: 4px;
+                font-size: 0.9rem;
+            "><i class="fas fa-times"></i></button>
+        </div>
+    `;
+
+    container.appendChild(toast);
+
+    // 4. Handle Update Button
+    document.getElementById('apply-update-btn').addEventListener('click', () => {
+        if (reg.waiting) {
+            reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+        }
+    });
+
+    // 5. Handle Close Button (Dismiss visually)
+    document.getElementById('close-update-toast').addEventListener('click', () => {
+        toast.style.animation = "fadeOut 0.4s ease forwards";
+        setTimeout(() => toast.remove(), 400);
     });
 }
