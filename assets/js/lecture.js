@@ -105,5 +105,14 @@ async function loadLecture(lessonId) {
                 حدث خطأ أثناء تحميل المحاضرة. يرجى المحاولة مرة أخرى.
             </div>
         `;
+    } finally {
+        // Hide Loading Overlay
+        const loading = document.getElementById('loading');
+        if (loading) {
+            loading.style.opacity = '0';
+            setTimeout(() => {
+                loading.style.display = 'none';
+            }, 300);
+        }
     }
 }

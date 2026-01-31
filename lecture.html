@@ -3,299 +3,534 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>المحاضرة | تمريض بنها</title>
     <link rel="stylesheet" href="assets/css/style.css">
     <link rel="stylesheet" href="assets/css/bottom-nav.css">
     <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
     <!-- Favicons -->
     <link rel="icon" type="image/png" sizes="16x16" href="assets/images/favicon-16x16.png">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/images/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="48x48" href="assets/images/favicon-48x48.png">
     <link rel="apple-touch-icon" sizes="180x180" href="assets/images/apple-touch-icon.png">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <style>
-        /* Lecture Specific Styles */
-        .lecture-page {
-            background-color: #f8fafc;
-            min-height: 100vh;
+        :root {
+            --lecture-max-width: 1000px;
+            --en-border-color: var(--primary-color);
+            --ar-border-color: var(--secondary-color);
+            --heading-color: var(--text-dark);
+            --text-color: #334155;
         }
 
-        /* Using global .page-header */
-
-        .lecture-title {
-            font-size: 2.2rem;
-            font-weight: 900;
-            margin-bottom: 1rem;
+        body {
+            background-color: var(--bg-body);
         }
 
-        .breadcrumb {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            font-size: 0.9rem;
-            opacity: 0.9;
-        }
-
-        .lecture-container {
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 0 1.5rem 5rem;
-        }
-
-        .lecture-content-card {
-            background: white;
-            border-radius: 1.5rem;
-            padding: 2.5rem;
-            box-shadow: var(--shadow-md);
-            border: 1px solid rgba(0, 0, 0, 0.05);
-        }
-
-        /* The Segment Styling */
-        .lecture-segment {
-            margin-bottom: 2.5rem;
-            padding-bottom: 2rem;
-            border-bottom: 1px solid #f1f5f9;
-            transition: var(--transition);
-        }
-
-        .lecture-segment:last-child {
-            border-bottom: none;
-            margin-bottom: 0;
-        }
-
-        .en-text {
-            direction: ltr;
-            text-align: left;
-            font-family: 'Inter', sans-serif;
-            font-size: 1.25rem;
-            line-height: 1.6;
-            color: #1e293b;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-            display: block;
-            border-left: 4px solid var(--primary-color);
-            padding-left: 1.25rem;
-        }
-
-        .ar-text {
-            direction: rtl;
-            text-align: right;
-            font-size: 1.15rem;
-            line-height: 1.8;
-            color: #475569;
-            padding-right: 0;
-            position: relative;
-        }
-
-        /* Removed the lightbulb icon pseudo-element */
-        .ar-text::before {
-            display: none;
-        }
-
-        /* Headers - set to LTR as requested for English medical titles */
-        .lecture-content-card h1 {
-            display: none !important;
-        }
-
-        .lecture-content-card h2,
-        .lecture-content-card h3 {
-            direction: ltr;
-            text-align: left;
-            border-left: 6px solid var(--secondary-color);
-            padding-left: 15px;
-            border-right: none;
-            padding-right: 0;
-        }
-
-        .lecture-content-card h2 {
-            color: var(--primary-dark);
-            margin: 2rem 0 1.5rem;
-            font-size: 1.6rem;
-        }
-
-        .lecture-content-card h3 {
-            color: var(--text-dark);
-            margin: 1.5rem 0 1rem;
-            font-size: 1.3rem;
-        }
-
-        .lecture-actions {
-            margin-top: 3rem;
-            display: flex;
-            justify-content: center;
-            gap: 1.5rem;
-            flex-wrap: wrap;
-        }
-
-        @media (max-width: 480px) {
-            .lecture-actions {
-                flex-direction: column;
-                gap: 1rem;
-            }
-
-            .lecture-actions .btn {
-                width: 100%;
-                justify-content: center;
-            }
-        }
-
-        .video-box {
-            margin-bottom: 3rem;
-            border-radius: 1rem;
-            overflow: hidden;
-            box-shadow: var(--shadow-lg);
-            background: #000;
-            aspect-ratio: 16/9;
-        }
-
-        .video-box iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-        }
-
-        /* Reading Progress */
-        .progress-bar {
+        /* Reading Progress Bar */
+        .reading-progress {
             position: fixed;
             top: 0;
             left: 0;
+            width: 100%;
             height: 4px;
-            background: var(--secondary-color);
-            z-index: 2000;
+            background: rgba(30, 179, 245, 0.1);
+            z-index: 9999;
+            direction: ltr;
+        }
+
+        .reading-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            width: 0%;
             transition: width 0.1s ease;
         }
 
-        /* Improved Table Styling with Scrolling */
-        .table-responsive {
-            width: 100%;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-            /* Smooth scroll on mobile */
-            margin: 2rem 0;
-            border-radius: 12px;
-            box-shadow: var(--shadow-sm);
-            background: white;
+        /* Page Header Overrides */
+        .page-header {
+            padding: 4rem 0 2rem 0;
+            margin-bottom: 2rem;
+            text-align: center;
+            /* Centered */
         }
 
-        .lecture-content-card table {
-            width: 100%;
-            min-width: 600px;
-            /* Forces scroll on small screens instead of squishing */
-            border-collapse: collapse;
-            border: 1px solid #e2e8f0;
+        .lecture-meta {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            /* Centered badges */
+            gap: 1rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
         }
 
-        .lecture-content-card th {
-            background-color: var(--primary-color);
+        .lecture-meta .badge {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 0.4rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
             color: white;
-            padding: 1.2rem;
-            text-align: left;
-            font-weight: 700;
+            font-weight: 600;
         }
 
-        .lecture-content-card td {
-            padding-bottom: 1rem;
-            border-bottom: 1px solid #f1f5f9;
-            vertical-align: top;
-        }
-
-        .lecture-content-card tr:nth-child(even) {
-            background-color: #f8fafc;
-        }
-
-        .lecture-content-card tr:hover {
-            background-color: #f1f5f9;
-        }
-
-        /* Simplified Lists - Removed checkmarks, using border-left for consistency */
-        .lecture-content-card ul,
-        .lecture-content-card ol {
-            padding-left: 0;
-            padding-right: 0;
-            margin: 1.5rem 0;
-            list-style: none;
-            /* Removed default bullets/numbers */
-        }
-
-        .lecture-content-card li {
-            margin-bottom: 0.75rem;
-            position: relative;
-            list-style: none;
-            /* padding-right: 1.5rem; */
-        }
-
-        /* 
-        .lecture-content-card ul li::before {
-            content: "\f058";
-            font-family: "Font Awesome 5 Free";
+        .lecture-title {
+            font-size: clamp(1.75rem, 5vw, 2.5rem);
             font-weight: 900;
-            position: absolute;
-            right: 0;
-            color: var(--secondary-color);
-            font-size: 0.9rem;
-        } */
+            margin: 0;
+            line-height: 1.3;
+            color: white;
+            text-align: center;
+            /* Centered title */
+        }
 
+        .lecture-actions {
+            margin-top: 2rem;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+            /* Centered actions */
+        }
+
+        .lecture-actions .btn {
+            background: rgba(255, 255, 255, 1);
+            color: var(--primary-color);
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            font-weight: 800;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s;
+            box-shadow: var(--shadow-md);
+        }
+
+        .lecture-actions .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+            background: var(--bg-light);
+        }
+
+        .lecture-actions .btn.btn-exam {
+            background: var(--secondary-color);
+            color: white;
+        }
+
+        /* Video Container */
+        .video-container {
+            display: none;
+            margin-bottom: 2rem;
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            box-shadow: var(--shadow-md);
+            background: black;
+        }
+
+        .video-container iframe {
+            width: 100%;
+            height: 500px;
+            border: none;
+        }
+
+        /* Reading Controls Overlay (Sticky) */
+        .reading-controls-wrapper {
+            position: sticky;
+            top: 80px;
+            z-index: 100;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            /* Center the container itself */
+        }
+
+        .reading-controls {
+            background: white;
+            border-radius: 50px;
+            padding: 0.5rem 1.5rem;
+            box-shadow: var(--shadow-md);
+            display: inline-flex;
+            align-items: center;
+            gap: 1.5rem;
+            border: 1px solid #E5E7EB;
+        }
+
+        .font-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        .font-controls button {
+            background: var(--bg-light);
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-dark);
+        }
+
+        .font-controls button:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .font-controls span {
+            font-size: 0.9rem;
+            color: var(--text-dark);
+            font-weight: 700;
+            min-width: 40px;
+            text-align: center;
+        }
+
+        /* Lecture Content Stylings */
+        .lecture-content-wrapper {
+            background: white;
+            border-radius: var(--radius-lg);
+            padding: 3rem;
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 4rem;
+            border: 1px solid #E5E7EB;
+        }
+
+        #lectureContent {
+            font-size: 1.15rem;
+            line-height: 1.8;
+            color: var(--text-dark);
+        }
+
+        #lectureContent h2 {
+            font-size: 1.5em;
+            font-weight: 900;
+            color: var(--primary-color);
+            margin: 3.5rem 0 1.5rem 0;
+            display: flex;
+            flex-wrap: wrap;
+            /* Allow wrapping for the Arabic title */
+            align-items: center;
+            /* Align icon and English text */
+            gap: 12px;
+            padding-bottom: 0.75rem;
+            border-bottom: 2px dashed #E5E7EB;
+            direction: ltr;
+            text-align: left;
+        }
+
+        #lectureContent h2:first-child {
+            margin-top: 0;
+        }
+
+        #lectureContent h2 i {
+            background: var(--bg-light);
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8em;
+            /* Relative icon size */
+            flex-shrink: 0;
+            /* Don't shrink the icon */
+        }
+
+        #lectureContent h3 {
+            font-size: 1.25em;
+            font-weight: 800;
+            color: var(--secondary-color);
+            margin: 2.5rem 0 1rem 0;
+            direction: ltr;
+            text-align: left;
+            display: flex;
+            flex-wrap: wrap;
+            /* Allow wrapping for the Arabic title */
+            align-items: center;
+            /* Align icon and English text */
+            gap: 10px;
+        }
+
+        #lectureContent h3 i {
+            font-size: 0.9em;
+            color: var(--secondary-color);
+            background: #F0FDFA;
+            padding: 8px;
+            border-radius: 8px;
+        }
+
+        #lectureContent h4 {
+            font-size: 1.1em;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin: 2rem 0 0.75rem 0;
+            direction: ltr;
+            text-align: left;
+            padding-left: 10px;
+            border-left: 3px solid var(--bg-light);
+        }
+
+        #lectureContent h2 .ar-title,
+        #lectureContent h3 .ar-title {
+            display: block;
+            width: 100%;
+            flex-basis: 100%;
+            /* Force to new line in flexbox */
+            font-size: 0.8em;
+            color: var(--secondary-color);
+            font-weight: 700;
+            text-align: right;
+            direction: rtl;
+            margin-top: 5px;
+        }
+
+        /* Lists and Paragraphs */
+        #lectureContent ul {
+            margin: 2rem 0;
+        }
+
+        #lectureContent ol {
+            margin: 2rem 0;
+            direction: ltr;
+            text-align: left;
+            padding-left: 0.5rem;
+            /* Give space for numbers */
+        }
+
+        #lectureContent li {
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+
+        /* Bilingual Blocks */
+        .en {
+            direction: ltr;
+            text-align: left;
+            padding: 1.25rem 1.5rem;
+            border-left: 5px solid var(--en-border-color);
+            background: #F0F9FF;
+            border-radius: 0 12px 12px 0;
+            margin-bottom: 0.5rem;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-weight: 500;
+            color: #0369a1;
+            font-size: 1em;
+            /* Ensure it inherits from parent and stays baseline */
+        }
+
+        .ar {
+            direction: rtl;
+            text-align: right;
+            padding: 1rem 1.5rem;
+            border-right: 5px solid var(--ar-border-color);
+            background: #F0FDFA;
+            border-radius: 12px 0 0 12px;
+            font-size: 0.95em;
+            /* Use em for scaling */
+            color: #0f766e;
+            font-weight: 600;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin: 3rem 0;
+            border-radius: 15px;
+            overflow: hidden;
+            border: 1px solid #E5E7EB;
+            box-shadow: var(--shadow-md);
+            font-size: 0.9em;
+            /* Scale table slightly smaller but relative */
+            direction: ltr;
+            /* English-first table */
+        }
+
+        th {
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            padding: 1.25rem;
+            font-weight: 900;
+            text-align: center;
+            border-bottom: 2px solid #E5E7EB;
+        }
+
+        td {
+            padding: 1.25rem;
+            border-bottom: 1px solid #E5E7EB;
+            vertical-align: middle;
+            text-align: center;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        .ar-sub {
+            display: block;
+            margin-top: 8px;
+            font-size: 0.85em;
+            /* Scale subtitle inside cell */
+            color: var(--secondary-color);
+            font-weight: 700;
+            background: #F0FDFA;
+            padding: 4px 10px;
+            border-radius: 6px;
+            display: inline-block;
+        }
+
+        /* Mobile Adjustments */
         @media (max-width: 768px) {
-            .lecture-header {
-                padding: 3rem 0 1.5rem;
+            .page-header {
+                padding: 3rem 1rem 1.5rem 1rem;
+            }
+
+            .lecture-content-wrapper {
+                padding: 1.5rem;
+                border-radius: 0;
+                margin-bottom: 2rem;
+                border-left: none;
+                border-right: none;
+            }
+
+            #lectureContent h2 {
+                font-size: 1.3em;
+                flex-wrap: wrap;
+            }
+
+            #lectureContent h2 .ar-title {
+                width: 100%;
+                margin-top: 5px;
+            }
+
+            .en,
+            .ar {
+                padding: 1rem;
+            }
+
+            .video-container iframe {
+                height: 250px;
+            }
+        }
+
+        /* Loading Overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            flex-direction: column;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid var(--bg-light);
+            border-top: 5px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 1rem;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        @media print {
+
+            .navbar,
+            .lecture-actions,
+            .reading-controls-wrapper,
+            .bottom-nav,
+            .reading-progress {
+                display: none !important;
+            }
+
+            body {
+                background: white;
+            }
+
+            .lecture-content-wrapper {
+                border: none;
+                box-shadow: none;
+                padding: 0;
+            }
+
+            .page-header {
+                background: white;
+                color: black;
+                padding: 0;
+                margin-bottom: 2rem;
             }
 
             .lecture-title {
-                font-size: 1.8rem;
+                color: black;
             }
 
-            .en-text {
-                font-size: 1.1rem;
-            }
-
-            .ar-text {
-                font-size: 1.05rem;
-            }
-
-            .lecture-content-card {
-                padding: 1.5rem;
+            .badge {
+                color: black;
+                border: 1px solid black;
             }
         }
 
         /* Scroll to Top Button */
-        .scroll-to-top {
+        #scrollTopBtn {
+            display: none;
             position: fixed;
-            bottom: 90px;
-            /* Above bottom nav */
+            bottom: 85px;
             right: 20px;
-            /* Changed from right to left for RTL */
-            width: 50px;
-            height: 50px;
+            z-index: 999;
+            width: 45px;
+            height: 45px;
             background: var(--primary-color);
             color: white;
             border: none;
             border-radius: 50%;
             cursor: pointer;
-            display: none;
+            box-shadow: var(--shadow-md);
+            transition: all 0.3s ease;
             align-items: center;
             justify-content: center;
             font-size: 1.2rem;
-            box-shadow: 0 4px 12px rgba(3, 169, 244, 0.4);
-            transition: all 0.3s ease;
-            z-index: 999;
         }
 
-        .scroll-to-top:hover {
+        #scrollTopBtn:hover {
             background: var(--primary-dark);
-            transform: translateY(-3px);
-            box-shadow: 0 6px 16px rgba(3, 169, 244, 0.5);
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
         }
 
-        .scroll-to-top.show {
+        #scrollTopBtn.show {
             display: flex;
-            animation: fadeInUp 0.3s ease;
+            animation: fadeIn 0.3s ease-in-out;
         }
 
-        @keyframes fadeInUp {
+        @keyframes fadeIn {
             from {
                 opacity: 0;
-                transform: translateY(20px);
+                transform: translateY(10px);
             }
 
             to {
@@ -303,20 +538,21 @@
                 transform: translateY(0);
             }
         }
-
-        @media (max-width: 768px) {
-            .scroll-to-top {
-                /* bottom: 50px; */
-                width: 45px;
-                height: 45px;
-                font-size: 1rem;
-            }
-        }
     </style>
 </head>
 
-<body class="lecture-page">
-    <div class="progress-bar" id="readingProgress"></div>
+<body>
+
+    <!-- Loading Screen -->
+    <div id="loading" class="loading-overlay">
+        <div class="spinner"></div>
+        <p>جاري تحضير المحاضرة...</p>
+    </div>
+
+    <!-- Reading Progress Bar -->
+    <div class="reading-progress">
+        <div class="reading-progress-bar" id="progressBar"></div>
+    </div>
 
     <!-- Navbar -->
     <nav class="navbar">
@@ -330,7 +566,7 @@
                 <i class="fas fa-bars"></i>
             </div>
 
-            <div id="pwaLogoutBtn" class="pwa-logout-btn">
+            <div id="pwaLogoutBtn" class="pwa-logout-btn" style="display:none;">
                 <i class="fas fa-sign-out-alt"></i>
             </div>
 
@@ -344,51 +580,60 @@
                         <i class="fas fa-shield-alt"></i> Admin
                     </a>
                 </li>
-                <li><a href="profile.html">البروفايل</a></li>
+                <li><a href="profile.html" id="navUserName">البروفايل</a></li>
                 <li><button id="logoutBtn" class="btn btn-outline" style="padding: 0.5rem 1rem;">خروج</button></li>
             </ul>
         </div>
     </nav>
 
+    <!-- Header Section -->
     <header class="page-header">
         <div class="container">
-            <h1 class="lecture-title" id="lectureTitle">جاري تحميل المحاضرة...</h1>
-            <div class="breadcrumb">
-                <span id="courseName">المادة</span>
+            <div class="lecture-meta">
+                <span class="badge">
+                    <i class="fas fa-book"></i>
+                    <span id="courseName">تحميل...</span>
+                </span>
+            </div>
+            <h1 class="lecture-title" id="lectureTitle">جاري تحميل عنوان المحاضرة...</h1>
+
+            <div class="lecture-actions">
+                <a href="#" id="examLink" class="btn btn-exam" style="display: none;">
+                    <i class="fas fa-edit"></i> حل الامتحان
+                </a>
             </div>
         </div>
     </header>
 
-    <main class="lecture-container">
-        <!-- Video if exists -->
-        <div id="videoContainer" style="display: none;">
-            <div class="video-box">
-                <iframe id="lectureVideo" src="" allowfullscreen></iframe>
+    <div class="container" style="max-width: var(--lecture-max-width);">
+
+        <!-- Video Section -->
+        <div id="videoContainer" class="video-container">
+            <iframe id="lectureVideo" allowfullscreen></iframe>
+        </div>
+
+        <!-- Float Controls -->
+        <div class="reading-controls-wrapper">
+            <div class="reading-controls">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-font" style="color: var(--primary-color);"></i>
+                    <span style="font-weight: 700; font-size: 0.9rem;">الخط</span>
+                </div>
+                <div class="font-controls">
+                    <button id="decreaseFont"><i class="fas fa-minus"></i></button>
+                    <span id="fontSizeDisplay">100%</span>
+                    <button id="increaseFont"><i class="fas fa-plus"></i></button>
+                </div>
             </div>
         </div>
 
-        <div class="lecture-content-card" id="lectureContent">
-            <!-- Content will be injected here -->
-            <div class="text-center py-5">
-                <div class="spinner"></div>
-                <p class="mt-3">نجهز لك أفضل تجربة قراءة...</p>
+        <!-- Content Area -->
+        <article class="lecture-content-wrapper">
+            <div id="lectureContent">
+                <!-- Content injected via JS -->
             </div>
-        </div>
-
-        <div class="lecture-actions">
-            <button class="btn btn-outline" onclick="history.back()">
-                <i class="fas fa-arrow-right"></i> رجوع
-            </button>
-            <a href="#" id="examLink" class="btn btn-primary btn-lg" style="display: none;">
-                <i class="fas fa-pen-nib"></i> حل الامتحان
-            </a>
-        </div>
-    </main>
-
-    <!-- Scroll to Top Button -->
-    <button class="scroll-to-top" id="scrollToTopBtn" title="العودة للأعلى">
-        <i class="fas fa-arrow-up"></i>
-    </button>
+        </article>
+    </div>
 
     <!-- Footer -->
     <footer class="footer">
@@ -399,7 +644,7 @@
         </div>
     </footer>
 
-    <!-- Bottom Navigation -->
+    <!-- Bottom Nav (PWA) -->
     <nav class="bottom-nav">
         <div class="bottom-nav-container">
             <a href="dashboard.html" class="bottom-nav-item">
@@ -429,51 +674,65 @@
         </div>
     </nav>
 
+    <!-- Scroll to Top Button -->
+    <button id="scrollTopBtn" title="العودة للأعلى">
+        <i class="fas fa-arrow-up"></i>
+    </button>
+
     <!-- Scripts -->
     <script type="module" src="assets/js/main.js"></script>
     <script type="module" src="assets/js/auth.js"></script>
     <script type="module" src="assets/js/lecture.js"></script>
 
     <script>
-        // Reading progress logic
-        window.onscroll = function () {
-            let winScroll = document.body.scrollTop || document.documentElement.scrollTop;
-            let height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
-            let scrolled = (winScroll / height) * 100;
-            document.getElementById("readingProgress").style.width = scrolled + "%";
-
-            // Scroll to top button visibility
-            const scrollToTopBtn = document.getElementById('scrollToTopBtn');
-            if (winScroll > 300) {
-                scrollToTopBtn.classList.add('show');
-            } else {
-                scrollToTopBtn.classList.remove('show');
-            }
-        };
-
-        // Scroll to top functionality
-        document.getElementById('scrollToTopBtn').addEventListener('click', function () {
-            window.scrollTo({
-                top: 0,
-                behavior: 'smooth'
-            });
+        // Reading Progress
+        window.addEventListener('scroll', () => {
+            const winScroll = document.documentElement.scrollTop;
+            const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            const scrolled = (winScroll / height) * 100;
+            document.getElementById('progressBar').style.width = scrolled + '%';
         });
 
-        // --- PWA Focus Mode ---
-        // If the app is running in Standalone mode (PWA), hide navs for focus
-        if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) {
-            console.log("Lecture Focus Mode: PWA Detected. Hiding distractions.");
-            const style = document.createElement('style');
-            style.textContent = `
-                .bottom-nav, 
-                .pwa-logout-btn,
-                .navbar .menu-toggle,
-                .navbar .nav-links { display: none !important; }
-                .lecture-container { padding-bottom: 2rem !important; }
-                .scroll-to-top { bottom: 20px !important; }
-            `;
-            document.head.appendChild(style);
-        }
+        // Font Controls
+        let fontSize = parseInt(localStorage.getItem('lectureFontSize')) || 100;
+        const cont = document.getElementById('lectureContent');
+        const display = document.getElementById('fontSizeDisplay');
+
+        const updateFont = () => {
+            cont.style.fontSize = (fontSize / 100) * 1.15 + 'rem';
+            display.textContent = fontSize + '%';
+            localStorage.setItem('lectureFontSize', fontSize);
+        };
+
+        updateFont();
+
+        document.getElementById('increaseFont').onclick = () => { if (fontSize < 180) { fontSize += 10; updateFont(); } };
+        document.getElementById('decreaseFont').onclick = () => { if (fontSize > 70) { fontSize -= 10; updateFont(); } };
+
+        // UI Helpers
+        document.addEventListener('DOMContentLoaded', () => {
+            // Check PWA mode to show logout button
+            if (window.matchMedia('(display-mode: standalone)').matches) {
+                document.getElementById('pwaLogoutBtn').style.display = 'block';
+            }
+
+            // Scroll to Top Logic
+            const scrollTopBtn = document.getElementById('scrollTopBtn');
+            window.addEventListener('scroll', () => {
+                if (window.pageYOffset > 300) {
+                    scrollTopBtn.classList.add('show');
+                } else {
+                    scrollTopBtn.classList.remove('show');
+                }
+            });
+
+            scrollTopBtn.addEventListener('click', () => {
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
+            });
+        });
     </script>
 </body>
 
