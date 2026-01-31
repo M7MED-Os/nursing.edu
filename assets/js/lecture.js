@@ -84,6 +84,14 @@ async function loadLecture(lessonId) {
         if (lesson.content) {
             lectureContent.innerHTML = lesson.content;
 
+            // Wrap tables for horizontal scroll
+            lectureContent.querySelectorAll('table').forEach(table => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'table-wrapper';
+                table.parentNode.insertBefore(wrapper, table);
+                wrapper.appendChild(table);
+            });
+
             // Clean up empty lines or fix structure if needed
             // But usually we expect the AI-generated HTML to be clean
         } else {
