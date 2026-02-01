@@ -128,37 +128,22 @@ window.dismissAnnouncement = (id) => {
 
 window.showPointsExplanation = () => {
     Swal.fire({
-        title: '<span style="color: var(--primary-color);">إزاي تجمع نقط؟ 🎯</span>',
+        title: '<span style="font-weight: 800; color: #1e293b; font-size: 1.2rem;">إزاي تجمع نقط؟ 🎯</span>',
         html: `
-            <div style="text-align: right; direction: rtl; line-height: 1.6; font-size: 0.95rem;">
-                <div style="background: #f0f9ff; padding: 12px; border-radius: 12px; margin-bottom: 15px; border-right: 4px solid var(--primary-color);">
-                    <strong>النقاط هي مستواك في المنصة!</strong><br>
-                    كل ما تجمع نقط أكتر، المستوى بتاعك هيزيد في المنصه، وبتظهر في قايمة الاوائل اللي ان شاء الله هيبقى فيها فلوس😂
+            <div style="text-align: right; direction: rtl; font-family: 'Cairo', sans-serif; line-height: 1.6;">
+                <div style="background: #f0f9ff; padding: 15px; border-radius: 12px; border-right: 4px solid #03A9F4; color: #334155; font-size: 1rem;">
+                    كل امتحان بتحله بتزيد في النقط نقطة لكل سؤال صح (لو دي أول مرة تحل الامتحان). 
+                    <br>
+                    وفي نقط زيادة لو قفلت، ولو حليت كل يوم امتحان لمدة 3 و 5 و 7 أيام.
+                    <br>
+                    كل ما تزيد في النقط و المتسوى هتظهر في قايمة الاوائل😂
                 </div>
-                
-                <ul style="list-style: none; padding: 0;">
-                    <li style="margin-bottom: 12px; display: flex; align-items: flex-start; gap: 10px;">
-                        <i class="fas fa-pen-nib" style="color: #03A9F4; margin-top: 5px;"></i>
-                        <span><strong>حل الامتحانات:</strong> بتاخد نقط على حسب درجتك في كل امتحان بتحله كل سؤال صح بتزيد نقطه (بس في حالة ان ده اول مره تحل الامتحان)</span>
-                    </li>
-                    <li style="margin-bottom: 12px; display: flex; align-items: flex-start; gap: 10px;">
-                        <i class="fas fa-crown" style="color: #FFD700; margin-top: 5px;"></i>
-                        <span><strong>بونص التقفيل:</strong> لو قفلت الامتحان من أول مرة بتاخد 10 نقط بونص فوق درجتك! 👑</span>
-                    </li>
-                    <li style="margin-bottom: 12px; display: flex; align-items: flex-start; gap: 10px;">
-                        <i class="fas fa-users" style="color: #10b981; margin-top: 5px;"></i>
-                        <span><strong>تحديات الشلة:</strong> حل الامتحان مع شلتك بتاخد بونص إضافي (3 أو 8 نقط).</span>
-                    </li>
-                    <li style="margin-bottom: 12px; display: flex; align-items: flex-start; gap: 10px;">
-                        <i class="fas fa-check-double" style="color: #f59e0b; margin-top: 5px;"></i>
-                        <span><strong>الالتزام اليومي:</strong> لو ذاكرت كل يوم و حليت امتحان هتاخد نقط زيادة بتفضل تزيد لحد ما تبطل تذاكر هتبدأ من الاول</span>
-                    </li>
-                </ul>
             </div>
         `,
-        confirmButtonText: 'تمام',
+        confirmButtonText: 'تمام، فهمت!',
         confirmButtonColor: '#03A9F4',
-        width: '500px',
-        padding: '1rem'
+        width: '380px',
+        padding: '1.5rem',
+        borderRadius: '20px'
     });
 };

@@ -148,13 +148,13 @@ export function getLevelMetadata(points, multiplier = LEVEL_MULTIPLIER) {
  */
 export function getLevelLegend() {
     const tiers = [
-        { minLevel: 25, name: 'أسطورة', icon: '🔥', color: '#dc2626' },
-        { minLevel: 20, name: 'بطل', icon: '👑', color: '#f97316' },
-        { minLevel: 15, name: 'محترف', icon: '🏆', color: '#eab308' },
-        { minLevel: 10, name: 'متفوق', icon: '💎', color: '#22c55e' },
-        { minLevel: 7, name: 'متقدم', icon: '⭐', color: '#3b82f6' },
-        { minLevel: 4, name: 'نشط', icon: '🌟', color: '#8b5cf6' },
-        { minLevel: 0, name: 'مبتدئ', icon: '🔰', color: '#94a3b8' }
+        { minLevel: 25, name: 'مستوى 25', icon: '🔥', color: '#dc2626' },
+        { minLevel: 20, name: 'مستوى 20', icon: '👑', color: '#f97316' },
+        { minLevel: 15, name: 'مستوى 15', icon: '🏆', color: '#eab308' },
+        { minLevel: 10, name: 'مستوى 10', icon: '💎', color: '#22c55e' },
+        { minLevel: 7, name: 'مستوى 7', icon: '⭐', color: '#3b82f6' },
+        { minLevel: 4, name: 'مستوى 4', icon: '🌟', color: '#8b5cf6' },
+        { minLevel: 0, name: 'مستوى 0', icon: '🔰', color: '#94a3b8' }
     ];
 
     return tiers.map(tier => ({

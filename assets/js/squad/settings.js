@@ -348,48 +348,48 @@ window.saveSquadPrivacySettings = async function () {
 
 window.showSquadGuide = () => {
     Swal.fire({
-        title: '<span style="color: var(--primary-color);">مرشد الشلة 👨‍🏫</span>',
+        title: '<span style="font-weight: 800; color: #1e293b; font-size: 1.25rem;">مرشد الشلة 👨‍🏫</span>',
         html: `
-            <div style="text-align: right; direction: rtl; line-height: 1.6; font-size: 0.95rem;">
-                <div style="background: #f0f9ff; padding: 12px; border-radius: 12px; margin-bottom: 15px; border-right: 4px solid var(--primary-color);">
-                    <strong>ليه تكون في شلة؟</strong><br>
-                    المذاكرة مع الصحاب بتشجعك وتخليك تلتزم أكتر. ضيف صحابك ب الكود وذاكرو مع بعض وشوفوا مين بيذاكر ومين مكسل! 😉
+            <div style="text-align: right; direction: rtl; font-family: 'Cairo', sans-serif;">
+                <div style="background: #f0f9ff; padding: 12px; border-radius: 10px; margin-bottom: 15px; border-right: 4px solid #03A9F4; font-size: 1rem; line-height: 1.5;">
+                    <strong>توضيح:</strong><br>
+                 ابعت الكود اللي في الاخر لصحابك و هما هيخشو يبحثو بيه و يخشو الشلة معاك.
                 </div>
                 
-                <ul style="list-style: none; padding: 0;">
-                    <li style="margin-bottom: 12px; display: flex; align-items: flex-start; gap: 10px;">
-                        <i class="fas fa-tasks" style="color: #03A9F4; margin-top: 5px;"></i>
-                        <span><strong>أهداف مشتركة:</strong> لما أي حد يخلص مهمة في الـ To-Do List بتظهر لكل الشلة على طول. وده بيحمس الكل يخلص اللي وراه.</span>
-                    </li>
-                    <li style="margin-bottom: 12px; display: flex; align-items: flex-start; gap: 10px;">
-                        <i class="fas fa-stopwatch" style="color: #f59e0b; margin-top: 5px;"></i>
-                        <span><strong>تايمر موحد:</strong> شغلوا التايمر مع بعض عشان تذاكروا في نفس الوقت (واحد بس يشغل التايمر هيظهر للكل و نفس النظام في ال todo list).</span>
-                    </li>
-                    <li style="margin-bottom: 12px; display: flex; align-items: flex-start; gap: 10px;">
-                        <i class="fas fa-graduation-cap" style="color: #10b981; margin-top: 5px;"></i>
-                        <span><strong>امتحانات الشلة:</strong> تقدروا تحلوا امتحانات مع بعض عشان تزودوا نقاط الشلة. رصيد الشلة بيتحسب كدة: (متوسط درجاتكم × 2) بس لازم تحققو الشرط اللي بيظهر اللي هو 75% من الشلة تحل الامتحان</span>
-                    </li>
-                    <li style="margin-bottom: 12px; display: flex; align-items: flex-start; gap: 10px;">
-                        <i class="fas fa-gift" style="color: #ef4444; margin-top: 5px;"></i>
-                        <span><strong>نقاط بونص ليك:</strong> 
-                            <br>• بتاخد <strong>3 نقط</strong> بونص لو حققتو الشرط و 75% من الشلة حلوا الامتحان.
-                            <br>• بتاخد <strong>8 نقط</strong> بونص لو كلكو (100%) حليتوا الامتحان.
-                        </span>
-                    </li>
-                    <li style="margin-bottom: 12px; display: flex; align-items: flex-start; gap: 10px;">
-                        <i class="fas fa-comments" style="color: #8b5cf6; margin-top: 5px;"></i>
-                        <span><strong>شات الشلة:</strong> هنا هيظهر تفاصيل كل امتحان هتحلوه مع بعض و الزرار اللي بيدخلكو الامتحان و كل ما واحد يحل بيتبعت رساله فاضل كام واحد عشان الشرط يتحقق و في الاخر يقولك حققتو الشرط ولا لا و بتاخدو النقط.</span>
-                    </li>
-                    <li style="margin-bottom: 12px; display: flex; align-items: flex-start; gap: 10px;">
-                        <i class="fas fa-user-clock" style="color: #10b981; margin-top: 5px;"></i>
-                        <span><strong>صحابك أونلاين:</strong> لو صاحبك خرج من صفحة الشلة هيظهر لك على طول انه بقى اوفلاين و مش بيذاكر😂</span>
-                    </li>
-                </ul>
+                <p style="font-weight: 700; color: #334155; font-size: 1.1rem; margin-bottom: 10px;">إيه اللي تقدرو تعملوه مع بعض؟</p>
+                
+                <div style="display: flex; flex-direction: column; gap: 10px; max-height: 400px; overflow-y: auto; padding-left: 6px; scrollbar-width: thin;">
+                    <div style="display: flex; align-items: flex-start; gap: 12px; padding: 10px; background: #fffbeb; border-radius: 10px; border: 1px solid #fef3c7;">
+                        <i class="fas fa-stopwatch" style="color: #f59e0b; margin-top: 4px; font-size: 1rem;"></i>
+                        <span style="font-size: 0.95rem; line-height: 1.5;">لو حد فيكو ظبط تايمر هيظهر للكل و تبدئو تذاكرو مع بعض.</span>
+                    </div>
+
+                    <div style="display: flex; align-items: flex-start; gap: 12px; padding: 10px; background: #f0fdf4; border-radius: 10px; border: 1px solid #dcfce7;">
+                        <i class="fas fa-tasks" style="color: #16a34a; margin-top: 4px; font-size: 1rem;"></i>
+                        <span style="font-size: 0.95rem; line-height: 1.5;">الـ To-Do List لو حد عمل حاجة فيها بتظهر للكل ولو حد خلص وعلم إنه خلص هيظهر اسمه تحتها لباقي الشلة.</span>
+                    </div>
+
+                    <div style="display: flex; align-items: flex-start; gap: 12px; padding: 10px; background: #eff6ff; border-radius: 10px; border: 1px solid #dbeafe;">
+                        <i class="fas fa-graduation-cap" style="color: #2563eb; margin-top: 4px; font-size: 1rem;"></i>
+                        <div style="font-size: 0.95rem; line-height: 1.5;">
+                            <strong>امتحان جماعي:</strong> بتبدئوه عادي زي أي امتحان وتبدئو تحلو.<br>
+                            - ده لما تحلو مع بعض النقط بتاعت الشلة بتزيد وبنحسب متوسط الدرجات ونضربها في 2.<br>
+                            - بيبقى في كام حاجة كده أول حاجة وقت دخول الامتحان ده لازم تخش قبل ما الوقت ده يخلص.<br>
+                            - كمان في شرط مثلاً إن 50% على الأقل من الشلة تحل الامتحان يعني لو الشلة فيها مثلاً 6 لازم على الأقل 3 يحلو عشان نقط الشلة تزيد.
+                        </div>
+                    </div>
+
+                    <div style="display: flex; align-items: flex-start; gap: 12px; padding: 10px; background: #f5f3ff; border-radius: 10px; border: 1px solid #ede9fe;">
+                        <i class="fas fa-comments" style="color: #7c3aed; margin-top: 4px; font-size: 1rem;"></i>
+                        <span style="font-size: 0.95rem; line-height: 1.5;">في شات ممكن تتكلمو فيه مع بعض وكمان تشوف مين من صحابك أونلاين وبيتبعت فيه شوية رسايل تلقائية.</span>
+                    </div>
+                </div>
             </div>
         `,
-        confirmButtonText: 'فهمت، يلا بينا! 🚀',
+        confirmButtonText: 'يلا بينا! 🚀',
         confirmButtonColor: '#03A9F4',
-        width: '500px',
-        padding: '1rem'
+        width: '450px',
+        padding: '1.5rem',
+        borderRadius: '24px'
     });
 };

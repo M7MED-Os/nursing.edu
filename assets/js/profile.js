@@ -531,11 +531,8 @@ if (showLevelGuideBtn) {
         const legend = getLevelLegend();
 
         let html = `
-            <div style="text-align: right; direction: rtl;">
-                <p style="margin-bottom: 1.5rem; color: #64748b; font-size: 0.95rem;">
-                    دي قائمة بكل المستويات ونقاط كل مستوى. حل امتحانات وجمع نقاط ترفع مستواك! ✨
-                </p>
-                <div style="display: flex; flex-direction: column; gap: 10px;">
+            <div style="text-align: right; direction: rtl; font-family: 'Cairo', sans-serif;">
+                <div style="display: flex; flex-direction: column; gap: 6px; max-height: 380px; overflow-y: auto; padding-left: 4px; scrollbar-width: thin;">
         `;
 
         legend.reverse().forEach(tier => {
@@ -544,21 +541,29 @@ if (showLevelGuideBtn) {
                     display: flex;
                     align-items: center;
                     justify-content: space-between;
-                    padding: 12px 15px;
-                    background: #f8fafc;
-                    border-radius: 12px;
-                    border-right: 5px solid ${tier.color};
-                ">
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <span style="font-size: 1.5rem;">${tier.icon}</span>
-                        <div>
-                            <div style="font-weight: 800; color: #1e293b; font-size: 0.95rem;">${tier.name}</div>
-                            <div style="font-size: 0.75rem; color: #64748b;">من مستوى ${tier.minLevel}</div>
-                        </div>
+                    padding: 8px 12px;
+                    background: white;
+                    border-radius: 10px;
+                    border: 1px solid #f1f5f9;
+                    transition: border-color 0.2s;
+                " onmouseover="this.style.borderColor='${tier.color}60'"
+                   onmouseout="this.style.borderColor='#f1f5f9'">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="
+                            font-size: 1rem;
+                            width: 28px;
+                            height: 28px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            background: ${tier.color}15;
+                            border-radius: 8px;
+                        ">${tier.icon}</span>
+                        <div style="font-weight: 700; color: #334155; font-size: 0.85rem;">${tier.name}</div>
                     </div>
-                    <div style="text-align: left;">
-                        <div style="font-weight: 700; color: ${tier.color}; font-size: 0.9rem;">${tier.points.toLocaleString()} نقطة</div>
-                        <div style="font-size: 0.7rem; color: #94a3b8;">للشلة: ${tier.squadPoints.toLocaleString()}</div>
+                    <div style="display: flex; align-items: center; gap: 4px;">
+                        <span style="font-weight: 800; color: ${tier.color}; font-size: 0.95rem;">${tier.points.toLocaleString()}</span>
+                        <span style="font-size: 0.65rem; color: #94a3b8; font-weight: 600;">XP</span>
                     </div>
                 </div>
             `;
@@ -566,19 +571,31 @@ if (showLevelGuideBtn) {
 
         html += `
                 </div>
-                <div style="margin-top: 1.5rem; padding: 10px; background: #fffbeb; border-radius: 8px; border: 1px border-style: dashed; border-color: #fef3c7; font-size: 0.85rem; color: #92400e; text-align: center;">
-                    <i class="fas fa-info-circle"></i> النقاط = (المستوى × المستوى) × ${LEVEL_MULTIPLIER}
+                <div style="
+                    margin-top: 1rem;
+                    padding: 10px;
+                    background: #f8fafc;
+                    border-radius: 8px;
+                    border: 1px dashed #e2e8f0;
+                    color: #94a3b8;
+                    font-size: 0.75rem;
+                    text-align: center;
+                ">
+                    بتتحسب كده: (المستوى × المستوى) × ${LEVEL_MULTIPLIER}
                 </div>
             </div>
         `;
 
         Swal.fire({
-            title: 'دليل المستويات 📈',
+            title: '<span style="font-weight: 800; color: #1e293b; font-size: 1.1rem;"> المستويات</span>',
             html: html,
             showConfirmButton: true,
-            confirmButtonText: 'فهمت',
+            confirmButtonText: 'إغلاق',
             confirmButtonColor: '#03A9F4',
-            width: '450px'
+            width: '360px',
+            padding: '1.25rem',
+            background: '#ffffff',
+            borderRadius: '20px'
         });
     });
 }
