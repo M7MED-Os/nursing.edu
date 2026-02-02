@@ -122,6 +122,21 @@ export function getCache(key) {
 export function clearCache(key) {
     localStorage.removeItem(`cache_${key}`);
 }
+
+/**
+ * Clears all cache items that match a specific pattern (e.g., 'leaderboard_')
+ * @param {string} pattern - String to look for in keys
+ */
+export function clearCacheByPattern(pattern) {
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.includes(`cache_${pattern}`)) {
+            keysToRemove.push(key);
+        }
+    }
+    keysToRemove.forEach(k => localStorage.removeItem(k));
+}
 /**
  * SWR Pattern: Get Data from Cache immediately, then fetch and update
  * @param {string} key - Cache key

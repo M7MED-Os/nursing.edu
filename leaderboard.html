@@ -649,7 +649,7 @@
                     return;
                 }
 
-                body.innerHTML = data.map((s, i) => {
+                body.innerHTML = data.filter(s => s.show_on_leaderboard !== false).map((s, i) => {
                     const rank = i + 1;
                     let rankDisplay = rank;
                     let rankClass = rank <= 3 ? `rank-${rank}` : '';

@@ -1,4 +1,5 @@
 import { supabase } from "./supabaseClient.js";
+import { clearCacheByPattern } from "./utils.js";
 import { showSuccessAlert, showErrorAlert, showWarningAlert, showDeleteConfirmDialog, showLoadingAlert } from "./utils/alerts.js";
 
 // Import admin modules
@@ -373,6 +374,11 @@ window.openEditStudent = async (id) => {
                     timer: 1500,
                     showConfirmButton: false
                 });
+
+                // Clear any leaderboard cache to reflect changes immediately
+                clearCacheByPattern('leaderboard_');
+                clearCacheByPattern('squad_leaderboard_');
+
                 closeModal();
                 loadStudents();
             }
@@ -477,6 +483,11 @@ window.deleteStudent = async (id, name) => {
                 timer: 2000,
                 showConfirmButton: false
             });
+
+            // Clear cache to reflect deletion in leaderboard
+            clearCacheByPattern('leaderboard_');
+            clearCacheByPattern('squad_leaderboard_');
+
             loadStudents();
         } catch (err) {
             console.error("Delete Fail", err);
@@ -559,6 +570,11 @@ window.toggleStudentStatus = async (id, currentStatus) => {
                         showConfirmButton: false
                     });
                     triggerCelebration('main');
+
+                    // Clear any leaderboard cache to reflect changes immediately
+                    clearCacheByPattern('leaderboard_');
+                    clearCacheByPattern('squad_leaderboard_');
+
                     closeModal();
                     loadStudents();
                 }
@@ -599,6 +615,11 @@ window.toggleStudentStatus = async (id, currentStatus) => {
                     timer: 1500,
                     showConfirmButton: false
                 });
+
+                // Clear any leaderboard cache to reflect changes immediately
+                clearCacheByPattern('leaderboard_');
+                clearCacheByPattern('squad_leaderboard_');
+
                 loadStudents();
             }
         }
