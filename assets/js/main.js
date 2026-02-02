@@ -178,7 +178,7 @@ if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js')
             .then(reg => {
-                console.log('Service Worker Registered');
+                // console.log('Service Worker Registered');
 
                 // 1. Check if there is already a waiting worker on load
                 if (reg.waiting) {
