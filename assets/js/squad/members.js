@@ -80,6 +80,13 @@ function renderMembersUI(members) {
             `;
         } else if (m.profile_id === currentSquad.owner_id) {
             actions = '<span style="font-size:0.6rem; color:#f59e0b; margin-right:auto;">مالك الشلة ⭐</span>';
+        } else if (m.profile_id === currentProfile.id) {
+            // User can leave if they are not the owner
+            actions = `
+                <div class="member-actions" style="margin-right:auto;">
+                    <i class="fas fa-sign-out-alt" title="خروج من الشلة" onclick="leaveSquad()" style="color:#ef4444; cursor:pointer; font-size: 1.1rem;"></i>
+                </div>
+            `;
         }
 
         let activeText = isOnline ? 'نشط الآن' : (m.profiles.updated_at ? timeAgo(m.profiles.updated_at) : 'غير نَشِط');

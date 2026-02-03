@@ -155,46 +155,78 @@
             border-top: 1px solid #edf2f7;
             background: white;
             display: flex;
+            flex-direction: column;
             gap: 1rem;
             flex-shrink: 0;
             box-shadow: 0 -10px 20px rgba(0,0,0,0.02);
         ">
-            <button onclick="closeSquadPrivacyModal()" style="
-                flex: 1;
-                background: #f1f5f9;
-                border: 1px solid #e2e8f0;
-                color: #64748b;
-                padding: 0.875rem 1rem;
-                border-radius: 14px;
-                font-weight: 700;
-                cursor: pointer;
-                transition: all 0.3s ease;
-                font-family: inherit;
-            " onmouseover="this.style.background='#e2e8f0'; this.style.color='#475569'"
-                onmouseout="this.style.background='#f1f5f9'; this.style.color='#64748b'">
-                إلغاء
-            </button>
-            <button onclick="saveSquadPrivacySettings()" style="
-                flex: 1.8;
-                background: linear-gradient(135deg, #03A9F4 0%, #0091ea 100%);
-                border: none;
-                color: white;
-                padding: 0.875rem 1rem;
-                border-radius: 14px;
-                font-weight: 800;
-                cursor: pointer;
-                transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-                box-shadow: 0 8px 24px rgba(3, 169, 244, 0.3);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                gap: 0.6rem;
-                font-family: inherit;
-            " onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 12px 28px rgba(3, 169, 244, 0.4)'"
-                onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 8px 24px rgba(3, 169, 244, 0.3)'">
-                <i class="fas fa-check-circle" style="font-size: 1.1rem;"></i>
-                حفظ التحديثات
-            </button>
+            <!-- Danger Actions Section -->
+            <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                <!-- Delete Squad Button (for owner/admin) -->
+                <button id="deleteSquadBtn" onclick="deleteSquad()" style="
+                    flex: 1;
+                    min-width: 140px;
+                    background: linear-gradient(135deg, #7f1d1d 0%, #450a0a 100%);
+                    border: none;
+                    color: white;
+                    padding: 0.75rem 1rem;
+                    border-radius: 12px;
+                    font-weight: 700;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                    font-family: inherit;
+                    display: none;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 0.5rem;
+                    font-size: 0.9rem;
+                    box-shadow: 0 4px 12px rgba(127, 29, 29, 0.35);
+                " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(127, 29, 29, 0.45)'"
+                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(127, 29, 29, 0.35)'">
+                    <i class="fas fa-trash-alt"></i>
+                    حذف الشلة نهائياً
+                </button>
+            </div>
+
+            <!-- Primary Actions Section -->
+            <div style="display: flex; gap: 1rem;">
+                <button onclick="closeSquadPrivacyModal()" style="
+                    flex: 1;
+                    background: #f1f5f9;
+                    border: 1px solid #e2e8f0;
+                    color: #64748b;
+                    padding: 0.875rem 1rem;
+                    border-radius: 14px;
+                    font-weight: 700;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                    font-family: inherit;
+                " onmouseover="this.style.background='#e2e8f0'; this.style.color='#475569'"
+                    onmouseout="this.style.background='#f1f5f9'; this.style.color='#64748b'">
+                    إلغاء
+                </button>
+                <button onclick="saveSquadPrivacySettings()" style="
+                    flex: 1.8;
+                    background: linear-gradient(135deg, #03A9F4 0%, #0091ea 100%);
+                    border: none;
+                    color: white;
+                    padding: 0.875rem 1rem;
+                    border-radius: 14px;
+                    font-weight: 800;
+                    cursor: pointer;
+                    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                    box-shadow: 0 8px 24px rgba(3, 169, 244, 0.3);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 0.6rem;
+                    font-family: inherit;
+                " onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 12px 28px rgba(3, 169, 244, 0.4)'"
+                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 8px 24px rgba(3, 169, 244, 0.3)'">
+                    <i class="fas fa-check-circle" style="font-size: 1.1rem;"></i>
+                    حفظ التحديثات
+                </button>
+            </div>
         </div>
     </div>
 </div>

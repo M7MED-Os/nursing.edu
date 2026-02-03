@@ -305,6 +305,15 @@ window.openSquadPrivacyModal = async function () {
         modal.style.display = 'block';
         document.body.style.overflow = 'hidden';
         loadSquadPrivacySettings();
+
+        // Show/hide danger action buttons based on role
+        const isOwner = currentSquad.owner_id === currentProfile.id;
+        const deleteBtn = document.getElementById('deleteSquadBtn');
+
+        if (deleteBtn) {
+            // Show delete button only for owner
+            deleteBtn.style.display = isOwner ? 'flex' : 'none';
+        }
     }
 };
 
@@ -384,6 +393,126 @@ window.saveSquadPrivacySettings = async function () {
     } catch (err) {
         console.error('Error saving squad privacy:', err);
         Swal.fire('خطأ', 'حدث خطأ أثناء حفظ الإعدادات', 'error');
+    }
+};
+
+/**
+ * Leave Squad (for members)
+ */
+window.leaveSquad = async () => {
+    // Close privacy modal first to avoid overlap
+    window.closeSquadPrivacyModal();
+
+    const result = await Swal.fire({
+        title: 'متأكد انك عاوز تخرج من الشلة؟',
+        text: 'هتفقد الوصول لكل محتوى الشلة (المهام، الشات، التحديات)',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: 'اه، اخرج',
+        cancelButtonText: 'لا',
+        reverseButtons: true
+    });
+
+    if (result.isConfirmed) {
+        try {
+            Swal.fire({
+                title: 'جاري الخروج...',
+                allowOutsideClick: false,
+                didOpen: () => Swal.showLoading()
+            });
+
+            const { error } = await supabase
+                .from('squad_members')
+                .delete()
+                .eq('squad_id', currentSquad.id)
+                .eq('profile_id', currentProfile.id);
+
+            if (error) throw error;
+
+            Swal.fire({
+                icon: 'success',
+                title: 'تم الخروج',
+                text: 'خرجت من الشلة بنجاح',
+                timer: 1500,
+                showConfirmButton: false
+            });
+
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+
+        } catch (err) {
+            console.error('Error leaving squad:', err);
+            Swal.fire('خطأ', 'حدث خطأ أثناء الخروج من الشلة', 'error');
+        }
+    }
+};
+
+/**
+ * Delete Squad (for owner/admin only)
+ */
+window.deleteSquad = async () => {
+    // Close privacy modal first to avoid overlap
+    window.closeSquadPrivacyModal();
+
+    // Single simple confirmation
+    const result = await Swal.fire({
+        title: 'متأكد انك عاوز تمسح الشلة؟',
+        text: 'الشلة هتتمسح نهائياً مع كل بياناتها',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: 'اه، امسح',
+        cancelButtonText: 'لا',
+        reverseButtons: true
+    });
+
+    if (result.isConfirmed) {
+        try {
+            Swal.fire({
+                title: 'جاري الحذف...',
+                html: 'يرجى الانتظار...',
+                allowOutsideClick: false,
+                didOpen: () => Swal.showLoading()
+            });
+
+            // Delete all related data in order
+            await supabase.from('squad_message_reads').delete().eq('message_id', 'in',
+                `(SELECT id FROM squad_chat_messages WHERE squad_id = '${currentSquad.id}')`);
+
+            await supabase.from('squad_chat_messages').delete().eq('squad_id', currentSquad.id);
+            await supabase.from('squad_task_completions').delete().eq('task_id', 'in',
+                `(SELECT id FROM squad_tasks WHERE squad_id = '${currentSquad.id}')`);
+
+            await supabase.from('squad_tasks').delete().eq('squad_id', currentSquad.id);
+            await supabase.from('squad_exam_challenges').delete().eq('squad_id', currentSquad.id);
+            await supabase.from('squad_pomodoro').delete().eq('squad_id', currentSquad.id);
+            await supabase.from('squad_members').delete().eq('squad_id', currentSquad.id);
+
+            // Finally delete the squad itself
+            const { error } = await supabase.from('squads').delete().eq('id', currentSquad.id);
+
+            if (error) throw error;
+
+            Swal.fire({
+                icon: 'success',
+                title: 'تم الحذف',
+                text: 'تم حذف الشلة بنجاح',
+                timer: 2000,
+                showConfirmButton: false
+            });
+
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000);
+
+        } catch (err) {
+            console.error('Error deleting squad:', err);
+            Swal.fire('خطأ', 'حدث خطأ أثناء حذف الشلة: ' + err.message, 'error');
+        }
     }
 };
 
