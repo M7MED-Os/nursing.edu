@@ -121,26 +121,61 @@ export async function editSquadBio() {
  * Show create squad modal
  */
 export async function showCreateSquadModal() {
+    // Get current profile to auto-fill
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('grade, stream')
+        .eq('id', currentProfile.id)
+        .single();
+
+    if (!profile || !profile.grade) {
+        Swal.fire('خطأ', 'لم نتمكن من تحميل بيانات حسابك. يرجى المحاولة مرة أخرى.', 'error');
+        return;
+    }
+
+    // Map profile grade to squad year format
+    const PROFILE_TO_SQUAD_YEAR = {
+        "1": "first_year",
+        "2": "second_year",
+        "3": "third_year",
+        "4": "fourth_year"
+    };
+
+    const studentYear = PROFILE_TO_SQUAD_YEAR[profile.grade];
+    const studentGrade = profile.grade;
+
+    // Determine department based on grade
+    let studentDept = "general"; // Default for years 1-2
+    if (studentGrade === "3" || studentGrade === "4") {
+        // Map profile stream to squad department
+        const PROFILE_TO_SQUAD_DEPT = {
+            "pediatric": "pediatric",
+            "obs_gyn": "maternity",
+            "nursing_admin": "community",
+            "psychiatric": "psychiatric"
+        };
+        studentDept = PROFILE_TO_SQUAD_DEPT[profile.stream] || "general";
+    }
+
+    // Show department selector only for years 3-4
+    const showDeptSelector = studentGrade === "3" || studentGrade === "4";
+
     const { value: formValues } = await Swal.fire({
         title: 'إنشاء شلة جديدة',
         html: `
             <input id="squad-name" class="swal2-input" placeholder="اسم الشلة">
-            <select id="squad-year" class="swal2-input">
-                <option value="">اختر السنة الدراسية</option>
-                <option value="first_year">السنة الأولى</option>
-                <option value="second_year">السنة الثانية</option>
-                <option value="third_year">السنة الثالثة</option>
-                <option value="fourth_year">السنة الرابعة</option>
-            </select>
-            <select id="squad-dept" class="swal2-input">
-                <option value="">اختر القسم</option>
-                <option value="general">عام</option>
-                <option value="medical_surgical">باطني جراحي</option>
-                <option value="pediatric">أطفال</option>
-                <option value="maternity">أمومة وطفولة</option>
-                <option value="psychiatric">نفسي</option>
-                <option value="community">مجتمع</option>
-            </select>
+            <input id="squad-year" type="hidden" value="${studentYear}">
+            ${showDeptSelector ? `
+                <select id="squad-dept" class="swal2-input">
+                    <option value="">اختر القسم</option>
+                    <option value="general" ${studentDept === 'general' ? 'selected' : ''}>عام</option>
+                    <option value="medical_surgical" ${studentDept === 'medical_surgical' ? 'selected' : ''}>باطني جراحي</option>
+                    <option value="pediatric" ${studentDept === 'pediatric' ? 'selected' : ''}>أطفال</option>
+                    <option value="maternity" ${studentDept === 'maternity' ? 'selected' : ''}>أمومة وطفولة</option>
+                    <option value="psychiatric" ${studentDept === 'psychiatric' ? 'selected' : ''}>نفسي</option>
+                    <option value="community" ${studentDept === 'community' ? 'selected' : ''}>مجتمع</option>
+                </select>
+            ` : `<input id="squad-dept" type="hidden" value="${studentDept}">`}
         `,
         focusConfirm: false,
         showCancelButton: true,
@@ -151,8 +186,13 @@ export async function showCreateSquadModal() {
             const year = document.getElementById('squad-year').value;
             const dept = document.getElementById('squad-dept').value;
 
-            if (!name || !year || !dept) {
-                Swal.showValidationMessage('من فضلك املأ جميع الحقول');
+            if (!name) {
+                Swal.showValidationMessage('من فضلك أدخل اسم الشلة');
+                return false;
+            }
+
+            if (showDeptSelector && !dept) {
+                Swal.showValidationMessage('من فضلك اختر القسم');
                 return false;
             }
 
@@ -185,6 +225,7 @@ export async function showCreateSquadModal() {
         }
     }
 }
+
 
 /**
  * Show join squad modal

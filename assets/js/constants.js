@@ -17,6 +17,32 @@ export const STREAMS = {
     "psychiatric": "تمريض النفسية"
 };
 
+// Squad-specific mappings (use database values)
+export const SQUAD_YEARS = {
+    "first_year": "الفرقة الأولى",
+    "second_year": "الفرقة الثانية",
+    "third_year": "الفرقة الثالثة",
+    "fourth_year": "الفرقة الرابعة"
+};
+
+export const SQUAD_DEPARTMENTS = {
+    "general": "عام",
+    "medical_surgical": "باطني جراحي",
+    "pediatric": "أطفال",
+    "maternity": "أمومة وطفولة",
+    "psychiatric": "نفسي",
+    "community": "مجتمع"
+};
+
+// Profile to Squad year mapping
+export const PROFILE_TO_SQUAD_YEAR = {
+    "1": "first_year",
+    "2": "second_year",
+    "3": "third_year",
+    "4": "fourth_year"
+};
+
+
 export const GRADE_STREAMS = {
     "3": ["pediatric", "obs_gyn"],
     "4": ["nursing_admin", "psychiatric"]

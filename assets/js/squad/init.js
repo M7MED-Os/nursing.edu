@@ -78,15 +78,27 @@ export async function initSquad() {
  * Setup Squad UI - Initialize all UI components
  */
 async function setupSquadUI() {
-    const displayGrade = GRADES[currentSquad.academic_year] || currentSquad.academic_year || 'سنة غير محددة';
-    const displayDept = STREAMS[currentSquad.department] || currentSquad.department || 'عام';
+    // Import squad-specific constants
+    const { SQUAD_YEARS, SQUAD_DEPARTMENTS } = await import('../constants.js');
+
+    const displayGrade = SQUAD_YEARS[currentSquad.academic_year] || currentSquad.academic_year || 'سنة غير محددة';
+    const displayDept = SQUAD_DEPARTMENTS[currentSquad.department] || currentSquad.department || 'عام';
+
+    // Determine squad info display based on year
+    let squadInfoText = displayGrade; // Default for years 1-2
+
+    // For years 3-4, show department
+    if (currentSquad.academic_year === 'third_year' || currentSquad.academic_year === 'fourth_year') {
+        squadInfoText = `${displayGrade} - قسم ${displayDept}`;
+    }
 
     // Update basic info
     document.getElementById('squadNameText').textContent = currentSquad.name;
-    document.getElementById('squadInfo').textContent = `${displayGrade} - ${displayDept}`;
+    document.getElementById('squadInfo').textContent = squadInfoText;
     document.getElementById('squadPoints').textContent = `رصيد الشلة: ${currentSquad.points || 0}`;
     document.getElementById('squadMemberCount').textContent = `0 عضو`; // Will be updated by loadMembers
     document.getElementById('squadCode').textContent = currentSquad.id.split('-')[0].toUpperCase();
+
 
     // Update preview button link
     const previewBtn = document.getElementById('previewSquadBtn');
