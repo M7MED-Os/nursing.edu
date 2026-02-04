@@ -5,8 +5,15 @@ import { showSuccessAlert, showErrorAlert, showWarningAlert, showDeleteConfirmDi
 // Import admin modules
 import { initAdminCore, checkAdminAuth, showView, currentContext, openModal, closeModal, triggerCelebration } from "./admin/admin-core.js";
 import { renderExamQuestions } from "./admin/admin-questions.js";
+import { showFreemiumSettingsView, saveFreemiumSettings, addFreemiumControlsToLectureModal, getFreemiumValuesFromModal } from "./admin/freemium.js";
 import "./admin/admin-subjects.js";
 import "./admin/admin-content.js";
+
+// Make freemium functions globally accessible
+window.showFreemiumSettingsView = showFreemiumSettingsView;
+window.saveFreemiumSettings = saveFreemiumSettings;
+window.addFreemiumControlsToLectureModal = addFreemiumControlsToLectureModal;
+window.getFreemiumValuesFromModal = getFreemiumValuesFromModal;
 
 // Local chart instances for student management (kept in main file)
 let enrollmentChartInstance = null;

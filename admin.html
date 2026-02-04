@@ -940,6 +940,52 @@
                 transform: rotate(360deg);
             }
         }
+
+        /* Toggle Switch Styles */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 26px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #cbd5e1;
+            transition: 0.3s;
+            border-radius: 26px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+
+        .toggle-switch input:checked+.toggle-slider {
+            background-color: #0ea5e9;
+        }
+
+        .toggle-switch input:checked+.toggle-slider:before {
+            transform: translateX(24px);
+        }
     </style>
 </head>
 
@@ -972,6 +1018,9 @@
             </div>
             <div class="nav-item" id="navLeaderboard" onclick="showLeaderboardMgmtView()">
                 <i class="fas fa-trophy"></i> إدارة الأوائل
+            </div>
+            <div class="nav-item" id="navFreemium" onclick="showFreemiumSettingsView()">
+                <i class="fas fa-crown"></i> إعدادات الاشتراكات
             </div>
 
             <div class="nav-group-title">فرقة 4</div>
@@ -1542,6 +1591,81 @@
                                 <i class="fas fa-history"
                                     style="font-size: 2.5rem; margin-bottom: 1rem; display: block;"></i>
                                 <p>يتم تحميل سجل الرسائل...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Freemium Settings View -->
+            <div id="freemiumSettingsView" class="admin-view" style="display: none;">
+                <!-- <div class="view-header">
+                    <h2><i class="fas fa-crown"></i> إعدادات Freemium</h2>
+                    <p style="color: #64748b; font-size: 0.9rem;">تحكم في الميزات المجانية والمدفوعة</p>
+                </div> -->
+
+                <div class="content-wrapper">
+                    <!-- Global Feature Toggles -->
+                    <div class="card card-admin" style="margin-bottom: 2rem; transition: none;">
+                        <div class="card-header">
+                            <h3><i class="fas fa-globe"></i> الميزات العامة</h3>
+                        </div>
+                        <div class="card-body">
+                            <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                                <!-- Squads Toggle -->
+                                <div class="setting-item"
+                                    style="padding: 1rem; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <div>
+                                            <h4 style="margin: 0; font-size: 1rem;">
+                                                <i class="fas fa-users" style="color: #0ea5e9;"></i> نظام الشلة
+                                            </h4>
+                                        </div>
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" id="squadsFreemiumToggle">
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <!-- Tasks Toggle -->
+                                <div class="setting-item"
+                                    style="padding: 1rem; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <div>
+                                            <h4 style="margin: 0; font-size: 1rem;">
+                                                <i class="fas fa-tasks" style="color: #10b981;"></i> نظام المهام
+                                            </h4>
+                                        </div>
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" id="tasksFreemiumToggle">
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <!-- Leaderboard Toggle -->
+                                <div class="setting-item"
+                                    style="padding: 1rem; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <div>
+                                            <h4 style="margin: 0; font-size: 1rem;">
+                                                <i class="fas fa-trophy" style="color: #f59e0b;"></i> لوحة الأوائل
+                                            </h4>
+                                        </div>
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" id="leaderboardFreemiumToggle">
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid #e2e8f0;">
+                                <button class="btn btn-primary" id="saveFreemiumSettingsBtn"
+                                    onclick="saveFreemiumSettings()">
+                                    <i class="fas fa-save"></i> حفظ الإعدادات
+                                </button>
                             </div>
                         </div>
                     </div>

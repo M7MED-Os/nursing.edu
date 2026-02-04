@@ -113,34 +113,29 @@ function handleAccessControl(profile) {
     const expiry = profile.subscription_ends_at ? new Date(profile.subscription_ends_at) : null;
     const isExpired = expiry && now > expiry;
     const isActive = profile.is_active;
-
-    // Student specific restrictions
-    if (profile.role !== 'admin') {
-        const dashboardPages = ["dashboard.html", "subject.html", "leaderboard.html", "profile.html", "squad.html", "exam.html"];
-
-        if (!isActive || isExpired) {
-            if (dashboardPages.includes(currentPage)) {
-                window.location.href = "pending.html";
-            }
-        }
-    }
+    const hasPremium = (profile.role === 'admin') || (isActive && !isExpired);
 
     // Redirect logged in users away from auth pages
     const authPages = ["login.html", "register.html"];
-    if (authPages.includes(currentPage) && isActive && !isExpired) {
+    if (authPages.includes(currentPage)) {
         window.location.href = "dashboard.html";
     }
 
-    // Pending page auto-redirect
-    if (currentPage === "pending.html" && isActive && !isExpired) {
+    // Pending page auto-redirect for premium users
+    if (currentPage === "pending.html" && hasPremium) {
         window.location.href = "dashboard.html";
     }
 
-    // Expiry Warnings
+    // Expiry Warnings (show on dashboard for premium users nearing expiry)
     if (currentPage === "dashboard.html" && expiry && !isExpired) {
         const diffMs = expiry - now;
         const diffDays = diffMs / (1000 * 60 * 60 * 24);
         if (diffDays <= 3) showSubscriptionWarning(expiry);
+    }
+
+    // Show subscription banner for free users on dashboard
+    if (currentPage === "dashboard.html" && !hasPremium) {
+        showFreemiumBanner();
     }
 }
 
@@ -206,6 +201,54 @@ export function showSubscriptionWarning(expiry) {
 
     parent.prepend(banner);
 }
+
+/**
+ * Show freemium banner for non-premium users
+ */
+function showFreemiumBanner() {
+    const parent = document.querySelector('header.dashboard-header .container') || document.body;
+
+    // Check if already exists
+    if (document.getElementById('freemiumBanner')) return;
+
+    const banner = document.createElement('div');
+    banner.id = 'freemiumBanner';
+    banner.style = `
+        background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+        border-right: 5px solid #0ea5e9;
+        color: #0c4a6e;
+        padding: 1.25rem;
+        border-radius: 16px;
+        margin-top: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        box-shadow: 0 10px 20px rgba(14, 165, 233, 0.1);
+        animation: slideIn 0.5s ease-out;
+    `;
+
+    banner.innerHTML = `
+        <div style="background:#0ea5e9; color:white; width:45px; height:45px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1.4rem;">
+            <i class="fas fa-rocket"></i>
+        </div>
+        <div style="flex:1">
+            <h4 style="margin:0; font-size:1.1rem; font-weight:900;">اشترك الآن واستمتع بجميع المميزات! 🚀</h4>
+            <p style="margin:2px 0 0; font-size:0.9rem; opacity:0.9;">حل الأسئلة مجاني، لكن للوصول الكامل والنقاط والشلل اشترك الآن</p>
+        </div>
+        <a href="pending.html" style="background:#0ea5e9; color:white; padding:8px 16px; border-radius:10px; text-decoration:none; font-size:0.85rem; font-weight:bold; transition:0.3s; white-space: nowrap;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">اشترك الآن 💳</a>
+    `;
+
+    if (parent === document.body) {
+        banner.style.position = 'fixed';
+        banner.style.top = '20px';
+        banner.style.left = '20px';
+        banner.style.right = '20px';
+        banner.style.zIndex = '10000';
+    }
+
+    parent.prepend(banner);
+}
+
 
 // ==========================
 // 2. Logout

@@ -185,6 +185,17 @@ export function openEditor(type, data) {
                     <textarea id="lessonContent" class="form-control" rows="15" placeholder="" style="font-family: monospace; font-size: 0.9rem;">${data.content || ''}</textarea>
                 </div>
 
+                <!-- Freemium Controls -->
+                <div style="margin: 1.5rem 0; padding: 1rem; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+                    <h5 style="margin: 0 0 1rem; font-size: 0.95rem; color: #334155;">
+                        <i class="fas fa-crown" style="color: #0ea5e9;"></i> إعدادات الوصول
+                    </h5>
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; margin-bottom: 0;">
+                        <input type="checkbox" id="lessonContentFree" ${data.is_free ? 'checked' : ''} style="width: 18px; height: 18px; cursor: pointer;">
+                        <span style="font-size: 0.9rem;">مجاني</span>
+                    </label>
+                </div>
+
                 <button class="btn btn-primary w-100" onclick="window.saveLectureData('${data.id}')">
                     <i class="fas fa-save"></i> حفظ المحتوى والفيديو
                 </button>
@@ -228,14 +239,40 @@ export function openAddLessonModal(chapterId) {
 export function openAddExamModal(parentType, parentId) {
     openModal({
         title: 'إضافة امتحان',
-        body: `<div class="form-group"><label>العنوان</label><input id="eTitle" class="form-control"></div>`,
+        body: `
+            <div class="form-group">
+                <label>العنوان</label>
+                <input id="eTitle" class="form-control" placeholder="مثال: امتحان الباب الأول">
+            </div>
+            <div class="form-group">
+                <label>مدة الامتحان (بالدقائق)</label>
+                <input type="number" id="eTime" class="form-control" value="30" min="1" placeholder="30">
+            </div>
+            <div style="margin: 1rem 0; padding: 1rem; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+                <h5 style="margin: 0 0 0.75rem; font-size: 0.9rem; color: #334155;">
+                    <i class="fas fa-crown" style="color: #0ea5e9;"></i> إعدادات الوصول
+                </h5>
+                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; margin-bottom: 0;">
+                    <input type="checkbox" id="examFree" style="width: 18px; height: 18px; cursor: pointer;">
+                    <span style="font-size: 0.85rem;">الامتحان مجاني (متاح لغير المشتركين)</span>
+                </label>
+            </div>
+        `,
         onSave: async () => {
             const payload = {
                 title: document.getElementById('eTitle').value,
+                time_limit: parseInt(document.getElementById('eTime').value) || 30,
                 subject_id: currentContext.subject.id
             };
-            if (parentType === 'lesson') payload.lesson_id = parentId;
-            else payload.chapter_id = parentId;
+            if (parentType === 'lesson') {
+                payload.lesson_id = parentId;
+                // Get lesson's is_free_exam setting from checkbox
+                const isFreeExam = document.getElementById('examFree').checked;
+                // Update the parent lesson's is_free_exam field
+                await supabase.from('lessons').update({ is_free_exam: isFreeExam }).eq('id', parentId);
+            } else {
+                payload.chapter_id = parentId;
+            }
 
             await supabase.from('exams').insert(payload);
             closeModal(); loadContentTree();
@@ -306,21 +343,23 @@ export function openEditNodeModal(type, data) {
 }
 
 /**
- * Save lecture data (content + video)
+ * Save lecture data (content + video + freemium settings)
  */
 export async function saveLectureData(lessonId) {
     const content = document.getElementById('lessonContent').value;
     const videoUrl = document.getElementById('lessonVideoUrl').value;
+    const isFree = document.getElementById('lessonContentFree').checked;
 
     const { error } = await supabase.from('lessons').update({
         content: content,
-        video_url: videoUrl
+        video_url: videoUrl,
+        is_free: isFree
     }).eq('id', lessonId);
 
     if (error) {
         showErrorAlert('خطأ', 'تعذر حفظ البيانات: ' + error.message);
     } else {
-        showSuccessAlert('تم الحفظ', 'تم تحديث محتوى المحاضرة والفيديو بنجاح', 1500);
+        showSuccessAlert('تم الحفظ', 'تم تحديث محتوى المحاضرة والإعدادات بنجاح', 1500);
     }
 }
 

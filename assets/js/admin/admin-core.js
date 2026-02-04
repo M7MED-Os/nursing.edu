@@ -79,8 +79,18 @@ export function getContextLabel(grade, val) {
 // ==========================================
 
 export function showView(viewId) {
-    document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
-    document.getElementById(viewId)?.classList.add('active');
+    // Hide all views (both .view-section and .admin-view)
+    document.querySelectorAll('.view-section, .admin-view').forEach(el => {
+        el.classList.remove('active');
+        el.style.display = 'none';
+    });
+
+    // Show the requested view
+    const targetView = document.getElementById(viewId);
+    if (targetView) {
+        targetView.classList.add('active');
+        targetView.style.display = 'block';
+    }
 }
 
 // ==========================================
