@@ -2,6 +2,8 @@ import { supabase } from "./supabaseClient.js";
 import { clearCache } from "./utils.js";
 import { APP_CONFIG } from "./constants.js";
 import { showErrorAlert, showSuccessAlert, showConfirmDialog, showInfoAlert } from "./utils/alerts.js";
+import { subscriptionService, initSubscriptionService, showUpgradePrompt } from "./subscription.js";
+import { checkAuth } from "./auth.js";
 
 const urlParams = new URLSearchParams(window.location.search);
 const examId = urlParams.get('id');
@@ -47,78 +49,59 @@ if (!examId) {
 
 async function initExam() {
     try {
-        // 0. Check SessionStorage Cache for Questions (with 3-minute expiration)
-        const cacheKey = `exam_cache_${examId}`;
-        const cachedData = sessionStorage.getItem(cacheKey);
+        // ✅ STEP 1: Check authentication
+        const { user, profile } = await checkAuth();
+        if (!user || !profile) {
+            showErrorAlert('خطأ', 'يجب تسجيل الدخول أولاً').then(() => {
+                window.location.href = 'login.html';
+            });
+            return;
+        }
 
-        // Restore answers from local storage to keep progress on refresh (Moved here for robust persistence)
+        // Initialize subscription service
+        await initSubscriptionService(profile);
+        window.currentUserProfile = profile;
+
+        // ✅ STEP 2: Validate exam access using RPC
+        const accessCheck = await subscriptionService.validateExamAccess(examId);
+
+        if (!accessCheck.canAccess) {
+            // User doesn't have access
+            loadingEl.innerHTML = '';
+            await showUpgradePrompt('exam');
+            window.location.href = 'dashboard.html';
+            return;
+        }
+
+        const exam = accessCheck.exam;
+        examTitle = exam.title;
+
+        // ✅ STEP 3: Fetch questions using secure RPC
+        const questions = await subscriptionService.fetchExamQuestions(examId);
+
+        if (!questions || questions.length === 0) {
+            loadingEl.innerHTML = "<p>عفواً، لا توجد أسئلة في هذا الامتحان.</p>";
+            return;
+        }
+
+        currentQuestions = shuffleArray(questions);
+
+        // Restore answers from local storage
         const savedAnswers = localStorage.getItem(`exam_progress_${examId}`);
         if (savedAnswers) {
             userAnswers = JSON.parse(savedAnswers);
         }
 
-        if (cachedData) {
-            const parsed = JSON.parse(cachedData);
-            const cacheAge = Date.now() - (parsed.timestamp || 0);
-            const cacheExpired = cacheAge > (APP_CONFIG.CACHE_TIME_QUESTIONS * 60 * 1000); // 3 minutes
+        // Cache questions
+        const cacheKey = `exam_cache_${examId}`;
+        sessionStorage.setItem(cacheKey, JSON.stringify({
+            questions: currentQuestions,
+            title: examTitle,
+            hierarchy: hierarchyInfo,
+            timestamp: Date.now()
+        }));
 
-            if (!cacheExpired) {
-                currentQuestions = parsed.questions;
-                examTitle = parsed.title;
-                hierarchyInfo = parsed.hierarchy;
-                console.log("Exam loaded from cache");
-            } else {
-                console.log("Exam cache expired, fetching fresh data");
-                sessionStorage.removeItem(cacheKey); // Clear expired cache
-            }
-        }
-
-        if (!currentQuestions || currentQuestions.length === 0) {
-            // 1. Fetch Exam Details
-            const { data: exam, error: examError } = await supabase
-                .from('exams')
-                .select('*')
-                .eq('id', examId)
-                .single();
-
-            if (examError || !exam) throw new Error("Exam not found");
-            examTitle = exam.title;
-
-            // Fetch hierarchy
-            if (exam.lesson_id) {
-                const { data: lesson } = await supabase.from('lessons').select('title, chapter_id').eq('id', exam.lesson_id).single();
-                if (lesson) {
-                    hierarchyInfo.lesson = lesson.title;
-                    const { data: chapter } = await supabase.from('chapters').select('title').eq('id', lesson.chapter_id).single();
-                    if (chapter) hierarchyInfo.chapter = chapter.title;
-                }
-            } else if (exam.chapter_id) {
-                const { data: chapter } = await supabase.from('chapters').select('title').eq('id', exam.chapter_id).single();
-                if (chapter) hierarchyInfo.chapter = chapter.title;
-            }
-
-            // 2. Fetch Questions
-            const { data: questions, error: qError } = await supabase
-                .from('questions')
-                .select('*')
-                .eq('exam_id', examId);
-
-            if (qError) throw qError;
-            if (!questions || questions.length === 0) {
-                loadingEl.innerHTML = "<p>عفواً، لا توجد أسئلة في هذا الامتحان.</p>";
-                return;
-            }
-
-            currentQuestions = shuffleArray(questions);
-
-            // Save to sessionStorage with timestamp
-            sessionStorage.setItem(cacheKey, JSON.stringify({
-                questions: currentQuestions,
-                title: examTitle,
-                hierarchy: hierarchyInfo,
-                timestamp: Date.now()
-            }));
-        }
+        // ✅ STEP 4: Initialize UI
 
         if (examTitleMobile) examTitleMobile.textContent = "الامتحان";
         totalTime = currentQuestions.length * 60;

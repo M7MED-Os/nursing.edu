@@ -1,172 +1,390 @@
+/**
+ * Subscription Service - Centralized Freemium Management
+ * Handles all subscription checks, feature access, and content filtering
+ */
+
 import { supabase } from './supabaseClient.js';
-import { getCache, setCache } from './utils.js';
 
-/**
- * Subscription Service
- * Centralized logic for checking subscription status and feature access
- */
+class SubscriptionService {
+    constructor() {
+        this.userProfile = null;
+        this.freemiumConfig = null;
+        this.initialized = false;
+        this.cache = {
+            isPremium: null,
+            config: null,
+            timestamp: null
+        };
+    }
 
-/**
- * Check if user has premium access (active subscription or admin)
- * @param {Object} profile - User profile object
- * @returns {boolean}
- */
-export function isPremium(profile) {
-    if (!profile) return false;
-
-    // Admins always have premium access
-    if (profile.role === 'admin') return true;
-
-    // Check subscription status
-    const now = new Date();
-    const expiry = profile.subscription_ends_at ? new Date(profile.subscription_ends_at) : null;
-    const isExpired = expiry && now > expiry;
-    const isActive = profile.is_active;
-
-    return isActive && !isExpired;
-}
-
-/**
- * Get app configuration from cache or database
- * @param {string} key - Config key
- * @returns {Promise<any>}
- */
-async function getAppConfig(key) {
-    const cacheKey = `app_config_${key}`;
-    let config = getCache(cacheKey);
-
-    if (!config) {
-        const { data, error } = await supabase
-            .from('app_configs')
-            .select('value')
-            .eq('key', key)
-            .single();
-
-        if (error || !data) {
-            console.warn(`Config key "${key}" not found, using default`);
-            return null;
+    /**
+     * Initialize the service with user profile
+     */
+    async init(profile) {
+        if (!profile) {
+            console.warn('SubscriptionService: No profile provided');
+            return false;
         }
 
-        config = data.value;
-        // Cache for 5 minutes
-        setCache(cacheKey, config, 5);
+        this.userProfile = profile;
+
+        // Load freemium config
+        await this.loadFreemiumConfig();
+
+        this.initialized = true;
+        return true;
     }
 
-    return config;
-}
+    /**
+     * Load freemium configuration from database
+     */
+    async loadFreemiumConfig() {
+        try {
+            const { data, error } = await supabase.rpc('get_freemium_config');
 
-/**
- * Check if a specific feature is accessible to the user
- * @param {string} feature - Feature name ('squads', 'tasks', 'leaderboard')
- * @param {Object} profile - User profile
- * @returns {Promise<boolean>}
- */
-export async function canAccessFeature(feature, profile) {
-    // Admins can access everything
-    if (profile?.role === 'admin') return true;
+            if (error) {
+                console.error('Error loading freemium config:', error);
+                // Default to all features enabled on error
+                this.freemiumConfig = {
+                    squads_enabled: true,
+                    tasks_enabled: true,
+                    leaderboard_enabled: true
+                };
+                return;
+            }
 
-    // Get feature config
-    const configKey = `${feature}_config`;
-    const config = await getAppConfig(configKey);
+            if (data && data.length > 0) {
+                this.freemiumConfig = data[0];
+            } else {
+                // Default config
+                this.freemiumConfig = {
+                    squads_enabled: true,
+                    tasks_enabled: true,
+                    leaderboard_enabled: true
+                };
+            }
 
-    if (!config) {
-        // If config doesn't exist, default to requiring premium
-        return isPremium(profile);
+            // Cache config
+            this.cache.config = this.freemiumConfig;
+            this.cache.timestamp = Date.now();
+
+        } catch (err) {
+            console.error('Exception loading freemium config:', err);
+            this.freemiumConfig = {
+                squads_enabled: true,
+                tasks_enabled: true,
+                leaderboard_enabled: true
+            };
+        }
     }
 
-    // If feature is free, everyone can access
-    if (config.is_free === true) return true;
+    /**
+     * Check if user has active premium subscription
+     */
+    isPremium() {
+        if (!this.userProfile) return false;
 
-    // Otherwise, require premium
-    return isPremium(profile);
-}
+        const { is_active, subscription_ends_at } = this.userProfile;
 
-/**
- * Check if user can access lecture content
- * @param {Object} lesson - Lesson object with is_free property
- * @param {Object} profile - User profile
- * @returns {boolean}
- */
-export function canAccessLectureContent(lesson, profile) {
-    // Admins can access everything
-    if (profile?.role === 'admin') return true;
+        // Check if subscription is active
+        if (!is_active) return false;
 
-    // If lesson is free, everyone can access
-    if (lesson.is_free === true) return true;
+        // Check if subscription has expired
+        if (subscription_ends_at) {
+            const expiryDate = new Date(subscription_ends_at);
+            const now = new Date();
+            if (now > expiryDate) return false;
+        }
 
-    // Otherwise, require premium
-    return isPremium(profile);
-}
+        return true;
+    }
 
-/**
- * Check if user can access exam/questions
- * @param {Object} lesson - Lesson object with is_free_exam property
- * @param {Object} profile - User profile
- * @returns {boolean}
- */
-export function canAccessExam(lesson, profile) {
-    // Admins can access everything
-    if (profile?.role === 'admin') return true;
+    /**
+     * Check if user can access a specific feature
+     * @param {string} featureName - 'squads', 'tasks', or 'leaderboard'
+     */
+    canAccessFeature(featureName) {
+        if (!this.freemiumConfig) return true; // Default allow if config not loaded
 
-    // If exam is free, everyone can access
-    if (lesson.is_free_exam === true) return true;
+        const isPremium = this.isPremium();
 
-    // Otherwise, require premium
-    return isPremium(profile);
-}
+        switch (featureName) {
+            case 'squads':
+                return this.freemiumConfig.squads_enabled || isPremium;
+            case 'tasks':
+                return this.freemiumConfig.tasks_enabled || isPremium;
+            case 'leaderboard':
+                return this.freemiumConfig.leaderboard_enabled || isPremium;
+            default:
+                return true;
+        }
+    }
 
-/**
- * Check if user can earn points
- * Only premium users can earn points
- * @param {Object} profile - User profile
- * @returns {boolean}
- */
-export function canEarnPoints(profile) {
-    return isPremium(profile);
-}
+    /**
+     * Check if user can access a lesson's content
+     * @param {object} lesson - Lesson object with is_free property
+     */
+    canAccessLessonContent(lesson) {
+        if (!lesson) return false;
 
-/**
- * Show upgrade prompt to user
- * @param {string} feature - Feature name for context
- */
-export function showUpgradePrompt(feature = 'هذه الميزة') {
-    const messages = {
-        'lecture': 'هذه المحاضرة متاحة للمشتركين فقط',
-        'exam': 'هذا الامتحان متاح للمشتركين فقط',
-        'squads': 'نظام الشلة متاح للمشتركين فقط',
-        'tasks': 'نظام المهام متاح للمشتركين فقط',
-        'default': `${feature} متاح للمشتركين فقط`
-    };
+        // Premium users can access everything
+        if (this.isPremium()) return true;
 
-    const message = messages[feature] || messages.default;
+        // Free users can only access free lessons
+        return lesson.is_free === true;
+    }
 
-    Swal.fire({
-        icon: 'info',
-        title: 'اشترك الآن! 🚀',
-        html: `
-            <div style="text-align: center; direction: rtl; padding: 1rem;">
-                <p style="font-size: 1.1rem; margin-bottom: 1rem;">${message}</p>
-                <div style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); 
-                            border-radius: 12px; padding: 1.5rem; margin: 1rem 0;">
-                    <h4 style="color: #0369a1; margin-bottom: 1rem;">✨ مميزات الاشتراك</h4>
-                    <ul style="text-align: right; list-style: none; padding: 0; color: #0c4a6e;">
-                        <li style="margin: 0.5rem 0;">📚 وصول كامل لجميع المحاضرات والفيديوهات</li>
-                        <li style="margin: 0.5rem 0;">📝 حل جميع الامتحانات والأسئلة</li>
-                        <li style="margin: 0.5rem 0;">⭐ كسب النقاط والظهور في لوحة الأوائل</li>
-                        <li style="margin: 0.5rem 0;">👥 الانضمام للشلل والمذاكرة الجماعية</li>
-                        <li style="margin: 0.5rem 0;">✅ نظام المهام والتنظيم الشخصي</li>
+    /**
+     * Check if user can access an exam
+     * @param {object} lesson - Parent lesson object with is_free_exam property
+     */
+    canAccessExam(lesson) {
+        if (!lesson) return false;
+
+        // Premium users can access everything
+        if (this.isPremium()) return true;
+
+        // Free users can only access free exams
+        return lesson.is_free_exam === true;
+    }
+
+    /**
+     * Fetch accessible lessons for a chapter (using RPC)
+     */
+    async fetchAccessibleLessons(chapterId) {
+        try {
+            const { data, error } = await supabase.rpc('get_accessible_lessons', {
+                p_chapter_id: chapterId
+            });
+
+            if (error) throw error;
+            return data || [];
+        } catch (err) {
+            console.error('Error fetching accessible lessons:', err);
+            return [];
+        }
+    }
+
+    /**
+     * Validate lesson access (server-side check)
+     * @returns {object} { canAccess: boolean, lesson: object }
+     */
+    async validateLessonAccess(lessonId) {
+        try {
+            const { data, error } = await supabase.rpc('get_lesson_secure', {
+                p_lesson_id: lessonId
+            });
+
+            if (error) throw error;
+
+            if (!data || data.length === 0) {
+                return { canAccess: false, lesson: null, error: 'Lesson not found' };
+            }
+
+            const lesson = data[0];
+            return {
+                canAccess: lesson.can_access,
+                lesson: lesson,
+                error: null
+            };
+        } catch (err) {
+            console.error('Error validating lesson access:', err);
+            return { canAccess: false, lesson: null, error: err.message };
+        }
+    }
+
+    /**
+     * Validate exam access (server-side check)
+     * @returns {object} { canAccess: boolean, exam: object }
+     */
+    async validateExamAccess(examId) {
+        try {
+            const { data, error } = await supabase.rpc('get_exam_secure', {
+                p_exam_id: examId
+            });
+
+            if (error) throw error;
+
+            if (!data || data.length === 0) {
+                return { canAccess: false, exam: null, error: 'Exam not found' };
+            }
+
+            const exam = data[0];
+            return {
+                canAccess: exam.can_access,
+                exam: exam,
+                isPremiumRequired: exam.is_premium_required,
+                error: null
+            };
+        } catch (err) {
+            console.error('Error validating exam access:', err);
+            return { canAccess: false, exam: null, error: err.message };
+        }
+    }
+
+    /**
+     * Fetch exam questions (with access check)
+     */
+    async fetchExamQuestions(examId) {
+        try {
+            const { data, error } = await supabase.rpc('get_exam_questions_secure', {
+                p_exam_id: examId
+            });
+
+            if (error) throw error;
+            return data || [];
+        } catch (err) {
+            console.error('Error fetching exam questions:', err);
+            return [];
+        }
+    }
+
+    /**
+     * Show upgrade prompt modal
+     */
+    async showUpgradePrompt(contentType = 'content') {
+        const messages = {
+            lesson: {
+                title: 'هذه المحاضرة للمشتركين فقط! 🔒',
+                text: 'اشترك الآن للوصول لجميع المحاضرات والامتحانات'
+            },
+            exam: {
+                title: 'هذا الامتحان للمشتركين فقط! 🔒',
+                text: 'اشترك الآن لحل جميع الامتحانات وكسب النقاط'
+            },
+            feature: {
+                title: 'هذه الميزة للمشتركين فقط! 🔒',
+                text: 'اشترك الآن للاستمتاع بجميع مميزات المنصة'
+            },
+            content: {
+                title: 'محتوى مدفوع! 🔒',
+                text: 'اشترك الآن للوصول الكامل'
+            }
+        };
+
+        const config = messages[contentType] || messages.content;
+
+        return Swal.fire({
+            title: config.title,
+            html: `
+                <p style="margin-bottom: 1.5rem;">${config.text}</p>
+                <div style="background: #f0f9ff; padding: 1.5rem; border-radius: 12px; text-align: right; margin-bottom: 1rem;">
+                    <h4 style="margin: 0 0 1rem; color: #0369a1; font-size: 1.1rem;">
+                        ✨ مميزات الاشتراك
+                    </h4>
+                    <ul style="list-style: none; padding: 0; margin: 0;">
+                        <li style="padding: 0.5rem 0; border-bottom: 1px solid #e0f2fe;">
+                            <i class="fas fa-check-circle" style="color: #10b981; margin-left: 8px;"></i>
+                            📚 وصول كامل لجميع المحاضرات والفيديوهات
+                        </li>
+                        <li style="padding: 0.5rem 0; border-bottom: 1px solid #e0f2fe;">
+                            <i class="fas fa-check-circle" style="color: #10b981; margin-left: 8px;"></i>
+                            📝 حل جميع الامتحانات وكسب النقاط
+                        </li>
+                        <li style="padding: 0.5rem 0; border-bottom: 1px solid #e0f2fe;">
+                            <i class="fas fa-check-circle" style="color: #10b981; margin-left: 8px;"></i>
+                            🏆 الظهور في لوحة الأوائل والمنافسة
+                        </li>
+                        <li style="padding: 0.5rem 0; border-bottom: 1px solid #e0f2fe;">
+                            <i class="fas fa-check-circle" style="color: #10b981; margin-left: 8px;"></i>
+                            👥 الانضمام للشلل والمذاكرة الجماعية
+                        </li>
+                        <li style="padding: 0.5rem 0;">
+                            <i class="fas fa-check-circle" style="color: #10b981; margin-left: 8px;"></i>
+                            ✅ نظام المهام والتنظيم الشخصي
+                        </li>
                     </ul>
                 </div>
-            </div>
-        `,
-        confirmButtonText: 'اشترك الآن 💳',
-        confirmButtonColor: '#0ea5e9',
-        showCancelButton: true,
-        cancelButtonText: 'ليس الآن',
-        cancelButtonColor: '#64748b'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            window.location.href = 'pending.html';
+            `,
+            icon: 'info',
+            showCancelButton: true,
+            confirmButtonColor: '#0ea5e9',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: '<i class="fas fa-crown"></i> اشترك الآن',
+            cancelButtonText: 'ليس الآن',
+            customClass: {
+                popup: 'rtl-popup'
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = 'pending.html';
+            }
+        });
+    }
+
+    /**
+     * Get user's subscription status for display
+     */
+    getSubscriptionStatus() {
+        if (!this.userProfile) {
+            return {
+                isPremium: false,
+                status: 'غير مشترك',
+                expiryDate: null,
+                daysRemaining: null
+            };
         }
-    });
+
+        const isPremium = this.isPremium();
+        const { subscription_ends_at } = this.userProfile;
+
+        if (!isPremium) {
+            return {
+                isPremium: false,
+                status: 'غير مشترك',
+                expiryDate: null,
+                daysRemaining: null
+            };
+        }
+
+        if (!subscription_ends_at) {
+            return {
+                isPremium: true,
+                status: 'مشترك (دائم)',
+                expiryDate: null,
+                daysRemaining: null
+            };
+        }
+
+        const expiryDate = new Date(subscription_ends_at);
+        const now = new Date();
+        const daysRemaining = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
+
+        return {
+            isPremium: true,
+            status: 'مشترك',
+            expiryDate: expiryDate,
+            daysRemaining: daysRemaining
+        };
+    }
+}
+
+// Create singleton instance
+const subscriptionService = new SubscriptionService();
+
+// Export service and helper functions for backward compatibility
+export { subscriptionService };
+
+export async function initSubscriptionService(profile) {
+    return await subscriptionService.init(profile);
+}
+
+export function isPremiumUser() {
+    return subscriptionService.isPremium();
+}
+
+export function canAccessFeature(featureName) {
+    return subscriptionService.canAccessFeature(featureName);
+}
+
+export function canAccessLectureContent(lesson) {
+    return subscriptionService.canAccessLessonContent(lesson);
+}
+
+export function canAccessExam(lesson) {
+    return subscriptionService.canAccessExam(lesson);
+}
+
+export async function showUpgradePrompt(contentType) {
+    return await subscriptionService.showUpgradePrompt(contentType);
 }

@@ -2,12 +2,15 @@ import { supabase } from "./supabaseClient.js";
 import { checkAuth } from "./auth.js";
 import { APP_CONFIG } from "./constants.js";
 import { getCache, setCache } from "./utils.js";
-import { canAccessLectureContent, canAccessExam, showUpgradePrompt } from "./subscription.js";
+import { subscriptionService, initSubscriptionService, showUpgradePrompt } from "./subscription.js";
 
 document.addEventListener('DOMContentLoaded', async () => {
     // Check Auth
     const { user, profile } = await checkAuth();
     if (!user) return;
+
+    // Initialize subscription service
+    await initSubscriptionService(profile);
 
     // Store profile globally for access checks
     window.currentUserProfile = profile;
@@ -42,171 +45,99 @@ async function loadLecture(lessonId) {
     const lectureVideo = document.getElementById('lectureVideo');
 
     try {
-        // Check cache first (1 hour cache)
-        const cacheKey = `lecture_${lessonId}`;
-        let lesson = getCache(cacheKey);
+        // ✅ STEP 1: Validate access using RPC function
+        const accessCheck = await subscriptionService.validateLessonAccess(lessonId);
 
-        if (!lesson) {
-            // Fetch lesson details with join to chapter and subject
-            const { data, error } = await supabase
-                .from('lessons')
-                .select(`
-                    *,
-                    chapters (
-                        title,
-                        subjects (name_ar)
-                    ),
-                    exams (id)
-                `)
-                .eq('id', lessonId)
-                .single();
-
-            if (error || !data) throw error;
-            lesson = data;
-
-            // Cache for 1 hour
-            setCache(cacheKey, lesson, APP_CONFIG.CACHE_TIME_LECTURES);
+        if (!accessCheck.canAccess) {
+            // User doesn't have access - show upgrade prompt
+            await showUpgradePrompt('lesson');
+            window.location.href = 'dashboard.html';
+            return;
         }
 
-        // Update UI
+        const lesson = accessCheck.lesson;
+
+        // ✅ STEP 2: Update UI with lesson data
         lectureTitle.textContent = lesson.title;
-        courseName.textContent = lesson.chapters?.subjects?.name_ar || 'المادة';
+        courseName.textContent = lesson.subject_name || 'المادة';
 
-        // Check content access
-        const hasContentAccess = canAccessLectureContent(lesson, window.currentUserProfile);
-        const hasExamAccess = canAccessExam(lesson, window.currentUserProfile);
+        // ✅ STEP 3: Display content (already filtered by RPC)
+        if (lesson.content) {
+            lectureContent.innerHTML = lesson.content;
+        } else {
+            lectureContent.innerHTML = '<p style="text-align: center; color: #64748b;">لا يوجد محتوى متاح</p>';
+        }
 
-        // Set Exam Link if exists
-        if (lesson.exams && lesson.exams.length > 0) {
-            if (hasExamAccess) {
-                examLink.href = `exam.html?id=${lesson.exams[0].id}`;
+        // ✅ STEP 4: Display video (already filtered by RPC)
+        if (lesson.video_url) {
+            const videoId = extractYouTubeID(lesson.video_url);
+            if (videoId) {
+                lectureVideo.src = `https://www.youtube.com/embed/${videoId}`;
+                videoContainer.style.display = 'block';
+            }
+        } else {
+            videoContainer.style.display = 'none';
+        }
+
+        // ✅ STEP 5: Handle exam link
+        // Fetch exams for this lesson
+        const { data: exams, error: examsError } = await supabase
+            .from('exams')
+            .select('id, title')
+            .eq('lesson_id', lessonId);
+
+        if (!examsError && exams && exams.length > 0) {
+            const firstExam = exams[0];
+
+            // Check if user can access exam
+            const examAccessCheck = await subscriptionService.validateExamAccess(firstExam.id);
+
+            if (examAccessCheck.canAccess) {
+                // User can access exam
+                examLink.href = `exam.html?id=${firstExam.id}`;
                 examLink.style.display = 'inline-flex';
                 examLink.style.alignItems = 'center';
                 examLink.style.gap = '8px';
+                examLink.style.opacity = '1';
+                examLink.innerHTML = '<i class="fas fa-clipboard-check"></i> ابدأ الامتحان';
+                examLink.onclick = null;
             } else {
-                // Show locked exam button
+                // User cannot access exam - show locked state
                 examLink.href = '#';
                 examLink.style.display = 'inline-flex';
                 examLink.style.alignItems = 'center';
                 examLink.style.gap = '8px';
                 examLink.style.opacity = '0.6';
+                examLink.style.cursor = 'not-allowed';
                 examLink.innerHTML = '<i class="fas fa-lock"></i> الامتحان (للمشتركين)';
                 examLink.onclick = (e) => {
                     e.preventDefault();
                     showUpgradePrompt('exam');
                 };
             }
-        }
-
-        // Handle Video
-        if (lesson.video_url) {
-            if (hasContentAccess) {
-                let embedUrl = lesson.video_url;
-                // Basic YouTube URL converter
-                if (embedUrl.includes('youtube.com/watch?v=')) {
-                    embedUrl = embedUrl.replace('watch?v=', 'embed/');
-                } else if (embedUrl.includes('youtu.be/')) {
-                    embedUrl = embedUrl.replace('youtu.be/', 'youtube.com/embed/');
-                }
-                lectureVideo.src = embedUrl;
-                videoContainer.style.display = 'block';
-            } else {
-                // Show locked video placeholder
-                videoContainer.style.display = 'block';
-                videoContainer.innerHTML = `
-                    <div style="
-                        background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
-                        border-radius: 12px;
-                        padding: 3rem;
-                        text-align: center;
-                        cursor: pointer;
-                    " onclick="window.showUpgradePrompt('lecture')">
-                        <i class="fas fa-lock" style="font-size: 3rem; color: #64748b; margin-bottom: 1rem;"></i>
-                        <h3 style="color: #334155; margin-bottom: 0.5rem;">هذا الفيديو متاح للمشتركين فقط</h3>
-                        <p style="color: #64748b; margin-bottom: 1rem;">اشترك الآن للوصول الكامل لجميع المحاضرات</p>
-                        <button class="btn btn-primary" style="margin-top: 1rem;">
-                            <i class="fas fa-crown"></i> اشترك الآن
-                        </button>
-                    </div>
-                `;
-            }
-        }
-
-        // Render Content
-        if (lesson.content) {
-            if (hasContentAccess) {
-                lectureContent.innerHTML = lesson.content;
-
-                // Wrap tables for horizontal scroll
-                lectureContent.querySelectorAll('table').forEach(table => {
-                    const wrapper = document.createElement('div');
-                    wrapper.className = 'table-wrapper';
-                    table.parentNode.insertBefore(wrapper, table);
-                    wrapper.appendChild(table);
-                });
-            } else {
-                // Show locked content with preview
-                const preview = lesson.content.substring(0, 300);
-                lectureContent.innerHTML = `
-                    <div style="position: relative;">
-                        <div style="
-                            max-height: 200px;
-                            overflow: hidden;
-                            filter: blur(3px);
-                            opacity: 0.5;
-                        ">${preview}...</div>
-                        <div style="
-                            position: absolute;
-                            top: 50%;
-                            left: 50%;
-                            transform: translate(-50%, -50%);
-                            background: white;
-                            padding: 2rem;
-                            border-radius: 16px;
-                            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-                            text-align: center;
-                            min-width: 300px;
-                        ">
-                            <i class="fas fa-lock" style="font-size: 2.5rem; color: #0ea5e9; margin-bottom: 1rem;"></i>
-                            <h3 style="margin-bottom: 0.5rem;">محتوى مدفوع 🔒</h3>
-                            <p style="color: #64748b; margin-bottom: 1.5rem;">اشترك للوصول الكامل للمحاضرة</p>
-                            <button class="btn btn-primary" onclick="window.showUpgradePrompt('lecture')">
-                                <i class="fas fa-crown"></i> اشترك الآن
-                            </button>
-                        </div>
-                    </div>
-                `;
-            }
         } else {
-            lectureContent.innerHTML = `
-                <div class="text-center py-5">
-                    <i class="fas fa-book-open fa-3x mb-3 text-muted"></i>
-                    <p>لا يوجد محتوى لهذه المحاضرة حالياً.</p>
-                </div>
-            `;
+            examLink.style.display = 'none';
         }
 
-        // Set Page Title
-        document.title = `${lesson.title} | Nursing Academy`;
-
-    } catch (error) {
-        console.error('Error loading lecture:', error);
-        lectureContent.innerHTML = `
-            <div class="alert alert-danger text-center">
-                حدث خطأ أثناء تحميل المحاضرة. يرجى المحاولة مرة أخرى.
-            </div>
-        `;
-    } finally {
-        // Hide Loading Overlay
-        const loading = document.getElementById('loading');
-        if (loading) {
-            loading.style.opacity = '0';
-            setTimeout(() => {
-                loading.style.display = 'none';
-            }, 300);
-        }
+    } catch (err) {
+        console.error('Error loading lecture:', err);
+        Swal.fire({
+            icon: 'error',
+            title: 'خطأ',
+            text: 'حدث خطأ أثناء تحميل المحاضرة',
+            confirmButtonText: 'حسناً'
+        }).then(() => {
+            window.location.href = 'dashboard.html';
+        });
     }
 }
 
-// Make showUpgradePrompt globally accessible
-window.showUpgradePrompt = showUpgradePrompt;
+/**
+ * Extract YouTube video ID from URL
+ */
+function extractYouTubeID(url) {
+    if (!url) return null;
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
+}

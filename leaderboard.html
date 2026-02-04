@@ -402,6 +402,43 @@
             if (auth) {
                 currentUserInfo = auth.profile;
 
+                // ✅ FREEMIUM CHECK - Leaderboard Access
+                const { data: configData } = await supabase.rpc('get_freemium_config');
+                if (configData && configData.length > 0) {
+                    const config = configData[0];
+
+                    // Check if leaderboard is enabled for free users
+                    if (!config.leaderboard_enabled) {
+                        // Check if user is premium
+                        const isPremium = currentUserInfo.is_active &&
+                            (!currentUserInfo.subscription_ends_at || new Date(currentUserInfo.subscription_ends_at) > new Date());
+
+                        if (!isPremium) {
+                            // Show upgrade prompt and redirect
+                            await Swal.fire({
+                                title: 'لوحة الأوائل للمشتركين فقط! 🔒',
+                                html: `
+                                    <p style="margin-bottom: 1.5rem;">اشترك الآن للمنافسة والظهور في لوحة الأوائل</p>
+                                    <div style="background: #f0f9ff; padding: 1.5rem; border-radius: 12px; text-align: right;">
+                                        <h4 style="margin: 0 0 1rem; color: #0369a1;">✨ مميزات الاشتراك</h4>
+                                        <ul style="list-style: none; padding: 0; margin: 0;">
+                                            <li style="padding: 0.5rem 0;"><i class="fas fa-check-circle" style="color: #10b981;"></i> 🏆 المنافسة في لوحة الأوائل</li>
+                                            <li style="padding: 0.5rem 0;"><i class="fas fa-check-circle" style="color: #10b981;"></i> 📚 وصول كامل لجميع المحاضرات</li>
+                                            <li style="padding: 0.5rem 0;"><i class="fas fa-check-circle" style="color: #10b981;"></i> 📝 حل جميع الامتحانات</li>
+                                            <li style="padding: 0.5rem 0;"><i class="fas fa-check-circle" style="color: #10b981;"></i> 👥 الانضمام للشلل</li>
+                                        </ul>
+                                    </div>
+                                `,
+                                icon: 'info',
+                                confirmButtonText: '<i class="fas fa-crown"></i> اشترك الآن',
+                                confirmButtonColor: '#0ea5e9'
+                            });
+                            window.location.href = 'pending.html';
+                            return;
+                        }
+                    }
+                }
+
                 // Fetch user's squad_id for privacy checks
                 const { data: squadMember } = await supabase
                     .from('squad_members')
