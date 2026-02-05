@@ -25,9 +25,9 @@ export async function startSharedExam() {
         await loadGlobalSettings();
 
         // Use correct field names from profiles table
-        const grade = currentProfile.academic_year || currentProfile.grade;
-        const term = currentProfile.current_term || currentProfile.term;
-        const stream = currentProfile.department || currentProfile.stream;
+        const grade = currentProfile.academic_year;
+        const term = currentProfile.current_term;
+        const stream = currentProfile.department;
 
         if (!grade || !term) {
             Swal.fire('تنبيه', 'يرجى تحديث بياناتك الدراسية من البروفايل أولاً.', 'warning');
@@ -39,7 +39,7 @@ export async function startSharedExam() {
             .from('subjects')
             .select('*')
             .eq('is_active', true)
-            .eq('grade', grade)
+            .eq('academic_year', grade)
             .order('order_index');
 
         if (error) throw error;
@@ -47,9 +47,9 @@ export async function startSharedExam() {
         // 2. Filter subjects (same logic as dashboard)
         const mySubjects = allSubjects.filter(s => {
             // Shared Subjects: Same Term & No Stream
-            const isShared = s.term === term && (!s.stream || s.stream === '');
-            // Department Subjects: Same Stream & (Same Term OR No Term)
-            const isDept = stream && s.stream === stream && (!s.term || s.term === term);
+            const isShared = s.current_term === term && (!s.department || s.department === '');
+            // Department-specific subjects
+            const isDept = stream && s.department === stream && (!s.current_term || s.current_term === term);
 
             return isShared || isDept;
         });

@@ -99,17 +99,28 @@ export async function initSquad() {
  */
 async function setupSquadUI() {
     // Import squad-specific constants
-    const { SQUAD_YEARS, SQUAD_DEPARTMENTS } = await import('../constants.js');
+    const { getAcademicYearLabel, getDepartmentLabel, getTermLabel, GRADES } = await import('../constants.js');
 
-    const displayGrade = SQUAD_YEARS[currentSquad.academic_year] || currentSquad.academic_year || 'سنة غير محددة';
-    const displayDept = SQUAD_DEPARTMENTS[currentSquad.department] || currentSquad.department || 'عام';
+    // Handle both text and numeric academic year values
+    // Check GRADES first for numeric values like "3", then try text-based lookup
+    const displayGrade = GRADES[currentSquad.academic_year] || getAcademicYearLabel(currentSquad.academic_year) || currentSquad.academic_year || 'سنة غير محددة';
+    const displayDept = getDepartmentLabel(currentSquad.department) || currentSquad.department || '';
+    const displayTerm = getTermLabel(currentSquad.current_term) || '';
 
     // Determine squad info display based on year
-    let squadInfoText = displayGrade; // Default for years 1-2
+    let squadInfoText = displayGrade; // Default
 
-    // For years 3-4, show department
-    if (currentSquad.academic_year === 'third_year' || currentSquad.academic_year === 'fourth_year') {
-        squadInfoText = `${displayGrade} - قسم ${displayDept}`;
+    // For years 1-2, show term if available
+    if (currentSquad.academic_year === 'first_year' || currentSquad.academic_year === 'second_year' || currentSquad.academic_year === '1' || currentSquad.academic_year === '2') {
+        if (displayTerm) {
+            squadInfoText = `${displayGrade} - ${displayTerm}`;
+        }
+    }
+    // For years 3-4, show department if available
+    else if (currentSquad.academic_year === 'third_year' || currentSquad.academic_year === 'fourth_year' || currentSquad.academic_year === '3' || currentSquad.academic_year === '4') {
+        if (displayDept) {
+            squadInfoText = `${displayGrade} - ${displayDept}`;
+        }
     }
 
     // Update basic info

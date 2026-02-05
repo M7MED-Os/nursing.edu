@@ -456,13 +456,13 @@
             const levelColor = getLevelColor(level);
             const levelBadgeHTML = createLevelBadge(student.points || 0, 'large');
 
-            const gradeText = GRADES[student.grade] || student.grade || 'غير محدد';
+            const gradeText = GRADES[student.academic_year] || student.academic_year || 'غير محدد';
             let additionalInfo = '';
 
-            if (student.grade === '3' || student.grade === '4') {
-                additionalInfo = STREAMS[student.stream] || student.stream || '';
-            } else if (student.term) {
-                additionalInfo = `الترم ${student.term}`;
+            if (student.academic_year === 'third_year' || student.academic_year === 'fourth_year') {
+                additionalInfo = STREAMS[student.department] || student.department || '';
+            } else if (student.current_term) {
+                additionalInfo = `الترم ${student.current_term === 'first_term' ? '1' : '2'}`;
             }
 
             // Check privacy for avatar

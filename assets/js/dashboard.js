@@ -1,6 +1,6 @@
 import { supabase } from "./supabaseClient.js";
-import { getCache, setCache, getSWR } from "./utils.js";
-import { APP_CONFIG, YEAR_TO_GRADE } from "./constants.js";
+import { showToast, getCache, setCache, getSWR } from "./utils.js";
+import { APP_CONFIG } from "./constants.js";
 import { checkAuth } from "./auth.js";
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -88,22 +88,28 @@ async function loadAnnouncements(profile) {
     const container = document.getElementById('announcements-container');
     if (!container || !profile) return;
 
-    // Use new column name with fallback
-    const academic_year = profile?.academic_year || profile?.grade;
-    const numericGrade = YEAR_TO_GRADE[academic_year] || academic_year;
-
-    const cacheKey = `announcements_${numericGrade}`;
+    const userId = profile.id;
+    const cacheKey = `announcements_${userId}`;
 
     getSWR(cacheKey, async () => {
-        const gradeTarget = `grade_${numericGrade}`;
-        const { data } = await supabase.from('announcements')
-            .select('*')
-            .eq('is_active', true)
-            .or(`target.eq.all,target.eq.${gradeTarget}`)
-            .lte('scheduled_for', new Date().toISOString())
-            .order('created_at', { ascending: false });
-        return data;
-    }, APP_CONFIG.CACHE_TIME_ANNOUNCEMENTS, (data) => renderAnnouncements(data, container));
+        // Use RPC function to get announcements for user
+        const { data, error } = await supabase
+            .rpc('get_announcements_for_user', { p_user_id: userId });
+
+        if (error) {
+            console.error('Error loading announcements:', error);
+            container.innerHTML = '<p style="text-align: center; color: var(--text-light);">حدث خطأ في تحميل الإعلانات</p>';
+            return null;
+        }
+
+        return data || [];
+    }, APP_CONFIG.CACHE_TIME_ANNOUNCEMENTS, (announcements) => {
+        if (!announcements || announcements.length === 0) {
+            container.style.display = 'none';
+            return;
+        }
+        renderAnnouncements(announcements, container);
+    });
 }
 
 function renderAnnouncements(announcements, container) {
@@ -112,9 +118,15 @@ function renderAnnouncements(announcements, container) {
     const dismissed = JSON.parse(localStorage.getItem('dismissed_announcements') || '[]');
     const valid = announcements.filter(a => !dismissed.includes(a.id));
 
-    // Styling logic handled in dashboard.js original (skipping detailed CSS for brevity in logic proof)
+    // Hide container if no valid announcements
+    if (valid.length === 0) {
+        container.style.display = 'none';
+        return;
+    }
+
+    container.style.display = 'block';
     container.innerHTML = valid.map(ann => `
-        <div class="announcement-toast" id="ann-${ann.id}">
+        <div class="announcement-toast announcement-${ann.type || 'info'}" id="ann-${ann.id}">
              <strong>${ann.title}</strong>
              <p>${ann.message}</p>
              <button onclick="dismissAnnouncement('${ann.id}')">×</button>

@@ -128,21 +128,12 @@ export async function showCreateSquadModal() {
         .eq('id', currentProfile.id)
         .single();
 
-    if (!profile || !profile.grade) {
-        Swal.fire('خطأ', 'لم نتمكن من تحميل بيانات حسابك. يرجى المحاولة مرة أخرى.', 'error');
+    if (!profile || !profile.academic_year) {
+        console.error('No profile or academic_year found');
         return;
     }
 
-    // Map profile grade to squad year format
-    const PROFILE_TO_SQUAD_YEAR = {
-        "1": "first_year",
-        "2": "second_year",
-        "3": "third_year",
-        "4": "fourth_year"
-    };
-
-    const studentYear = PROFILE_TO_SQUAD_YEAR[profile.grade];
-    const studentGrade = profile.grade;
+    const studentGrade = profile.academic_year;
 
     // Determine department based on grade
     let studentDept = "general"; // Default for years 1-2
@@ -154,7 +145,7 @@ export async function showCreateSquadModal() {
             "nursing_admin": "community",
             "psychiatric": "psychiatric"
         };
-        studentDept = PROFILE_TO_SQUAD_DEPT[profile.stream] || "general";
+        studentDept = PROFILE_TO_SQUAD_DEPT[profile.department] || "general";
     }
 
     // Show department selector only for years 3-4

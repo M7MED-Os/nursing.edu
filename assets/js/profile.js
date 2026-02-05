@@ -1,6 +1,6 @@
 import { supabase } from "./supabaseClient.js";
-import { showToast } from "./utils.js";
-import { GRADES, TERMS, STREAMS } from "./constants.js";
+import { showToast, showInputError } from './utils.js';
+import { getAcademicYearLabel, getTermLabel, getDepartmentLabel } from './constants.js';
 import { setButtonLoading } from "./utils/dom.js";
 import { openAvatarModal } from "./avatar-modal.js";
 import { generateAvatar, calculateLevel, getLevelColor, getLevelLegend, getLevelMetadata, LEVEL_MULTIPLIER } from './avatars.js';
@@ -42,9 +42,9 @@ function renderProfileUI(profile, user) {
     // 2. Data to use (new column names with fallback)
     const fullName = profile.full_name || meta.full_name || "";
     const email = currentUser.email || "";
-    const academic_year = profile?.academic_year || profile?.grade || meta.academic_year || meta.grade || "";
-    const current_term = profile?.current_term || profile?.term || meta.current_term || meta.term || "";
-    const department = profile?.department || profile?.stream || meta.department || meta.stream || "";
+    const academic_year = profile?.academic_year || meta.academic_year || "";
+    const current_term = profile?.current_term || meta.current_term || "";
+    const department = profile?.department || meta.department || "";
 
     // Check if Admin
     const isAdmin = profile?.role === "admin" || meta.role === "admin";
@@ -178,7 +178,7 @@ function renderProfileUI(profile, user) {
         // Academic Year Card
         statsHtml += createStatCard(
             'السنة الدراسية',
-            GRADES[academic_year] || academic_year || '-',
+            getAcademicYearLabel(academic_year) || academic_year || '-',
             'fa-graduation-cap',
             '#10b981',
             'linear-gradient(135deg, #10b981 0%, #059669 100%)'
@@ -188,7 +188,7 @@ function renderProfileUI(profile, user) {
         if (current_term) {
             statsHtml += createStatCard(
                 'الترم',
-                TERMS[current_term] || current_term || '-',
+                getTermLabel(current_term) || current_term || '-',
                 'fa-calendar-alt',
                 '#3b82f6',
                 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)'
@@ -196,10 +196,10 @@ function renderProfileUI(profile, user) {
         }
 
         // Department Card (for Year 3 & 4)
-        if ((academic_year === "3" || academic_year === "4" || academic_year === "third_year" || academic_year === "fourth_year") && department) {
+        if ((academic_year === "third_year" || academic_year === "fourth_year") && department) {
             statsHtml += createStatCard(
                 'القسم',
-                STREAMS[department] || department || '-',
+                getDepartmentLabel(department) || department || '-',
                 'fa-user-md',
                 '#8b5cf6',
                 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)'
@@ -312,7 +312,35 @@ if (editNameBtn) {
                 }
             }
         });
-
+        const infoHTML = `
+            <div class="info-item">
+                <i class="fas fa-user"></i>
+                <span>${profile.full_name || '-'}</span>
+            </div>
+            <div class="info-item">
+                <i class="fas fa-envelope"></i>
+                <span>${profile.email || '-'}</span>
+            </div>
+            <div class="info-item">
+                <i class="fas fa-graduation-cap"></i>
+                <span>${getAcademicYearLabel(academic_year) || academic_year || '-'
+            }</span>
+            </div>
+            <div class="info-item">
+                <i class="fas fa-calendar-alt"></i>
+                <span>${getTermLabel(current_term) || current_term || '-'
+            }</span>
+            </div>
+            <div class="info-item">
+                <i class="fas fa-building"></i>
+                <span>${getDepartmentLabel(department) || department || '-'
+            }</span>
+            </div>
+            <div class="info-item">
+                <i class="fas fa-phone"></i>
+                <span>${profile.phone || '-'}</span>
+            </div>
+        `;
         if (newName && newName.trim() !== currentProfile.full_name) {
             try {
                 Swal.fire({

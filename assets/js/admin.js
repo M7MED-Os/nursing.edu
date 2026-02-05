@@ -73,11 +73,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (grade === '3') {
             options += `
                 <option value="pediatric">أطفال</option>
-                <option value="obs_gyn">نسا</option>
+                <option value="maternity">نسا</option>
             `;
         } else if (grade === '4') {
             options += `
-                <option value="nursing_admin">إدارة</option>
+                <option value="community">إدارة</option>
                 <option value="psychiatric">نفسية</option>
             `;
         } else {
@@ -141,13 +141,13 @@ window.loadStudents = async () => {
 
         const matchesStatus = filterStatus === 'all' || sStatus === filterStatus;
 
-        // Grade Filter (check both academic_year and grade for compatibility)
-        const student_year = s.academic_year || s.grade;
+        // Grade Filter
+        const student_year = s.academic_year;
         const matchesGrade = filterGrade === 'all' || student_year == filterGrade;
 
-        // Stream/Term Filter (check both department/current_term and stream/term)
-        const student_department = s.department || s.stream;
-        const student_term = s.current_term || s.term;
+        // Stream/Term Filter
+        const student_department = s.department;
+        const student_term = s.current_term;
         const matchesStream = filterStream === 'all' || student_department == filterStream || student_term == filterStream;
 
         return matchesSearch && matchesStatus && matchesGrade && matchesStream;
@@ -171,36 +171,56 @@ window.loadStudents = async () => {
     }
 
     tableBody.innerHTML = filtered.map(s => {
+        // Get student data
+        const student_year = s.academic_year;
+        const student_term = s.current_term;
+        const student_department = s.department;
+
         const roleStr = s.role === 'admin' ? 'آدمن' : 'طالب';
         const roleClass = s.role === 'admin' ? 'badge-info' : 'badge-gray';
 
         // Translation Mapping for Nursing Academy - Simplified
         const gradeMap = {
-            '1': '1',
-            '2': '2',
-            '3': '3',
-            '4': '4'
+            'first_year': 'فرقة 1',
+            'second_year': 'فرقة 2',
+            'third_year': 'فرقة 3',
+            'fourth_year': 'فرقة 4',
+            '1': 'فرقة 1',
+            '2': 'فرقة 2',
+            '3': 'فرقة 3',
+            '4': 'فرقة 4'
         };
 
         const streamMap = {
             'pediatric': 'أطفال',
+            'maternity': 'نسا',
+            'community': 'إدارة',
+            'psychiatric': 'نفسية',
             'obs_gyn': 'نسا',
-            'nursing_admin': 'إدارة',
-            'psychiatric': 'نفسية'
+            'nursing_admin': 'إدارة'
         };
 
         const termMap = {
-            '1': '1',
-            '2': '2'
+            '1': 'ترم أول',
+            '2': 'ترم ثاني',
+            'first_term': 'ترم أول',
+            'second_term': 'ترم ثاني'
         };
 
-        // Display logic: Show stream for years 3&4, term for all
+        // Display logic: Show department - term (e.g., "نفسية - ترم أول")
         let displayInfo = [];
-        if (s.term) displayInfo.push(`${termMap[s.term] || s.term}`);
-        if ((s.grade === '3' || s.grade === '4') && s.stream) {
-            displayInfo.push(streamMap[s.stream] || s.stream);
+
+        // For years 3 & 4, show department first
+        if ((student_year === 'third_year' || student_year === '3' || student_year === 'fourth_year' || student_year === '4') && student_department) {
+            displayInfo.push(streamMap[student_department] || student_department);
         }
-        const displayStreamOrTerm = displayInfo.length > 0 ? displayInfo.join(' / ') : '-';
+
+        // Then add term
+        if (student_term) {
+            displayInfo.push(termMap[student_term] || student_term);
+        }
+
+        const displayStreamOrTerm = displayInfo.length > 0 ? displayInfo.join(' - ') : '-';
 
         // Status Logic
         const expiry = s.subscription_ends_at ? new Date(s.subscription_ends_at) : null;
@@ -243,8 +263,8 @@ window.loadStudents = async () => {
                 <div class="user-id">ID: ${s.id.substr(0, 8)}</div>
             </td>
             <td data-label="البريد" style="color:#64748b; font-size:0.85rem;">${s.email || '-'}</td>
-            <td data-label="السنة"><span class="badge badge-info">${gradeMap[s.academic_year || s.grade] || s.academic_year || s.grade || '-'}</span></td>
-            <td data-label="القسم/الترم">${displayStreamOrTerm}</td>
+            <td data-label="السنة"><span class="badge badge-info">${gradeMap[student_year] || student_year || '-'}</span></td>
+            <td data-label="الترم/القسم">${displayStreamOrTerm}</td>
             <td data-label="النقاط"><strong>${s.points || 0}</strong></td>
             <td data-label="الدور"><span class="badge ${roleClass}">${roleStr}</span></td>
             <td data-label="الحالة">${statusHtml}</td>
@@ -304,28 +324,28 @@ window.openEditStudent = async (id) => {
             <div class="form-group">
                 <label>السنة الدراسية</label>
                 <select id="editGrade" class="form-control">
-                    <option value="1" ${student.grade === '1' ? 'selected' : ''}>فرقة 1</option>
-                    <option value="2" ${student.grade === '2' ? 'selected' : ''}>فرقة 2</option>
-                    <option value="3" ${student.grade === '3' ? 'selected' : ''}>فرقة 3</option>
-                    <option value="4" ${student.grade === '4' ? 'selected' : ''}>فرقة 4</option>
+                    <option value="first_year" ${student.academic_year === 'first_year' ? 'selected' : ''}>فرقة 1</option>
+                    <option value="second_year" ${student.academic_year === 'second_year' ? 'selected' : ''}>فرقة 2</option>
+                    <option value="third_year" ${student.academic_year === 'third_year' ? 'selected' : ''}>فرقة 3</option>
+                    <option value="fourth_year" ${student.academic_year === 'fourth_year' ? 'selected' : ''}>فرقة 4</option>
                 </select>
             </div>
             <div class="form-group">
                 <label>الترم</label>
                 <select id="editTerm" class="form-control">
-                    <option value="" ${!student.term ? 'selected' : ''}>--</option>
-                    <option value="1" ${student.term === '1' ? 'selected' : ''}>الترم 1</option>
-                    <option value="2" ${student.term === '2' ? 'selected' : ''}>الترم 2</option>
+                    <option value="" ${!student.current_term ? 'selected' : ''}>--</option>
+                    <option value="first_term" ${student.current_term === 'first_term' ? 'selected' : ''}>الترم 1</option>
+                    <option value="second_term" ${student.current_term === 'second_term' ? 'selected' : ''}>الترم 2</option>
                 </select>
             </div>
             <div class="form-group">
                 <label>القسم (للفرقة 3 و 4)</label>
                 <select id="editStream" class="form-control">
-                    <option value="" ${!student.stream ? 'selected' : ''}>-- بدون قسم --</option>
-                    <option value="pediatric" ${student.stream === 'pediatric' ? 'selected' : ''}>أطفال (فرقة 3)</option>
-                    <option value="obs_gyn" ${student.stream === 'obs_gyn' ? 'selected' : ''}>نسا (فرقة 3)</option>
-                    <option value="nursing_admin" ${student.stream === 'nursing_admin' ? 'selected' : ''}>إدارة (فرقة 4)</option>
-                    <option value="psychiatric" ${student.stream === 'psychiatric' ? 'selected' : ''}>نفسية (فرقة 4)</option>
+                    <option value="" ${!student.department ? 'selected' : ''}>-- بدون قسم --</option>
+                    <option value="pediatric" ${student.department === 'pediatric' ? 'selected' : ''}>أطفال (فرقة 3)</option>
+                    <option value="maternity" ${student.department === 'maternity' ? 'selected' : ''}>نسا (فرقة 3)</option>
+                    <option value="community" ${student.department === 'community' ? 'selected' : ''}>إدارة (فرقة 4)</option>
+                    <option value="psychiatric" ${student.department === 'psychiatric' ? 'selected' : ''}>نفسية (فرقة 4)</option>
                 </select>
             </div>
             <div class="form-group">
@@ -347,21 +367,16 @@ window.openEditStudent = async (id) => {
         `,
         onSave: async () => {
             const gradeVal = document.getElementById('editGrade').value;
-            const termVal = document.getElementById('editTerm').value || null;
             const streamVal = document.getElementById('editStream').value || null;
+            const termVal = document.getElementById('editTerm').value || null;
 
-            // Map numeric grade to text academic_year
-            const yearMap = { '1': 'first_year', '2': 'second_year', '3': 'third_year', '4': 'fourth_year' };
-            const academic_year = yearMap[gradeVal] || gradeVal;
+            // gradeVal is already in the correct format (first_year, second_year, etc.)
+            const academic_year = gradeVal;
 
             const updates = {
                 full_name: document.getElementById('editName').value,
                 points: parseInt(document.getElementById('editPoints').value) || 0,
                 role: document.getElementById('editRole').value,
-                grade: gradeVal,
-                stream: streamVal,
-                term: termVal,
-                // New columns
                 academic_year: academic_year,
                 current_term: termVal,
                 department: streamVal,
@@ -379,13 +394,17 @@ window.openEditStudent = async (id) => {
                     text: error.message
                 });
             } else {
-                // Clean up old data via RPC
-                await supabase.rpc('cleanup_student_data', {
-                    p_user_id: id,
-                    p_grade: updates.grade,
-                    p_term: updates.term || '',
-                    p_stream: updates.stream || ''
-                });
+                // Clean up old data via RPC (optional - won't fail if function doesn't exist)
+                try {
+                    await supabase.rpc('cleanup_student_data', {
+                        p_user_id: id,
+                        p_academic_year: updates.academic_year,
+                        p_current_term: updates.current_term || '',
+                        p_department: updates.department || ''
+                    });
+                } catch (rpcError) {
+                    console.warn('cleanup_student_data RPC not available:', rpcError);
+                }
 
                 Swal.fire({
                     icon: 'success',

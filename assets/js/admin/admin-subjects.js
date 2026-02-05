@@ -24,15 +24,15 @@ export async function selectContext(grade, termOrStream) {
     // UI Update
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
 
-    currentContext.grade = grade;
+    currentContext.academic_year = grade;
     currentContext.termOrStream = termOrStream;
     currentContext.subject = null;
 
-    // Determine if this is a term (1, 2) or a stream (department)
+    // Determine if this is a term (1, 2) or a department
     const isTerm = termOrStream === '1' || termOrStream === '2';
     currentContext.isTerm = isTerm;
-    currentContext.term = isTerm ? termOrStream : null;
-    currentContext.stream = !isTerm ? termOrStream : null;
+    currentContext.current_term = isTerm ? termOrStream : null;
+    currentContext.department = !isTerm ? termOrStream : null;
 
     const label = getContextLabel(grade, termOrStream);
     document.getElementById('pageTitle').textContent = `الرئيسية > ${label}`;
@@ -48,16 +48,16 @@ export async function loadSubjects() {
     const container = document.getElementById('subjectListView');
     container.innerHTML = `<div class="spinner"></div>`;
 
-    // Filter Logic - use term and stream from context
-    let query = supabase.from('subjects').select('*').eq('grade', currentContext.grade).order('order_index');
+    // Filter Logic - use current_term and department from context
+    let query = supabase.from('subjects').select('*').eq('academic_year', currentContext.academic_year).order('order_index');
 
     // If viewing by term: show all subjects in that term
-    if (currentContext.term) {
-        query = query.eq('term', currentContext.term);
+    if (currentContext.current_term) {
+        query = query.eq('current_term', currentContext.current_term);
     }
-    // If viewing by stream (department): show only that department's subjects
-    else if (currentContext.stream) {
-        query = query.eq('stream', currentContext.stream);
+    // If viewing by department: show only that department's subjects
+    else if (currentContext.department) {
+        query = query.eq('department', currentContext.department);
     }
 
     const { data: subjects, error } = await query;
@@ -131,16 +131,16 @@ export function openAddSubjectModal() {
 
             const payload = {
                 name_ar: name,
-                grade: currentContext.grade,
+                academic_year: currentContext.academic_year,
                 order_index: order
             };
 
-            // Set term and stream based on context
-            if (currentContext.term) {
-                payload.term = currentContext.term;
+            // Set term and department based on context
+            if (currentContext.current_term) {
+                payload.current_term = currentContext.current_term;
             }
-            if (currentContext.stream) {
-                payload.stream = currentContext.stream;
+            if (currentContext.department) {
+                payload.department = currentContext.department;
             }
 
             const { error } = await supabase.from('subjects').insert(payload);
