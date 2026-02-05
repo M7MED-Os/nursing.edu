@@ -1,6 +1,6 @@
 import { supabase } from "./supabaseClient.js";
 import { getCache, setCache, getSWR } from "./utils.js";
-import { APP_CONFIG } from "./constants.js";
+import { APP_CONFIG, YEAR_TO_GRADE } from "./constants.js";
 import { checkAuth } from "./auth.js";
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -88,10 +88,14 @@ async function loadAnnouncements(profile) {
     const container = document.getElementById('announcements-container');
     if (!container || !profile) return;
 
-    const cacheKey = `announcements_${profile.grade}`;
+    // Use new column name with fallback
+    const academic_year = profile?.academic_year || profile?.grade;
+    const numericGrade = YEAR_TO_GRADE[academic_year] || academic_year;
+
+    const cacheKey = `announcements_${numericGrade}`;
 
     getSWR(cacheKey, async () => {
-        const gradeTarget = `grade_${profile.grade}`;
+        const gradeTarget = `grade_${numericGrade}`;
         const { data } = await supabase.from('announcements')
             .select('*')
             .eq('is_active', true)

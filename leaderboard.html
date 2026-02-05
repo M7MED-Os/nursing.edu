@@ -450,6 +450,39 @@
                     currentUserInfo.squad_id = squadMember.squad_id;
                 }
 
+                // FREEMIUM CHECK: Verify access to leaderboard feature
+                const { data: freemiumConfig } = await supabase.rpc('get_freemium_config');
+                const leaderboardEnabled = freemiumConfig?.[0]?.leaderboard_enabled || false;
+
+                if (!leaderboardEnabled && !currentUserInfo.is_active) {
+                    // Track analytics
+                    await supabase.from('freemium_analytics').insert({
+                        user_id: currentUserInfo.id,
+                        content_type: 'feature',
+                        content_id: null,
+                        action: 'blocked'
+                    }).catch(err => console.warn('Analytics error:', err));
+
+                    // Show upgrade prompt
+                    await Swal.fire({
+                        title: 'لوحة الأوائل للمشتركين فقط! 🔒',
+                        text: 'اشترك الآن للمنافسة والظهور في لوحة الأوائل',
+                        icon: 'info',
+                        showCancelButton: true,
+                        confirmButtonText: 'اشترك الآن',
+                        cancelButtonText: 'العودة',
+                        confirmButtonColor: '#0ea5e9',
+                        cancelButtonColor: '#64748b'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            window.location.href = 'pending.html';
+                        } else {
+                            window.location.href = 'dashboard.html';
+                        }
+                    });
+                    return;
+                }
+
                 // Sync UI on point changes
                 window.addEventListener('profileUpdated', (e) => {
                     currentUserInfo = e.detail;

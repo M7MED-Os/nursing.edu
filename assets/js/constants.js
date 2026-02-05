@@ -1,8 +1,14 @@
 export const GRADES = {
+    // Old format (numeric)
     "1": "الفرقة الأولى",
     "2": "الفرقة الثانية",
     "3": "الفرقة الثالثة",
-    "4": "الفرقة الرابعة"
+    "4": "الفرقة الرابعة",
+    // New format (text)
+    "first_year": "الفرقة الأولى",
+    "second_year": "الفرقة الثانية",
+    "third_year": "الفرقة الثالثة",
+    "fourth_year": "الفرقة الرابعة"
 };
 
 export const TERMS = {
@@ -29,6 +35,7 @@ export const SQUAD_DEPARTMENTS = {
     "general": "عام",
     "medical_surgical": "باطني جراحي",
     "pediatric": "أطفال",
+    "obs_gyn": "أمومة وطفولة",
     "maternity": "أمومة وطفولة",
     "psychiatric": "نفسي",
     "community": "مجتمع"
@@ -40,6 +47,14 @@ export const PROFILE_TO_SQUAD_YEAR = {
     "2": "second_year",
     "3": "third_year",
     "4": "fourth_year"
+};
+
+// Reverse mapping for database queries (subjects table uses numeric 'grade')
+export const YEAR_TO_GRADE = {
+    "first_year": "1",
+    "second_year": "2",
+    "third_year": "3",
+    "fourth_year": "4"
 };
 
 

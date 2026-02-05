@@ -61,7 +61,7 @@ function initMainJS() {
             });
         }
     } catch (err) {
-        console.log('Smooth scroll not available on this page');
+        // Smooth scroll not available on this page
     }
 
     // Contact Form Validation

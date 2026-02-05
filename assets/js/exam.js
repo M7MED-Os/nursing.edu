@@ -2,7 +2,7 @@ import { supabase } from "./supabaseClient.js";
 import { clearCache } from "./utils.js";
 import { APP_CONFIG } from "./constants.js";
 import { showErrorAlert, showSuccessAlert, showConfirmDialog, showInfoAlert } from "./utils/alerts.js";
-import { subscriptionService, initSubscriptionService, showUpgradePrompt } from "./subscription.js";
+import { subscriptionService, initSubscriptionService, showSubscriptionPopup } from "./subscription.js";
 import { checkAuth } from "./auth.js";
 
 const urlParams = new URLSearchParams(window.location.search);
@@ -65,11 +65,16 @@ async function initExam() {
         // ✅ STEP 2: Validate exam access using RPC
         const accessCheck = await subscriptionService.validateExamAccess(examId);
 
+        if (accessCheck.error) {
+            console.error('Access check error:', accessCheck.error);
+            loadingEl.innerHTML = '<p style="color: red;">حدث خطأ في التحقق من الوصول</p>';
+            return;
+        }
+
         if (!accessCheck.canAccess) {
-            // User doesn't have access
+            // User doesn't have access - show popup
             loadingEl.innerHTML = '';
-            await showUpgradePrompt('exam');
-            window.location.href = 'dashboard.html';
+            await showSubscriptionPopup();
             return;
         }
 

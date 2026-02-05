@@ -80,23 +80,13 @@ class SubscriptionService {
 
     /**
      * Check if user has active premium subscription
+     * SIMPLIFIED: Just check is_active flag (expiry handled by database trigger)
      */
     isPremium() {
         if (!this.userProfile) return false;
 
-        const { is_active, subscription_ends_at } = this.userProfile;
-
-        // Check if subscription is active
-        if (!is_active) return false;
-
-        // Check if subscription has expired
-        if (subscription_ends_at) {
-            const expiryDate = new Date(subscription_ends_at);
-            const now = new Date();
-            if (now > expiryDate) return false;
-        }
-
-        return true;
+        // Simple check: is_active = true means premium
+        return this.userProfile.is_active === true;
     }
 
     /**
@@ -203,9 +193,13 @@ class SubscriptionService {
                 p_exam_id: examId
             });
 
-            if (error) throw error;
+            if (error) {
+                console.error('RPC error (get_exam_secure):', error);
+                return { canAccess: false, exam: null, error: error.message };
+            }
 
             if (!data || data.length === 0) {
+                console.error('Exam not found:', examId);
                 return { canAccess: false, exam: null, error: 'Exam not found' };
             }
 
@@ -213,11 +207,10 @@ class SubscriptionService {
             return {
                 canAccess: exam.can_access,
                 exam: exam,
-                isPremiumRequired: exam.is_premium_required,
                 error: null
             };
         } catch (err) {
-            console.error('Error validating exam access:', err);
+            console.error('Exception validating exam access:', err);
             return { canAccess: false, exam: null, error: err.message };
         }
     }
@@ -237,6 +230,29 @@ class SubscriptionService {
             console.error('Error fetching exam questions:', err);
             return [];
         }
+    }
+
+    /**
+     * Show simple subscription popup (no redirect)
+     */
+    showSubscriptionPopup() {
+        return Swal.fire({
+            title: 'المحتوى ده للمشتركين بس 🔒',
+            text: 'اشترك عشان تقدر توصل لكل المحتوى',
+            icon: 'info',
+            showCancelButton: true,
+            confirmButtonText: 'اشترك الآن',
+            cancelButtonText: 'إلغاء',
+            confirmButtonColor: '#0ea5e9',
+            cancelButtonColor: '#64748b',
+            customClass: {
+                popup: 'rtl-popup'
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = 'pending.html';
+            }
+        });
     }
 
     /**
@@ -387,4 +403,8 @@ export function canAccessExam(lesson) {
 
 export async function showUpgradePrompt(contentType) {
     return await subscriptionService.showUpgradePrompt(contentType);
+}
+
+export function showSubscriptionPopup() {
+    return subscriptionService.showSubscriptionPopup();
 }

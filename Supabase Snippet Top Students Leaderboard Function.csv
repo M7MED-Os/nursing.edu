@@ -1,0 +1,127 @@
+type,name,detail,data_type,is_nullable,column_default
+POLICY,announcements,Admins can manage announcements,ALL,PERMISSIVE,"(EXISTS ( SELECT 1
+   FROM profiles
+  WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'admin'::text))))"
+POLICY,announcements,Students can view announcements,SELECT,PERMISSIVE,true
+POLICY,app_configs,Admins can manage configs,ALL,PERMISSIVE,"(EXISTS ( SELECT 1
+   FROM profiles
+  WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'admin'::text))))"
+POLICY,app_configs,Allow anyone to read configs,SELECT,PERMISSIVE,true
+POLICY,challenge_participations,Insert own participation,INSERT,PERMISSIVE,null
+POLICY,challenge_participations,Update own participation,UPDATE,PERMISSIVE,(auth.uid() = profile_id)
+POLICY,challenge_participations,View participations,SELECT,PERMISSIVE,true
+POLICY,chapters,Admins can manage chapters,ALL,PERMISSIVE,"(EXISTS ( SELECT 1
+   FROM profiles
+  WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'admin'::text))))"
+POLICY,chapters,Authenticated users can view chapters,SELECT,PERMISSIVE,true
+POLICY,chapters,Content_Manage_Admin,ALL,PERMISSIVE,is_admin()
+POLICY,chapters,Content_Read_Secured,SELECT,PERMISSIVE,"(((( SELECT profiles.is_active
+   FROM profiles
+  WHERE (profiles.id = auth.uid())) = true) AND (( SELECT profiles.subscription_ends_at
+   FROM profiles
+  WHERE (profiles.id = auth.uid())) > now())) OR is_admin())"
+POLICY,exams,Admins can manage exams,ALL,PERMISSIVE,"(EXISTS ( SELECT 1
+   FROM profiles
+  WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'admin'::text))))"
+POLICY,exams,Authenticated users can view exams,SELECT,PERMISSIVE,true
+POLICY,exams,Content_Manage_Admin,ALL,PERMISSIVE,is_admin()
+POLICY,exams,Content_Read_Secured,SELECT,PERMISSIVE,"(((( SELECT profiles.is_active
+   FROM profiles
+  WHERE (profiles.id = auth.uid())) = true) AND (( SELECT profiles.subscription_ends_at
+   FROM profiles
+  WHERE (profiles.id = auth.uid())) > now())) OR is_admin())"
+POLICY,freemium_analytics,Admins can read all analytics,SELECT,PERMISSIVE,"(EXISTS ( SELECT 1
+   FROM profiles
+  WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'admin'::text))))"
+POLICY,freemium_analytics,Users can insert their own analytics,INSERT,PERMISSIVE,null
+POLICY,freemium_audit_log,Allow admins to read audit log,SELECT,PERMISSIVE,"(EXISTS ( SELECT 1
+   FROM profiles
+  WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'admin'::text))))"
+POLICY,freemium_audit_log,Allow system to insert audit logs,INSERT,PERMISSIVE,null
+POLICY,freemium_config,Allow admins to manage freemium config,ALL,PERMISSIVE,"(EXISTS ( SELECT 1
+   FROM profiles
+  WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'admin'::text))))"
+POLICY,freemium_config,Allow authenticated users to read freemium config,SELECT,PERMISSIVE,true
+POLICY,freemium_config,Allow service role to manage freemium config,ALL,PERMISSIVE,true
+POLICY,lessons,Admins can manage lessons,ALL,PERMISSIVE,"(EXISTS ( SELECT 1
+   FROM profiles
+  WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'admin'::text))))"
+POLICY,lessons,Authenticated users can view lessons,SELECT,PERMISSIVE,true
+POLICY,lessons,Content_Manage_Admin,ALL,PERMISSIVE,is_admin()
+POLICY,lessons,Content_Read_Secured,SELECT,PERMISSIVE,"(((( SELECT profiles.is_active
+   FROM profiles
+  WHERE (profiles.id = auth.uid())) = true) AND (( SELECT profiles.subscription_ends_at
+   FROM profiles
+  WHERE (profiles.id = auth.uid())) > now())) OR is_admin())"
+POLICY,profiles,Profiles are viewable by everyone,SELECT,PERMISSIVE,true
+POLICY,profiles,Profiles_Delete_Admin,DELETE,PERMISSIVE,is_admin()
+POLICY,profiles,Profiles_Insert_Own,INSERT,PERMISSIVE,null
+POLICY,profiles,Profiles_Select_All,SELECT,PERMISSIVE,true
+POLICY,profiles,Profiles_Update_Own_Or_Admin,UPDATE,PERMISSIVE,((auth.uid() = id) OR is_admin())
+POLICY,profiles,Users can only update their own non-sensitive info,UPDATE,PERMISSIVE,(auth.uid() = id)
+POLICY,profiles,Users can update own profile,UPDATE,PERMISSIVE,(auth.uid() = id)
+POLICY,questions,Admins can manage questions,ALL,PERMISSIVE,"(EXISTS ( SELECT 1
+   FROM profiles
+  WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'admin'::text))))"
+POLICY,questions,Authenticated users can view questions,SELECT,PERMISSIVE,true
+POLICY,questions,Content_Manage_Admin,ALL,PERMISSIVE,is_admin()
+POLICY,questions,Content_Read_Secured,SELECT,PERMISSIVE,"(((( SELECT profiles.is_active
+   FROM profiles
+  WHERE (profiles.id = auth.uid())) = true) AND (( SELECT profiles.subscription_ends_at
+   FROM profiles
+  WHERE (profiles.id = auth.uid())) > now())) OR is_admin())"
+POLICY,results,Results_Delete_Admin,DELETE,PERMISSIVE,is_admin()
+POLICY,results,Results_Insert_Own,INSERT,PERMISSIVE,null
+POLICY,results,Results_Select_Own_Or_Admin,SELECT,PERMISSIVE,((auth.uid() = user_id) OR is_admin())
+POLICY,squad_chat_messages,مسح الشات للمالك والأدمن,DELETE,PERMISSIVE,"((EXISTS ( SELECT 1
+   FROM squads
+  WHERE ((squads.id = squad_chat_messages.squad_id) AND (squads.owner_id = auth.uid())))) OR (( SELECT profiles.role
+   FROM profiles
+  WHERE (profiles.id = auth.uid())) = 'admin'::text))"
+POLICY,squad_chat_messages,وصول للشات,ALL,PERMISSIVE,"(EXISTS ( SELECT 1
+   FROM squad_members
+  WHERE ((squad_members.squad_id = squad_chat_messages.squad_id) AND (squad_members.profile_id = auth.uid()))))"
+POLICY,squad_exam_challenges,Anyone authenticated can create challenges,INSERT,PERMISSIVE,null
+POLICY,squad_exam_challenges,Anyone authenticated can view challenges,SELECT,PERMISSIVE,true
+POLICY,squad_exam_challenges,Create exam challenges,INSERT,PERMISSIVE,null
+POLICY,squad_exam_challenges,View exam challenges,SELECT,PERMISSIVE,true
+POLICY,squad_exam_sessions,أعضاء الشلة يحلون امتحانات معا,ALL,PERMISSIVE,"(EXISTS ( SELECT 1
+   FROM squad_members
+  WHERE ((squad_members.squad_id = squad_exam_sessions.squad_id) AND (squad_members.profile_id = auth.uid()))))"
+POLICY,squad_members,أي حد يقدر ينضم لشلة,INSERT,PERMISSIVE,null
+POLICY,squad_members,الكل يشوف الأعضاء,SELECT,PERMISSIVE,true
+POLICY,squad_members,المالك يحذف الأعضاء,DELETE,PERMISSIVE,"(EXISTS ( SELECT 1
+   FROM squads
+  WHERE ((squads.id = squad_members.squad_id) AND (squads.owner_id = auth.uid()))))"
+POLICY,squad_members,المستخدم ينضم لنفسه,INSERT,PERMISSIVE,null
+POLICY,squad_message_reads,الكل يقرأ علامات القراءة,SELECT,PERMISSIVE,true
+POLICY,squad_message_reads,المستخدم يسجل قراءته,ALL,PERMISSIVE,(auth.uid() = profile_id)
+POLICY,squad_pomodoro,أعضاء الشلة يديرون البومودورو,ALL,PERMISSIVE,"(EXISTS ( SELECT 1
+   FROM squad_members
+  WHERE ((squad_members.squad_id = squad_pomodoro.squad_id) AND (squad_members.profile_id = auth.uid()))))"
+POLICY,squad_task_completions,الكل يشوف إنجازات الشلة,SELECT,PERMISSIVE,true
+POLICY,squad_task_completions,المستخدم يسجل إنجازه بنفسه,ALL,PERMISSIVE,(auth.uid() = profile_id)
+POLICY,squad_tasks,وصول للمهام,ALL,PERMISSIVE,"(EXISTS ( SELECT 1
+   FROM squad_members
+  WHERE ((squad_members.squad_id = squad_tasks.squad_id) AND (squad_members.profile_id = auth.uid()))))"
+POLICY,squads,Squad owners can update,UPDATE,PERMISSIVE,(auth.uid() = owner_id)
+POLICY,squads,Squads are viewable by everyone,SELECT,PERMISSIVE,true
+POLICY,squads,الشلل مرئية للجميع للمشاركة,SELECT,PERMISSIVE,true
+POLICY,squads,المستخدمين يقدروا ينشئوا شلل,INSERT,PERMISSIVE,null
+POLICY,squads,صاحب الشلة يقدر يعدلها,UPDATE,PERMISSIVE,(auth.uid() = owner_id)
+POLICY,subjects,Admins can manage subjects,ALL,PERMISSIVE,"(EXISTS ( SELECT 1
+   FROM profiles
+  WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'admin'::text))))"
+POLICY,subjects,Authenticated users can view subjects,SELECT,PERMISSIVE,true
+POLICY,subjects,Content_Manage_Admin,ALL,PERMISSIVE,is_admin()
+POLICY,subjects,Content_Read_Secured,SELECT,PERMISSIVE,"(((( SELECT profiles.is_active
+   FROM profiles
+  WHERE (profiles.id = auth.uid())) = true) AND (( SELECT profiles.subscription_ends_at
+   FROM profiles
+  WHERE (profiles.id = auth.uid())) > now())) OR is_admin())"
+POLICY,todos,Users can create their own todos,INSERT,PERMISSIVE,null
+POLICY,todos,Users can delete their own todos,DELETE,PERMISSIVE,(auth.uid() = user_id)
+POLICY,todos,Users can update their own todos,UPDATE,PERMISSIVE,(auth.uid() = user_id)
+POLICY,todos,Users can view their own todos,SELECT,PERMISSIVE,(auth.uid() = user_id)
+POLICY,user_streaks,Manage own streak,ALL,PERMISSIVE,(auth.uid() = profile_id)
+POLICY,user_streaks,View streaks,SELECT,PERMISSIVE,true

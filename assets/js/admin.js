@@ -5,15 +5,13 @@ import { showSuccessAlert, showErrorAlert, showWarningAlert, showDeleteConfirmDi
 // Import admin modules
 import { initAdminCore, checkAdminAuth, showView, currentContext, openModal, closeModal, triggerCelebration } from "./admin/admin-core.js";
 import { renderExamQuestions } from "./admin/admin-questions.js";
-import { showFreemiumSettingsView, saveFreemiumSettings, addFreemiumControlsToLectureModal, getFreemiumValuesFromModal } from "./admin/freemium.js";
+import { showFreemiumSettingsView, saveFreemiumSettings } from "./admin/freemium.js";
 import "./admin/admin-subjects.js";
 import "./admin/admin-content.js";
 
 // Make freemium functions globally accessible
 window.showFreemiumSettingsView = showFreemiumSettingsView;
 window.saveFreemiumSettings = saveFreemiumSettings;
-window.addFreemiumControlsToLectureModal = addFreemiumControlsToLectureModal;
-window.getFreemiumValuesFromModal = getFreemiumValuesFromModal;
 
 // Local chart instances for student management (kept in main file)
 let enrollmentChartInstance = null;
@@ -143,11 +141,14 @@ window.loadStudents = async () => {
 
         const matchesStatus = filterStatus === 'all' || sStatus === filterStatus;
 
-        // Grade Filter
-        const matchesGrade = filterGrade === 'all' || s.grade == filterGrade;
+        // Grade Filter (check both academic_year and grade for compatibility)
+        const student_year = s.academic_year || s.grade;
+        const matchesGrade = filterGrade === 'all' || student_year == filterGrade;
 
-        // Stream Filter
-        const matchesStream = filterStream === 'all' || s.stream == filterStream || s.term == filterStream;
+        // Stream/Term Filter (check both department/current_term and stream/term)
+        const student_department = s.department || s.stream;
+        const student_term = s.current_term || s.term;
+        const matchesStream = filterStream === 'all' || student_department == filterStream || student_term == filterStream;
 
         return matchesSearch && matchesStatus && matchesGrade && matchesStream;
     });
@@ -242,7 +243,7 @@ window.loadStudents = async () => {
                 <div class="user-id">ID: ${s.id.substr(0, 8)}</div>
             </td>
             <td data-label="البريد" style="color:#64748b; font-size:0.85rem;">${s.email || '-'}</td>
-            <td data-label="السنة"><span class="badge badge-info">${gradeMap[s.grade] || s.grade || '-'}</span></td>
+            <td data-label="السنة"><span class="badge badge-info">${gradeMap[s.academic_year || s.grade] || s.academic_year || s.grade || '-'}</span></td>
             <td data-label="القسم/الترم">${displayStreamOrTerm}</td>
             <td data-label="النقاط"><strong>${s.points || 0}</strong></td>
             <td data-label="الدور"><span class="badge ${roleClass}">${roleStr}</span></td>
@@ -345,13 +346,25 @@ window.openEditStudent = async (id) => {
             </div>
         `,
         onSave: async () => {
+            const gradeVal = document.getElementById('editGrade').value;
+            const termVal = document.getElementById('editTerm').value || null;
+            const streamVal = document.getElementById('editStream').value || null;
+
+            // Map numeric grade to text academic_year
+            const yearMap = { '1': 'first_year', '2': 'second_year', '3': 'third_year', '4': 'fourth_year' };
+            const academic_year = yearMap[gradeVal] || gradeVal;
+
             const updates = {
                 full_name: document.getElementById('editName').value,
                 points: parseInt(document.getElementById('editPoints').value) || 0,
                 role: document.getElementById('editRole').value,
-                grade: document.getElementById('editGrade').value,
-                stream: document.getElementById('editStream').value || null,
-                term: document.getElementById('editTerm').value || null,
+                grade: gradeVal,
+                stream: streamVal,
+                term: termVal,
+                // New columns
+                academic_year: academic_year,
+                current_term: termVal,
+                department: streamVal,
                 is_active: document.getElementById('editIsActive').checked,
                 show_on_leaderboard: document.getElementById('editShowLeaderboard').checked,
                 subscription_ends_at: document.getElementById('editExpiry').value || null,

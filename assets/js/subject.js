@@ -1,7 +1,8 @@
 import { supabase } from "./supabaseClient.js";
-import { getCache, setCache, clearCache, getSWR } from "./utils.js";
+import { getCache, setCache } from "./utils.js";
 import { APP_CONFIG } from "./constants.js";
 import { checkAuth } from "./auth.js";
+import { initSubscriptionService, subscriptionService, showSubscriptionPopup } from "./subscription.js";
 
 // Utility to get Query Params
 const urlParams = new URLSearchParams(window.location.search);
@@ -13,6 +14,7 @@ let allExamGroups = [];
 let resultsOffset = 0;
 const resultsLimit = 3;
 let allSolvedExams = []; // Shared solved exams state
+let currentUserProfile = null;
 
 async function loadSubjectContent() {
     if (!subjectId) {
@@ -20,67 +22,82 @@ async function loadSubjectContent() {
         return;
     }
 
-    // 1. Initial Auth Check (Ensures Realtime + Session)
+    // 1. Initial Auth Check
     const auth = await checkAuth();
     if (!auth) return;
+
+    currentUserProfile = auth.profile;
+
+    // Initialize subscription service
+    await initSubscriptionService(auth.profile);
 
     const titleEl = document.getElementById("subjectTitle");
     const gridEl = document.getElementById("examsGrid");
     const loadingEl = document.getElementById("loading");
 
-    // 2. Unified SWR Logic
-    const cacheKey = `subject_data_${subjectId}`;
+    try {
+        // Fetch subject info
+        const { data: subject, error: subjectError } = await supabase
+            .from('subjects')
+            .select('name_ar')
+            .eq('id', subjectId)
+            .single();
 
-    getSWR(cacheKey,
-        () => fetchSubjectFreshData(auth.user.id),
-        APP_CONFIG.CACHE_TIME_SUBJECT_CONTENT,
-        (data) => {
-            if (data.subject) titleEl.textContent = data.subject.name_ar;
-            allSolvedExams = data.solvedExams || [];
-            renderContent(data.chapters, data.lessons, data.exams, gridEl, mode, squadIdInUrl, allSolvedExams);
+        if (subjectError) throw subjectError;
+        if (subject) titleEl.textContent = subject.name_ar;
+
+        // Fetch chapters
+        const { data: chapters, error: chaptersError } = await supabase
+            .from('chapters')
+            .select('*')
+            .eq('subject_id', subjectId)
+            .order('created_at');
+
+        if (chaptersError) throw chaptersError;
+
+        // Fetch all lessons using RPC (with freemium filtering)
+        let allLessons = [];
+        for (const chapter of chapters || []) {
+            const lessons = await subscriptionService.fetchAccessibleLessons(chapter.id);
+            allLessons = allLessons.concat(lessons.map(l => ({ ...l, chapter_id: chapter.id })));
+        }
+
+        // Fetch all exams
+        const { data: exams, error: examsError } = await supabase
+            .from('exams')
+            .select('*')
+            .or(`subject_id.eq.${subjectId},lesson_id.in.(${allLessons.map(l => l.id).join(',') || 'null'})`)
+            .order('created_at');
+
+        if (examsError) console.error('Exams error:', examsError);
+
+        // Fetch solved exams
+        const { data: results } = await supabase
+            .from('results')
+            .select('exam_id')
+            .eq('user_id', auth.user.id);
+
+        allSolvedExams = results ? [...new Set(results.map(r => r.exam_id))] : [];
+
+        // Render content
+        renderContent(chapters || [], allLessons, exams || [], gridEl, mode, squadIdInUrl, allSolvedExams);
+
+        // Hide loading (with null check)
+        if (loadingEl) {
             loadingEl.style.display = "none";
         }
-    );
-}
 
-
-
-async function fetchSubjectFreshData(userId) {
-    // Use the new RPC function (1 call instead of 4-5!)
-    const { data, error } = await supabase.rpc('get_subject_full_data', {
-        p_subject_id: subjectId,
-        p_user_id: userId
-    });
-
-    if (error) {
-        console.error('Subject data load error:', error);
-        return { subject: null, chapters: [], lessons: [], exams: [], solvedExams: [] };
+    } catch (err) {
+        console.error('Error loading subject:', err);
+        if (loadingEl) {
+            loadingEl.innerHTML = '<p style="color: red;">حدث خطأ في تحميل المحتوى</p>';
+        }
     }
-
-    return {
-        subject: data.subject,
-        chapters: data.chapters || [],
-        lessons: data.lessons || [],
-        exams: data.exams || [],
-        solvedExams: data.solved_exams || []
-    };
-}
-
-function renderSkeletons(container) {
-    container.innerHTML = `
-        <div class="skeleton-container" style="direction: rtl;">
-            ${[1, 2, 3].map(() => `
-                <div class="chapter-card skeleton pulse" style="border:none; margin-bottom:1.5rem; background:#eee;">
-                    <div class="skeleton-chapter skeleton"></div>
-                </div>
-            `).join('')}
-        </div>
-    `;
 }
 
 function renderContent(chapters, lessons, exams, container, mode, squadId, solvedExams = []) {
     container.innerHTML = "";
-    container.className = ""; // Remove grid class for accordion layout
+    container.className = "";
 
     // Style adjustments for Accordion
     const accordionStyle = document.createElement('style');
@@ -133,7 +150,6 @@ function renderContent(chapters, lessons, exams, container, mode, squadId, solve
         .chapter-body.show {
             display: block;
         }
-        /* Lesson Item */
         .lesson-item {
             padding: 1rem;
             border-bottom: 1px solid #eee;
@@ -150,6 +166,9 @@ function renderContent(chapters, lessons, exams, container, mode, squadId, solve
             display: flex;
             align-items: center;
             gap: 0.5rem;
+        }
+        .lesson-title.locked {
+            color: #9ca3af;
         }
         .exam-buttons {
             display: flex;
@@ -174,6 +193,12 @@ function renderContent(chapters, lessons, exams, container, mode, squadId, solve
             background: var(--primary-color);
             color: white;
         }
+        .exam-btn-sm.locked {
+            background: #f3f4f6;
+            border-color: #d1d5db;
+            color: #9ca3af;
+            cursor: not-allowed;
+        }
         .lecture-btn-sm {
             padding: 0.4rem 1.2rem;
             font-size: 0.85rem;
@@ -186,16 +211,16 @@ function renderContent(chapters, lessons, exams, container, mode, squadId, solve
             align-items: center;
             gap: 5px;
             font-weight: 700;
+            cursor: pointer;
         }
         .lecture-btn-sm:hover {
             background: var(--primary-dark);
             transform: translateY(-2px);
             box-shadow: 0 4px 8px rgba(30, 179, 245, 0.3);
         }
-        .lecture-btn-sm.disabled {
+        .lecture-btn-sm.locked {
             background: #e5e7eb;
             color: #9ca3af;
-            border-color: #d1d5db;
             cursor: not-allowed;
             pointer-events: none;
             box-shadow: none;
@@ -212,17 +237,20 @@ function renderContent(chapters, lessons, exams, container, mode, squadId, solve
     if (!chapters || chapters.length === 0) {
         const noMsgEl = document.getElementById("noExamsMessage");
         if (noMsgEl) noMsgEl.style.display = "block";
-        container.innerHTML = ""; // Clear skeletons
+        container.innerHTML = "";
         return;
     }
 
-    // Hide no message if it was showing
     const noMsgEl = document.getElementById("noExamsMessage");
     if (noMsgEl) noMsgEl.style.display = "none";
 
+    // SECURITY: Use can_access flag from RPC (server-side check)
+    // DO NOT use client-side isPremium() for access control!
+    const isPremium = subscriptionService.isPremium(); // Only for UI hints
+
     chapters.forEach((chapter, index) => {
         const chapterLessons = lessons.filter(l => l.chapter_id === chapter.id);
-        const chapterExams = exams.filter(e => e.chapter_id === chapter.id); // Exams directly on chapter
+        const chapterExams = exams.filter(e => e.chapter_id === chapter.id);
 
         const div = document.createElement("div");
         div.className = "chapter-card";
@@ -231,8 +259,17 @@ function renderContent(chapters, lessons, exams, container, mode, squadId, solve
         let lessonsHtml = "";
         if (chapterLessons.length > 0) {
             chapterLessons.forEach(lesson => {
-                // Find exams for this specific lesson
                 const lessonExams = exams.filter(e => e.lesson_id === lesson.id);
+
+                // SECURITY: Use RPC-provided can_access flag (server-side security)
+                const canAccessLesson = lesson.can_access || false;
+
+                // For exams: check lesson's is_free_exam flag
+                // Note: RPC already filtered content, this is just for UI
+                const canAccessExam = lesson.can_access && lesson.is_free_exam ? true :
+                    lesson.can_access ? true :
+                        false;
+
                 let examsHtml = "";
 
                 if (lessonExams.length > 0) {
@@ -243,7 +280,13 @@ function renderContent(chapters, lessons, exams, container, mode, squadId, solve
                         const iconColor = (!isSquadMode && isSolved) ? '#10b981' : 'inherit';
                         const examTitle = exam.title || `نموذج أسئلة ${idx + 1}`;
 
-                        if (isSquadMode) {
+                        if (!canAccessExam) {
+                            // Locked exam
+                            examsHtml += `
+                                <a href="javascript:void(0)" onclick="window.showLockedExamPopup()" class="exam-btn-sm locked">
+                                    <i class="fas fa-lock"></i> ${examTitle}
+                                </a>`;
+                        } else if (isSquadMode) {
                             examsHtml += `
                                 <a href="javascript:void(0)" onclick="selectSquadExam('${exam.id}', '${examTitle}', '${squadId}')" class="exam-btn-sm">
                                     <i class="fas ${iconClass}"></i> ${examTitle}
@@ -261,15 +304,20 @@ function renderContent(chapters, lessons, exams, container, mode, squadId, solve
 
                 lessonsHtml += `
                     <div class="lesson-item">
-                        <div class="lesson-title">
-                            <i class="fas fa-book-open" style="color: var(--secondary-color);"></i>
+                        <div class="lesson-title ${!canAccessLesson ? 'locked' : ''}">
+                            <i class="fas ${canAccessLesson ? 'fa-book-open' : 'fa-lock'}" style="color: ${canAccessLesson ? 'var(--secondary-color)' : '#9ca3af'};"></i>
                             ${lesson.title}
+                            ${!canAccessLesson ? '<span style="font-size: 0.75rem; color: #9ca3af; margin-right: 0.5rem;">(للمشتركين)</span>' : ''}
                         </div>
                         <div class="exam-buttons">
-                            <a href="${lesson.content ? `lecture.html?id=${lesson.id}` : '#'}" 
-                               class="lecture-btn-sm ${!lesson.content ? 'disabled' : ''}">
-                                ${lesson.content ? 'عرض المحاضرة' : 'المحاضرة قريباً'}
-                            </a>
+                            ${canAccessLesson ?
+                        `<a href="lecture.html?id=${lesson.id}" class="lecture-btn-sm">
+                                    عرض المحاضرة
+                                </a>` :
+                        `<a href="javascript:void(0)" onclick="window.showLockedLessonPopup()" class="lecture-btn-sm locked">
+                                    <i class="fas fa-lock"></i> عرض المحاضرة
+                                </a>`
+                    }
                             ${examsHtml}
                         </div>
                     </div>
@@ -321,7 +369,7 @@ function renderContent(chapters, lessons, exams, container, mode, squadId, solve
                 </h2>
                 <i class="fas fa-chevron-down"></i>
             </div>
-            <div class="chapter-body ${chapter.id ? '' : 'show'}"> <!-- Show first one by default if needed, logic can be added -->
+            <div class="chapter-body">
                 ${lessonsHtml}
                 ${chapterExamsHtml}
             </div>
@@ -330,6 +378,15 @@ function renderContent(chapters, lessons, exams, container, mode, squadId, solve
         container.appendChild(div);
     });
 }
+
+// Global popup functions
+window.showLockedLessonPopup = function () {
+    showSubscriptionPopup();
+};
+
+window.showLockedExamPopup = function () {
+    showSubscriptionPopup();
+};
 
 // Squad Exam Selection System
 window.selectSquadExam = async (examId, examTitle, squadId) => {
@@ -352,10 +409,8 @@ window.selectSquadExam = async (examId, examTitle, squadId) => {
             }
         });
 
-        // 1. Get User
         const { data: { user } } = await supabase.auth.getUser();
 
-        // 2. Check if already solved by the squad
         const { data: completedChallenges } = await supabase
             .from('squad_exam_challenges')
             .select('id')
@@ -379,8 +434,7 @@ window.selectSquadExam = async (examId, examTitle, squadId) => {
             if (!proceedAnyway) return;
         }
 
-        // 2. Fetch Global Settings for Duration
-        let joinWindowMins = 60; // Default
+        let joinWindowMins = 60;
         try {
             const { data: config } = await supabase.from('app_configs').select('value').eq('key', 'squad_settings').maybeSingle();
             if (config?.value?.join_mins) joinWindowMins = config.value.join_mins;
@@ -403,11 +457,10 @@ window.selectSquadExam = async (examId, examTitle, squadId) => {
 
         if (challError) throw challError;
 
-        // 3. Success & Redirect to squad page (challenge card will handle display)
         await Swal.fire({
             icon: 'success',
             title: 'الامتحان بدأ! 🚀',
-            text: 'روح خش الامتحان انت و صحابك من صفخة الشلة.',
+            text: 'روح خش الامتحان انت و صحابك من صفحة الشلة.',
             timer: 2000,
             showConfirmButton: false
         });
@@ -470,7 +523,6 @@ async function loadSubjectResults() {
             examGroupsMap[result.exam_id].push(result);
         });
 
-        // Convert to array and sort by latest attempt descending
         const groups = Object.values(examGroupsMap);
         groups.sort((a, b) => new Date(b[0].created_at) - new Date(a[0].created_at));
 
@@ -497,7 +549,6 @@ function renderSubjectResults(append = false) {
     const batch = allExamGroups.slice(resultsOffset, resultsOffset + resultsLimit);
 
     batch.forEach(attempts => {
-        // attempts is already sorted newest first from the grouping logic if results were ordered desc
         const currentAttempt = attempts[0];
         const previousAttempt = attempts[1] || null;
 
@@ -511,7 +562,6 @@ function renderSubjectResults(append = false) {
         card.style.cssText = 'margin-bottom: 1.5rem; padding: 1.5rem; border-right: 4px solid var(--primary-color); animation: fadeIn 0.3s ease;';
 
         if (!previousAttempt) {
-            // Single attempt
             card.innerHTML = `
                 <div style="font-size: 0.95rem; font-weight: bold; color: var(--primary-color); margin-bottom: 0.2rem;">
                     <i class="fas fa-folder-open"></i> ${chapterTitle}
@@ -536,7 +586,6 @@ function renderSubjectResults(append = false) {
                 </div>
             `;
         } else {
-            // Multiple attempts (Latest 2)
             const diff = currentAttempt.percentage - previousAttempt.percentage;
             const icon = diff > 0 ? '📈' : diff < 0 ? '📉' : '➖';
             const color = diff > 0 ? '#10B981' : diff < 0 ? '#EF4444' : '#94A3B8';
@@ -550,22 +599,17 @@ function renderSubjectResults(append = false) {
                     ${lessonTitle ? lessonTitle + ' - ' : ''}${examTitle}
                 </h4>
                 <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 0.5rem; align-items: center;">
-                    <!-- Previous Attempt -->
                     <div style="text-align: center; padding: 0.75rem; background: var(--bg-light); border-radius: var(--radius-sm);">
                         <div style="font-size: 0.7rem; color: var(--text-light); margin-bottom: 0.3rem;">السابقة</div>
                         <div style="font-size: 1.4rem; font-weight: 900; color: var(--text-dark);">${previousAttempt.percentage}%</div>
                         <div style="font-size: 0.65rem; color: var(--text-light); margin-top: 0.2rem;">🕒 ${new Date(previousAttempt.created_at).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' })}</div>
                     </div>
-
-                    <!-- Improvement Arrow -->
                     <div style="text-align: center; font-size: 1.5rem; line-height: 1;">
                         ${icon}
                         <div style="font-size: 0.8rem; font-weight: bold; color: ${color}; margin-top: 0.2rem;">
                             ${sign}${diff}%
                         </div>
                     </div>
-
-                    <!-- Current Attempt -->
                     <div style="text-align: center; padding: 0.75rem; background: #f0fdf4; border-radius: var(--radius-sm); border: 2px solid var(--primary-color);">
                         <div style="font-size: 0.7rem; color: var(--text-light); margin-bottom: 0.3rem;">الأخيرة</div>
                         <div style="font-size: 1.4rem; font-weight: 900; color: var(--primary-color);">${currentAttempt.percentage}%</div>
@@ -580,7 +624,6 @@ function renderSubjectResults(append = false) {
 
     resultsOffset += batch.length;
 
-    // Load More visibility
     if (btn) {
         if (resultsOffset < allExamGroups.length) {
             btn.style.display = 'inline-block';

@@ -15,6 +15,7 @@ import { loadChat } from './chat.js';
 import { loadPomodoro } from './pomodoro.js';
 import { setupPresence } from './presence.js';
 import { loadActiveChallenge } from './challenge.js';
+import { subscriptionService, initSubscriptionService, showSubscriptionPopup } from '../subscription.js';
 
 /**
  * Initialize Squad - Main entry point
@@ -42,7 +43,26 @@ export async function initSquad() {
     }
     setCurrentProfile(profile);
 
-    // 3. Check for Squad Membership - Use Cache (1 min short cache)
+    // 3. Initialize subscription service
+    await initSubscriptionService(profile);
+
+    // 4. FREEMIUM CHECK: Verify access to squads feature
+    if (!subscriptionService.canAccessFeature('squads')) {
+        // Track analytics
+        await supabase.from('freemium_analytics').insert({
+            user_id: user.id,
+            content_type: 'feature',
+            content_id: null,
+            action: 'blocked'
+        }).catch(err => console.warn('Analytics error:', err));
+
+        // Show upgrade prompt
+        await showSubscriptionPopup();
+        window.location.href = 'dashboard.html';
+        return;
+    }
+
+    // 5. Check for Squad Membership - Use Cache (1 min short cache)
     let memberRecord = getCache(`squad_member_${user.id}`);
     if (!memberRecord) {
         const { data: records, error: memberError } = await supabase

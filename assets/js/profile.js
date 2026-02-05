@@ -39,12 +39,12 @@ function renderProfileUI(profile, user) {
     // 1. Get Auth Metadata fallback
     const meta = user?.user_metadata || {};
 
-    // 2. Data to use
+    // 2. Data to use (new column names with fallback)
     const fullName = profile.full_name || meta.full_name || "";
     const email = currentUser.email || "";
-    const grade = profile?.grade || meta.grade || "";
-    const term = profile?.term || meta.term || "";
-    const stream = profile?.stream || meta.stream || "";
+    const academic_year = profile?.academic_year || profile?.grade || meta.academic_year || meta.grade || "";
+    const current_term = profile?.current_term || profile?.term || meta.current_term || meta.term || "";
+    const department = profile?.department || profile?.stream || meta.department || meta.stream || "";
 
     // Check if Admin
     const isAdmin = profile?.role === "admin" || meta.role === "admin";
@@ -59,9 +59,9 @@ function renderProfileUI(profile, user) {
     const termField = document.getElementById("term");
 
     if (emailField) emailField.value = email;
-    if (gradeField) gradeField.value = grade;
-    if (termField) termField.value = term;
-    if (streamField) streamField.value = stream;
+    if (gradeField) gradeField.value = academic_year;
+    if (termField) termField.value = current_term;
+    if (streamField) streamField.value = department;
 
     // Display Bio
     const bioDisplay = document.getElementById('profileBioDisplay');
@@ -178,17 +178,17 @@ function renderProfileUI(profile, user) {
         // Academic Year Card
         statsHtml += createStatCard(
             'السنة الدراسية',
-            GRADES[grade] || grade || '-',
+            GRADES[academic_year] || academic_year || '-',
             'fa-graduation-cap',
             '#10b981',
             'linear-gradient(135deg, #10b981 0%, #059669 100%)'
         );
 
         // Term Card
-        if (term) {
+        if (current_term) {
             statsHtml += createStatCard(
                 'الترم',
-                TERMS[term] || term || '-',
+                TERMS[current_term] || current_term || '-',
                 'fa-calendar-alt',
                 '#3b82f6',
                 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)'
@@ -196,10 +196,10 @@ function renderProfileUI(profile, user) {
         }
 
         // Department Card (for Year 3 & 4)
-        if ((grade === "3" || grade === "4") && stream) {
+        if ((academic_year === "3" || academic_year === "4" || academic_year === "third_year" || academic_year === "fourth_year") && department) {
             statsHtml += createStatCard(
                 'القسم',
-                STREAMS[stream] || stream || '-',
+                STREAMS[department] || department || '-',
                 'fa-user-md',
                 '#8b5cf6',
                 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)'

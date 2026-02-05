@@ -2,7 +2,7 @@ import { supabase } from "./supabaseClient.js";
 import { checkAuth } from "./auth.js";
 import { APP_CONFIG } from "./constants.js";
 import { getCache, setCache } from "./utils.js";
-import { subscriptionService, initSubscriptionService, showUpgradePrompt } from "./subscription.js";
+import { subscriptionService, initSubscriptionService, showSubscriptionPopup } from "./subscription.js";
 
 document.addEventListener('DOMContentLoaded', async () => {
     // Check Auth
@@ -43,15 +43,22 @@ async function loadLecture(lessonId) {
     const examLink = document.getElementById('examLink');
     const videoContainer = document.getElementById('videoContainer');
     const lectureVideo = document.getElementById('lectureVideo');
+    const loadingEl = document.getElementById('loading');
 
     try {
         // ✅ STEP 1: Validate access using RPC function
         const accessCheck = await subscriptionService.validateLessonAccess(lessonId);
 
+        if (accessCheck.error) {
+            console.error('Access check error:', accessCheck.error);
+            if (loadingEl) loadingEl.innerHTML = '<p style="color: red;">حدث خطأ في التحقق من الوصول</p>';
+            return;
+        }
+
         if (!accessCheck.canAccess) {
-            // User doesn't have access - show upgrade prompt
-            await showUpgradePrompt('lesson');
-            window.location.href = 'dashboard.html';
+            // User doesn't have access - show popup
+            if (loadingEl) loadingEl.innerHTML = '';
+            await showSubscriptionPopup();
             return;
         }
 

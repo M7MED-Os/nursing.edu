@@ -1,6 +1,6 @@
 import { supabase } from "./supabaseClient.js";
-import { showToast, showInputError, clearInputError, getCache, setCache, clearCache } from "./utils.js";
-import { APP_CONFIG, STREAMS, GRADES, TERMS, GRADE_STREAMS } from "./constants.js";
+import { showToast, showInputError, clearInputError, getCache, setCache } from "./utils.js";
+import { APP_CONFIG, STREAMS, GRADES, TERMS, GRADE_STREAMS, PROFILE_TO_SQUAD_YEAR, YEAR_TO_GRADE } from "./constants.js";
 import { showSuccessAlert, showWarningAlert, showErrorAlert, showInputDialog } from "./utils/alerts.js";
 import { validateEmail, validatePassword, validatePasswordConfirmation, validateRequired, validateSelect } from "./utils/validators.js";
 import { setButtonLoading } from "./utils/dom.js";
@@ -344,9 +344,10 @@ if (registerForm) {
         const full_name = full_name_input.value.trim();
         const email = email_input.value.trim();
         const password = password_input.value;
-        const grade = grade_input.value;
-        const term = term_input.value;
-        const stream = stream_input.value;
+        // Map to new column names
+        const academic_year = grade_input.value;
+        const current_term = term_input.value;
+        const department = stream_input.value;
 
         let isValid = true;
 
@@ -371,22 +372,22 @@ if (registerForm) {
             isValid = false;
         }
 
-        // Validate grade
-        const gradeValidation = validateSelect(grade, 'السنة الدراسية');
+        // Validate academic year (grade input)
+        const gradeValidation = validateSelect(academic_year, 'السنة الدراسية');
         if (!gradeValidation.isValid) {
             showInputError(grade_input, gradeValidation.error);
             isValid = false;
         } else {
             // Validate Term (Required for all years now)
-            const termValidation = validateSelect(term, 'الترم');
+            const termValidation = validateSelect(current_term, 'الترم');
             if (!termValidation.isValid) {
                 showInputError(term_input, termValidation.error);
                 isValid = false;
             }
 
-            // Validate Stream (Required for Year 3 & 4)
-            if ((grade === "3" || grade === "4")) {
-                const streamValidation = validateSelect(stream, 'القسم');
+            // Validate Department (Required for Year 3 & 4)
+            if ((academic_year === "3" || academic_year === "4")) {
+                const streamValidation = validateSelect(department, 'القسم');
                 if (!streamValidation.isValid) {
                     showInputError(stream_input, streamValidation.error);
                     isValid = false;
@@ -417,9 +418,9 @@ if (registerForm) {
                 options: {
                     data: {
                         full_name,
-                        grade,
-                        term: term || null,
-                        stream: stream || null,
+                        academic_year,
+                        current_term: current_term || null,
+                        department: department || null,
                         show_on_leaderboard: true,
                     },
                     emailRedirectTo: `${window.location.origin}/login.html`
@@ -813,8 +814,11 @@ function updateNameUI(name) {
 // 10. Dynamic Subject Rendering (Database-Driven)
 // ==========================
 
-async function loadSubjectsFromDB(grade) {
-    const cacheKey = grade ? `subjects_${grade}` : 'subjects_all';
+async function loadSubjectsFromDB(academic_year) {
+    // Map text academic_year back to numeric grade for DB query
+    const mappedGrade = YEAR_TO_GRADE[academic_year] || academic_year;
+
+    const cacheKey = mappedGrade ? `subjects_${mappedGrade}` : 'subjects_all';
     const cachedData = getCache(cacheKey);
     if (cachedData) return cachedData;
 
@@ -824,8 +828,9 @@ async function loadSubjectsFromDB(grade) {
         .eq('is_active', true)
         .order('order_index');
 
-    if (grade) {
-        query = query.eq('grade', grade);
+    if (mappedGrade) {
+        // Note: subjects table still uses 'grade' column (numeric)
+        query = query.eq('grade', mappedGrade);
     }
 
     const { data: subjects, error } = await query;
@@ -845,37 +850,41 @@ async function renderSubjects(userMetadata) {
 
     grid.innerHTML = ""; // Clear content
 
-    const grade = userMetadata?.grade; // "1", "2", "3", "4"
-    const stream = userMetadata?.stream; // "pediatric", "obs_gyn", "nursing_admin", "psychiatric"
-    const term = userMetadata?.term; // "1", "2"
+    // Use new column names with fallback to old names for backward compatibility
+    const academic_year = userMetadata?.academic_year || userMetadata?.grade;
+    const department = userMetadata?.department || userMetadata?.stream;
+    const current_term = userMetadata?.current_term || userMetadata?.term;
 
-    if (!grade || !term) {
+    if (!academic_year || !current_term) {
         grid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--text-light); padding: 2rem;">يرجى تحديث بياناتك الدراسية</p>`;
         return;
     }
 
-    // Load ALL subjects for this grade
-    const allSubjects = await loadSubjectsFromDB(grade);
+    // Load ALL subjects for this academic year
+    const allSubjects = await loadSubjectsFromDB(academic_year);
+
+    // Get numeric grade for comparison (subjects table uses numeric 'grade')
+    const numericGrade = YEAR_TO_GRADE[academic_year] || academic_year;
 
     let sharedSubjects = [];
     let departmentSubjects = [];
 
     allSubjects.forEach(s => {
-        // Must match grade
-        if (s.grade !== grade) return;
+        // Must match academic year (subjects table uses 'grade' column)
+        if (s.grade != numericGrade) return;
 
         // 1. Shared Subjects Logic:
         // Must match Student's Term AND Have NO Stream
-        if (s.term === term && (!s.stream || s.stream === '')) {
+        if (s.term === current_term && (!s.stream || s.stream === '')) {
             sharedSubjects.push(s);
         }
 
-        // 2. Department Subjects Logic (Only if student has a stream):
-        // Must match Student's Stream
-        if (stream && s.stream === stream) {
+        // 2. Department Subjects Logic (Only if student has a department)
+        // Must match Student's Department
+        if (department && s.stream === department) {
             // If subject has a term defined, it MUST match Student's Term.
             // If subject has NO term (i.e. term-agnostic department subject), show it.
-            if (!s.term || s.term === term) {
+            if (!s.term || s.term === current_term) {
                 departmentSubjects.push(s);
             }
         }
@@ -892,13 +901,14 @@ async function renderSubjects(userMetadata) {
 
     // Section 2: Department Subjects
     if (departmentSubjects.length > 0) {
-        const streamNames = {
+        const deptNames = {
             'pediatric': 'قسم الأطفال',
-            'obs_gyn': 'قسم النسا',
+            'obs_gyn': 'قسم النسا والتوليد',
+            'maternity': 'قسم النسا والتوليد',
             'nursing_admin': 'قسم الإدارة',
             'psychiatric': 'قسم النفسية'
         };
-        const deptName = streamNames[stream] || stream;
+        const deptName = deptNames[department] || department;
         renderSection(`مواد ${deptName}`, departmentSubjects, grid);
         hasSubjects = true;
     }
@@ -1167,3 +1177,12 @@ function startSecurityMonitor() {
         }
     }, APP_CONFIG.ACTIVE_CHECK_INTERVAL || 60000);
 }
+
+// End of file
+
+
+
+
+
+
+
