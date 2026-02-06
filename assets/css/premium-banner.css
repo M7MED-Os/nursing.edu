@@ -1,0 +1,139 @@
+/* Subscription Banner - Shared Styles */
+.premium-banner {
+    background: linear-gradient(135deg, #03A9F4 0%, #0288D1 100%);
+    color: white;
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
+    margin-bottom: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    box-shadow: 0 4px 12px rgba(3, 169, 244, 0.2);
+    animation: fadeIn 0.4s ease-out;
+}
+
+.premium-banner-icon {
+    font-size: 2rem;
+    flex-shrink: 0;
+}
+
+.premium-banner-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.premium-banner-content p {
+    margin: 0;
+    font-size: 1rem;
+    line-height: 1.5;
+    opacity: 0.95;
+}
+
+.premium-banner-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.premium-banner-btn {
+    background: white;
+    color: #03A9F4;
+    border: none;
+    padding: 0.65rem 1.25rem;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.premium-banner-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.premium-banner-close {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+}
+
+.premium-banner-close:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .premium-banner {
+        padding: 1rem;
+        gap: 0.75rem;
+    }
+
+    .premium-banner-icon {
+        font-size: 1.5rem;
+    }
+
+    .premium-banner-content p {
+        font-size: 0.9rem;
+    }
+
+    .premium-banner-btn {
+        padding: 0.6rem 1rem;
+        font-size: 0.85rem;
+    }
+
+    .premium-banner-close {
+        width: 28px;
+        height: 28px;
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .premium-banner {
+        flex-wrap: wrap;
+        text-align: center;
+        justify-content: center;
+    }
+
+    .premium-banner-icon {
+        width: 100%;
+        font-size: 2rem;
+    }
+
+    .premium-banner-content {
+        width: 100%;
+    }
+
+    .premium-banner-actions {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .premium-banner-btn {
+        flex: 1;
+        max-width: 200px;
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

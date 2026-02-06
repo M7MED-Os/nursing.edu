@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="assets/css/style.css">
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="assets/css/bottom-nav.css">
+    <link rel="stylesheet" href="assets/css/premium-banner.css">
 
     <!-- Favicons -->
     <link rel="icon" type="image/png" sizes="16x16" href="assets/images/favicon-16x16.png">
@@ -62,199 +63,27 @@
         </div>
     </header>
 
-    <!-- Subscription Banner (for non-premium users) -->
-    <div id="subscriptionBanner" class="subscription-banner" style="display: none;">
-        <div class="subscription-banner-content">
-            <div class="subscription-banner-icon">
-                <i class="fas fa-crown"></i>
-            </div>
-            <div class="subscription-banner-text">
-                <p>لو عاوز النقط تتحسبلك و تذاكر مع الشلة عشان تظهر في الأوائل <strong>اشترك</strong></p>
-            </div>
-            <div class="subscription-banner-actions">
-                <button id="subscriptionBannerBtn" class="subscription-banner-cta">
-                    <i class="fas fa-star"></i> اشترك دلوقتي
-                </button>
-                <button id="closeBannerBtn" class="subscription-banner-close" title="إخفاء">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <style>
-        .subscription-banner {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 1rem;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            animation: slideDown 0.4s ease-out;
-        }
-
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateY(-20px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .subscription-banner-content {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            flex-wrap: wrap;
-        }
-
-        .subscription-banner-icon {
-            font-size: 2rem;
-            color: #ffd700;
-        }
-
-        .subscription-banner-text {
-            flex: 1;
-            min-width: 200px;
-        }
-
-        .subscription-banner-text p {
-            margin: 0;
-            font-size: 1rem;
-            line-height: 1.5;
-        }
-
-        .subscription-banner-text strong {
-            color: #ffd700;
-            font-weight: 700;
-        }
-
-        .subscription-banner-actions {
-            display: flex;
-            gap: 0.5rem;
-            align-items: center;
-        }
-
-        .subscription-banner-cta {
-            background: #ffd700;
-            color: #764ba2;
-            border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: 50px;
-            font-weight: 700;
-            font-size: 0.95rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            white-space: nowrap;
-        }
-
-        .subscription-banner-cta:hover {
-            background: #ffed4e;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(255, 215, 0, 0.4);
-        }
-
-        .subscription-banner-close {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            border: none;
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .subscription-banner-close:hover {
-            background: rgba(255, 255, 255, 0.3);
-        }
-
-        /* Mobile Responsive */
-        @media (max-width: 768px) {
-            .subscription-banner {
-                padding: 1rem 0.75rem;
-            }
-
-            .subscription-banner-content {
-                gap: 0.75rem;
-            }
-
-            .subscription-banner-icon {
-                font-size: 1.75rem;
-            }
-
-            .subscription-banner-text p {
-                font-size: 0.95rem;
-                line-height: 1.6;
-            }
-
-            .subscription-banner-cta {
-                padding: 0.65rem 1.25rem;
-                font-size: 0.9rem;
-            }
-
-            .subscription-banner-close {
-                width: 34px;
-                height: 34px;
-                font-size: 0.9rem;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .subscription-banner {
-                padding: 1.25rem 1rem;
-            }
-
-            .subscription-banner-content {
-                flex-direction: column;
-                text-align: center;
-                gap: 1rem;
-            }
-
-            .subscription-banner-icon {
-                font-size: 2.5rem;
-                width: 100%;
-            }
-
-            .subscription-banner-text {
-                width: 100%;
-            }
-
-            .subscription-banner-text p {
-                font-size: 1rem;
-                line-height: 1.7;
-            }
-
-            .subscription-banner-actions {
-                width: 100%;
-                justify-content: center;
-                flex-direction: row;
-                gap: 0.75rem;
-            }
-
-            .subscription-banner-cta {
-                flex: 1;
-                max-width: 200px;
-                padding: 0.85rem 1.5rem;
-                font-size: 0.95rem;
-            }
-
-            .subscription-banner-close {
-                flex-shrink: 0;
-            }
-        }
-    </style>
-
     <!-- Exams Grid -->
     <section class="section">
         <div class="container">
+            <!-- Premium Banner (for non-premium users) -->
+            <div id="premiumBanner" class="premium-banner" style="display: none;">
+                <div class="premium-banner-icon">
+                    <i class="fas fa-crown"></i>
+                </div>
+                <div class="premium-banner-content">
+                    <p><strong>عشان تفتح الشلة و المهام و تظهر في الأوائل اشترك</strong></p>
+                </div>
+                <div class="premium-banner-actions">
+                    <button id="premiumBannerBtn" class="premium-banner-btn">
+                        <i class="fas fa-star"></i> اشترك الآن
+                    </button>
+                    <button id="closePremiumBanner" class="premium-banner-close">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+
             <div id="loading" class="text-center">
                 <i class="fas fa-spinner fa-spin fa-3x" style="color: var(--primary-color);"></i>
                 <p style="margin-top: 1rem;">بيحمل الامتحانات...</p>

@@ -663,62 +663,37 @@ document.addEventListener("DOMContentLoaded", () => {
         loadMoreBtn.onclick = () => renderSubjectResults(true);
     }
 
-    // Initialize subscription banner
-    initSubscriptionBanner();
+    // Initialize premium banner
+    initPremiumBanner();
 });
 
 /**
- * Initialize and show subscription banner for non-premium users
+ * Initialize premium banner for non-premium users
  */
-function initSubscriptionBanner() {
-    // Check if banner was dismissed in this session
-    const bannerDismissed = sessionStorage.getItem('subscription_banner_dismissed');
-    if (bannerDismissed) return;
+function initPremiumBanner() {
+    if (!currentUserProfile || currentUserProfile.is_active === true) return;
 
-    // Check if user profile loaded
-    if (!currentUserProfile) {
-        // Wait for profile to load
-        setTimeout(initSubscriptionBanner, 500);
-        return;
-    }
+    const banner = document.getElementById('premiumBanner');
+    if (!banner) return;
 
-    // Check if user has active subscription (matching subscription.js logic)
-    const isPremium = currentUserProfile.is_active === true;
-
-    console.log('Banner check - isPremium:', isPremium, 'profile:', currentUserProfile);
-
-    if (isPremium) return; // Don't show banner for premium users
+    // Check session dismissal
+    if (sessionStorage.getItem('premium_banner_dismissed')) return;
 
     // Show banner
-    const banner = document.getElementById('subscriptionBanner');
-    if (banner) {
-        banner.style.display = 'block';
+    banner.style.display = 'flex';
 
-        // Subscribe button
-        const subscribeBtn = document.getElementById('subscriptionBannerBtn');
-        if (subscribeBtn) {
-            subscribeBtn.onclick = () => {
-                showSubscriptionPopup();
-                // Optionally dismiss banner after showing popup
-                dismissBanner();
-            };
-        }
-
-        // Close button
-        const closeBtn = document.getElementById('closeBannerBtn');
-        if (closeBtn) {
-            closeBtn.onclick = dismissBanner;
-        }
+    // Subscribe button
+    const subscribeBtn = document.getElementById('premiumBannerBtn');
+    if (subscribeBtn) {
+        subscribeBtn.onclick = () => window.location.href = 'pricing.html';
     }
-}
 
-/**
- * Dismiss banner for current session
- */
-function dismissBanner() {
-    const banner = document.getElementById('subscriptionBanner');
-    if (banner) {
-        banner.style.display = 'none';
-        sessionStorage.setItem('subscription_banner_dismissed', 'true');
+    // Close button
+    const closeBtn = document.getElementById('closePremiumBanner');
+    if (closeBtn) {
+        closeBtn.onclick = () => {
+            banner.style.display = 'none';
+            sessionStorage.setItem('premium_banner_dismissed', 'true');
+        };
     }
 }

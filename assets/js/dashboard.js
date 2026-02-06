@@ -20,8 +20,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadAnnouncements(auth.profile);
     loadDashboardStats(auth.user.id);
 
-    // 5. Initialize subscription banner
-    initSubscriptionBanner(auth.profile);
+    // 5. Initialize premium banner
+    initPremiumBanner(auth.profile);
 });
 
 function updateDashboardProfileUI(profile) {
@@ -168,6 +168,38 @@ window.showPointsExplanation = () => {
 };
 
 /**
+ * Initialize premium banner for non-premium users
+ */
+function initPremiumBanner(profile) {
+    if (!profile || profile.is_active === true) return;
+
+    const banner = document.getElementById('premiumBanner');
+    if (!banner) return;
+
+    // Check session dismissal
+    if (sessionStorage.getItem('premium_banner_dismissed')) return;
+
+    // Show banner
+    banner.style.display = 'flex';
+
+    // Subscribe button
+    const subscribeBtn = document.getElementById('premiumBannerBtn');
+    if (subscribeBtn) {
+        subscribeBtn.onclick = () => window.location.href = 'pricing.html';
+    }
+
+    // Close button
+    const closeBtn = document.getElementById('closePremiumBanner');
+    if (closeBtn) {
+        closeBtn.onclick = () => {
+            banner.style.display = 'none';
+            sessionStorage.setItem('premium_banner_dismissed', 'true');
+        };
+    }
+}
+
+
+/**
  * Initialize and show subscription banner for non-premium users
  */
 function initSubscriptionBanner(profile) {
@@ -179,8 +211,6 @@ function initSubscriptionBanner(profile) {
 
     // Check if user has active subscription (matching subscription.js logic)
     const isPremium = profile.is_active === true;
-
-    console.log('Dashboard Banner check - isPremium:', isPremium, 'profile:', profile);
 
     if (isPremium) return; // Don't show banner for premium users
 
