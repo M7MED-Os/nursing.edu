@@ -230,8 +230,8 @@ function showUpdateToast(reg) {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        width: 100%;
         min-width: 300px;
+        max-width: 400px;
         padding: 0.8rem 1.2rem;
         cursor: default;
     `;

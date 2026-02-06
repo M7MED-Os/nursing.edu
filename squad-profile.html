@@ -440,7 +440,7 @@
         import { supabase } from './assets/js/supabaseClient.js';
         import { generateAvatar, calculateLevel, getLevelColor, calculateSquadLevel } from './assets/js/avatars.js';
         import { createLevelBadge, createSquadLevelBadge, createLevelProgress, createSquadLevelProgress } from './assets/js/level-badge.js';
-        import { GRADES, STREAMS } from './assets/js/constants.js';
+        import { ACADEMIC_YEARS, DEPARTMENTS, getAcademicYearLabel, getDepartmentLabel } from './assets/js/constants.js';
         import { checkAuth } from './assets/js/auth.js';
         import { isVisible, createLockedElement, createLockedAvatar, isSquadMember, shouldShowAvatar } from './assets/js/privacy.js';
 
@@ -575,8 +575,8 @@
                     ${avatarHTML}
                     <h1 class="squad-name">${squad.name}</h1>
                     <div class="squad-meta">
-                        <span><i class="fas fa-graduation-cap"></i> ${squad.academic_year}</span>
-                        <span><i class="fas fa-book"></i> ${squad.department}</span>
+                        <span><i class="fas fa-graduation-cap"></i> ${getAcademicYearLabel(squad.academic_year) || squad.academic_year}</span>
+                        <span><i class="fas fa-book"></i> ${getDepartmentLabel(squad.department) || squad.department}</span>
                     </div>
                     
                     <div class="squad-bio-container">

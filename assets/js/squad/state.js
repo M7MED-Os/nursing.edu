@@ -3,7 +3,7 @@ import { supabase } from '../supabaseClient.js';
 import { getSWR, setCache, getCache } from '../utils.js';
 import { generateAvatar } from '../avatars.js';
 import { createSquadLevelBadge, createSquadLevelProgress, getSquadLevelBorderStyle } from '../level-badge.js';
-import { GRADES, STREAMS } from '../constants.js';
+import { ACADEMIC_YEARS, DEPARTMENTS } from '../constants.js';
 
 // Global State Variables
 export let currentSquad = null;

@@ -25,31 +25,31 @@ export async function startSharedExam() {
         await loadGlobalSettings();
 
         // Use correct field names from profiles table
-        const grade = currentProfile.academic_year;
-        const term = currentProfile.current_term;
-        const stream = currentProfile.department;
+        const academicYear = currentProfile.academic_year;
+        const currentTerm = currentProfile.current_term;
+        const department = currentProfile.department;
 
-        if (!grade || !term) {
+        if (!academicYear || !currentTerm) {
             Swal.fire('تنبيه', 'يرجى تحديث بياناتك الدراسية من البروفايل أولاً.', 'warning');
             return;
         }
 
-        // 1. Fetch Subjects for this grade
+        // 1. Fetch Subjects for this academic year
         const { data: allSubjects, error } = await supabase
             .from('subjects')
             .select('*')
             .eq('is_active', true)
-            .eq('academic_year', grade)
+            .eq('academic_year', academicYear)
             .order('order_index');
 
         if (error) throw error;
 
         // 2. Filter subjects (same logic as dashboard)
         const mySubjects = allSubjects.filter(s => {
-            // Shared Subjects: Same Term & No Stream
-            const isShared = s.current_term === term && (!s.department || s.department === '');
+            // Shared Subjects: Same Term & No Department
+            const isShared = s.current_term === currentTerm && (!s.department || s.department === '');
             // Department-specific subjects
-            const isDept = stream && s.department === stream && (!s.current_term || s.current_term === term);
+            const isDept = department && s.department === department && (!s.current_term || s.current_term === currentTerm);
 
             return isShared || isDept;
         });

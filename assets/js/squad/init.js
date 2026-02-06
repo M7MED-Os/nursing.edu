@@ -3,7 +3,7 @@ import { supabase } from '../supabaseClient.js';
 import { getCache, setCache } from '../utils.js';
 import { generateAvatar } from '../avatars.js';
 import { createSquadLevelBadge, createSquadLevelProgress, getSquadLevelBorderStyle } from '../level-badge.js';
-import { GRADES, STREAMS } from '../constants.js';
+import { ACADEMIC_YEARS, DEPARTMENTS, getAcademicYearLabel, getDepartmentLabel, getTermLabel } from '../constants.js';
 import {
     currentSquad, currentProfile, views,
     setCurrentSquad, setCurrentProfile
@@ -98,12 +98,8 @@ export async function initSquad() {
  * Setup Squad UI - Initialize all UI components
  */
 async function setupSquadUI() {
-    // Import squad-specific constants
-    const { getAcademicYearLabel, getDepartmentLabel, getTermLabel, GRADES } = await import('../constants.js');
-
-    // Handle both text and numeric academic year values
-    // Check GRADES first for numeric values like "3", then try text-based lookup
-    const displayGrade = GRADES[currentSquad.academic_year] || getAcademicYearLabel(currentSquad.academic_year) || currentSquad.academic_year || 'سنة غير محددة';
+    // Get display labels using helper functions
+    const displayGrade = getAcademicYearLabel(currentSquad.academic_year) || currentSquad.academic_year || 'سنة غير محددة';
     const displayDept = getDepartmentLabel(currentSquad.department) || currentSquad.department || '';
     const displayTerm = getTermLabel(currentSquad.current_term) || '';
 
@@ -111,13 +107,13 @@ async function setupSquadUI() {
     let squadInfoText = displayGrade; // Default
 
     // For years 1-2, show term if available
-    if (currentSquad.academic_year === 'first_year' || currentSquad.academic_year === 'second_year' || currentSquad.academic_year === '1' || currentSquad.academic_year === '2') {
+    if (currentSquad.academic_year === 'first_year' || currentSquad.academic_year === 'second_year') {
         if (displayTerm) {
             squadInfoText = `${displayGrade} - ${displayTerm}`;
         }
     }
     // For years 3-4, show department if available
-    else if (currentSquad.academic_year === 'third_year' || currentSquad.academic_year === 'fourth_year' || currentSquad.academic_year === '3' || currentSquad.academic_year === '4') {
+    else if (currentSquad.academic_year === 'third_year' || currentSquad.academic_year === 'fourth_year') {
         if (displayDept) {
             squadInfoText = `${displayGrade} - ${displayDept}`;
         }

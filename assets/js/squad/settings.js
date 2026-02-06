@@ -124,7 +124,7 @@ export async function showCreateSquadModal() {
     // Get current profile to auto-fill
     const { data: profile } = await supabase
         .from('profiles')
-        .select('grade, stream')
+        .select('academic_year, department')
         .eq('id', currentProfile.id)
         .single();
 
@@ -137,15 +137,9 @@ export async function showCreateSquadModal() {
 
     // Determine department based on grade
     let studentDept = "general"; // Default for years 1-2
-    if (studentGrade === "3" || studentGrade === "4") {
-        // Map profile stream to squad department
-        const PROFILE_TO_SQUAD_DEPT = {
-            "pediatric": "pediatric",
-            "obs_gyn": "maternity",
-            "nursing_admin": "community",
-            "psychiatric": "psychiatric"
-        };
-        studentDept = PROFILE_TO_SQUAD_DEPT[profile.department] || "general";
+    if (studentGrade === "third_year" || studentGrade === "fourth_year") {
+        // Use profile department directly (already in new schema)
+        studentDept = profile.department || "general";
     }
 
     // Show department selector only for years 3-4

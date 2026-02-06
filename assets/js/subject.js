@@ -36,42 +36,61 @@ async function loadSubjectContent() {
     const loadingEl = document.getElementById("loading");
 
     try {
-        // Fetch subject info
-        const { data: subject, error: subjectError } = await supabase
-            .from('subjects')
-            .select('name_ar')
-            .eq('id', subjectId)
-            .single();
+        // Cache key for this subject's data
+        const cacheKey = `subject_${subjectId}_data`;
+        const cachedData = getCache(cacheKey);
 
-        if (subjectError) throw subjectError;
-        if (subject) titleEl.textContent = subject.name_ar;
+        let subject, chapters, allLessons, exams;
 
-        // Fetch chapters
-        const { data: chapters, error: chaptersError } = await supabase
-            .from('chapters')
-            .select('*')
-            .eq('subject_id', subjectId)
-            .order('created_at');
+        if (cachedData) {
+            // Use cached data
+            ({ subject, chapters, allLessons, exams } = cachedData);
+            if (subject) titleEl.textContent = subject.name_ar;
+        } else {
+            // Fetch fresh data
+            // Fetch subject info
+            const { data: subjectData, error: subjectError } = await supabase
+                .from('subjects')
+                .select('name_ar')
+                .eq('id', subjectId)
+                .single();
 
-        if (chaptersError) throw chaptersError;
+            if (subjectError) throw subjectError;
+            subject = subjectData;
+            if (subject) titleEl.textContent = subject.name_ar;
 
-        // Fetch all lessons using RPC (with freemium filtering)
-        let allLessons = [];
-        for (const chapter of chapters || []) {
-            const lessons = await subscriptionService.fetchAccessibleLessons(chapter.id);
-            allLessons = allLessons.concat(lessons.map(l => ({ ...l, chapter_id: chapter.id })));
+            // Fetch chapters
+            const { data: chaptersData, error: chaptersError } = await supabase
+                .from('chapters')
+                .select('*')
+                .eq('subject_id', subjectId)
+                .order('created_at');
+
+            if (chaptersError) throw chaptersError;
+            chapters = chaptersData;
+
+            // Fetch all lessons using RPC (with freemium filtering)
+            allLessons = [];
+            for (const chapter of chapters || []) {
+                const lessons = await subscriptionService.fetchAccessibleLessons(chapter.id);
+                allLessons = allLessons.concat(lessons.map(l => ({ ...l, chapter_id: chapter.id })));
+            }
+
+            // Fetch all exams
+            const { data: examsData, error: examsError } = await supabase
+                .from('exams')
+                .select('*')
+                .or(`subject_id.eq.${subjectId},lesson_id.in.(${allLessons.map(l => l.id).join(',') || 'null'})`)
+                .order('created_at');
+
+            if (examsError) console.error('Exams error:', examsError);
+            exams = examsData;
+
+            // Cache the data for 5 minutes
+            setCache(cacheKey, { subject, chapters, allLessons, exams }, 5);
         }
 
-        // Fetch all exams
-        const { data: exams, error: examsError } = await supabase
-            .from('exams')
-            .select('*')
-            .or(`subject_id.eq.${subjectId},lesson_id.in.(${allLessons.map(l => l.id).join(',') || 'null'})`)
-            .order('created_at');
-
-        if (examsError) console.error('Exams error:', examsError);
-
-        // Fetch solved exams
+        // Always fetch fresh solved exams (user-specific, changes frequently)
         const { data: results } = await supabase
             .from('results')
             .select('exam_id')
@@ -643,4 +662,63 @@ document.addEventListener("DOMContentLoaded", () => {
     if (loadMoreBtn) {
         loadMoreBtn.onclick = () => renderSubjectResults(true);
     }
+
+    // Initialize subscription banner
+    initSubscriptionBanner();
 });
+
+/**
+ * Initialize and show subscription banner for non-premium users
+ */
+function initSubscriptionBanner() {
+    // Check if banner was dismissed in this session
+    const bannerDismissed = sessionStorage.getItem('subscription_banner_dismissed');
+    if (bannerDismissed) return;
+
+    // Check if user profile loaded
+    if (!currentUserProfile) {
+        // Wait for profile to load
+        setTimeout(initSubscriptionBanner, 500);
+        return;
+    }
+
+    // Check if user has active subscription (matching subscription.js logic)
+    const isPremium = currentUserProfile.is_active === true;
+
+    console.log('Banner check - isPremium:', isPremium, 'profile:', currentUserProfile);
+
+    if (isPremium) return; // Don't show banner for premium users
+
+    // Show banner
+    const banner = document.getElementById('subscriptionBanner');
+    if (banner) {
+        banner.style.display = 'block';
+
+        // Subscribe button
+        const subscribeBtn = document.getElementById('subscriptionBannerBtn');
+        if (subscribeBtn) {
+            subscribeBtn.onclick = () => {
+                showSubscriptionPopup();
+                // Optionally dismiss banner after showing popup
+                dismissBanner();
+            };
+        }
+
+        // Close button
+        const closeBtn = document.getElementById('closeBannerBtn');
+        if (closeBtn) {
+            closeBtn.onclick = dismissBanner;
+        }
+    }
+}
+
+/**
+ * Dismiss banner for current session
+ */
+function dismissBanner() {
+    const banner = document.getElementById('subscriptionBanner');
+    if (banner) {
+        banner.style.display = 'none';
+        sessionStorage.setItem('subscription_banner_dismissed', 'true');
+    }
+}

@@ -23,32 +23,7 @@ export const DEPARTMENTS = {
     "pediatric": "أطفال",
     "maternity": "نسا وتوليد",
     "psychiatric": "نفسية",
-    "community": "إدارة",
-    // Old values for backward compatibility
-    "obs_gyn": "نسا وتوليد",
-    "nursing_admin": "إدارة"
-};
-
-// ========================================
-// BACKWARD COMPATIBILITY (DEPRECATED)
-// Keep for old data only, will be removed
-// ========================================
-
-// Old GRADES mapping (DEPRECATED - use ACADEMIC_YEARS)
-export const GRADES = {
-    // Old numeric format (for backward compatibility only)
-    "1": "الفرقة الأولى",
-    "2": "الفرقة الثانية",
-    "3": "الفرقة الثالثة",
-    "4": "الفرقة الرابعة",
-    // New text format
-    ...ACADEMIC_YEARS
-};
-
-// Old STREAMS mapping (DEPRECATED - use DEPARTMENTS)
-export const STREAMS = {
-    "obs_gyn": "تمريض نسا وتوليد", // Old name
-    ...DEPARTMENTS
+    "community": "إدارة"
 };
 
 // ========================================
@@ -56,7 +31,7 @@ export const STREAMS = {
 // ========================================
 
 export const APP_CONFIG = {
-    CACHE_VERSION: 'v3.2', // Incremented for schema changes
+    CACHE_VERSION: 'v3.3', // Incremented for Phase 2 cleanup
     CACHE_TIME_PROFILE: 1, // 1 minute
     CACHE_TIME_STATS: 1,  // 1 minute for better sync
     CACHE_TIME_SUBJECTS: 1440, // 24 hours (static content)

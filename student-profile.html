@@ -371,7 +371,7 @@
         import { supabase } from './assets/js/supabaseClient.js';
         import { generateAvatar, calculateLevel, getLevelColor } from './assets/js/avatars.js';
         import { createLevelBadge, createLevelProgress } from './assets/js/level-badge.js';
-        import { GRADES, STREAMS } from './assets/js/constants.js';
+        import { ACADEMIC_YEARS, DEPARTMENTS, getAcademicYearLabel, getDepartmentLabel, getTermLabel } from './assets/js/constants.js';
         import { isInSameSquad, isVisible, createLockedElement, createLockedAvatar } from './assets/js/privacy.js';
 
         // Wait for DOM
@@ -456,11 +456,11 @@
             const levelColor = getLevelColor(level);
             const levelBadgeHTML = createLevelBadge(student.points || 0, 'large');
 
-            const gradeText = GRADES[student.academic_year] || student.academic_year || 'غير محدد';
+            const gradeText = getAcademicYearLabel(student.academic_year) || student.academic_year || 'غير محدد';
             let additionalInfo = '';
 
             if (student.academic_year === 'third_year' || student.academic_year === 'fourth_year') {
-                additionalInfo = STREAMS[student.department] || student.department || '';
+                additionalInfo = getDepartmentLabel(student.department) || student.department || '';
             } else if (student.current_term) {
                 additionalInfo = `الترم ${student.current_term === 'first_term' ? '1' : '2'}`;
             }

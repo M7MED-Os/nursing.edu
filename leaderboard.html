@@ -364,7 +364,7 @@
         import { supabase } from "./assets/js/supabaseClient.js";
         import { getCache, setCache } from "./assets/js/utils.js";
         import { checkAuth } from "./assets/js/auth.js";
-        import { GRADES, STREAMS } from "./assets/js/constants.js";
+        import { ACADEMIC_YEARS, DEPARTMENTS, getAcademicYearLabel, getDepartmentLabel } from "./assets/js/constants.js";
         import { calculateLevel, getLevelColor, calculateSquadLevel } from "./assets/js/avatars.js";
         import { createLevelBadge, createSquadLevelBadge } from "./assets/js/level-badge.js";
         import { shouldShowAvatar, isVisible, isSquadMember } from "./assets/js/privacy.js";
@@ -607,7 +607,7 @@
 
             // Update Text Context
             const headerP = document.querySelector('.page-header p');
-            const contextText = GRADES[currentUserInfo.academic_year] || '';
+            const contextText = getAcademicYearLabel(currentUserInfo.academic_year) || '';
             headerP.textContent = `أقوى الشلل في ${contextText}`;
 
             const cacheKey = `squad_leaderboard_${currentUserInfo.academic_year}_limit${settings.top_squads || 10}`;
@@ -631,8 +631,14 @@
                 }
 
                 body.innerHTML = squads.map((s, i) => {
-                    const displayDept = STREAMS[s.department] || s.department || 'عام';
-                    const displayGrade = GRADES[s.academic_year] || s.academic_year || '';
+                    const displayGrade = getAcademicYearLabel(s.academic_year) || s.academic_year || '';
+                    const displayDept = getDepartmentLabel(s.department) || s.department || '';
+
+                    // Build info text: Year - Department (for years 3-4 only)
+                    let infoText = displayGrade;
+                    if ((s.academic_year === 'third_year' || s.academic_year === 'fourth_year') && displayDept) {
+                        infoText = `${displayGrade} - ${displayDept}`;
+                    }
 
                     // Squad avatar URL or fallback
                     const avatarUrl = s.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(s.name || 'Squad')}&background=10b981&color=fff&size=80`;
@@ -665,7 +671,7 @@
                                 </div>
                                 <div class="user-name-box">
                                     <a href="squad-profile.html?id=${s.id}" style="text-decoration: none; color: inherit; font-weight: 700; transition: color 0.3s ease;" onmouseover="this.style.color='#10b981'" onmouseout="this.style.color='inherit'">${s.name}</a>
-                                    <span>${displayDept} - ${displayGrade}</span>
+                                    <span>${infoText}</span>
                                 </div>
                             </div>
                         </td>
@@ -711,9 +717,9 @@
                 }
 
                 const headerP = document.querySelector('.page-header p');
-                let contextText = GRADES[currentUserInfo.academic_year] || '';
+                let contextText = getAcademicYearLabel(currentUserInfo.academic_year) || '';
                 if (currentFilterStream === 'all') contextText += " (الدفعة كاملة)";
-                else if (STREAMS[currentFilterStream]) contextText += ` - ${STREAMS[currentFilterStream]}`;
+                else if (getDepartmentLabel(currentFilterStream)) contextText += ` - ${getDepartmentLabel(currentFilterStream)}`;
                 headerP.textContent = `قائمة الأوائل لـ ${contextText}`;
 
                 if (!data || data.length === 0) {
@@ -730,8 +736,8 @@
                     else if (rank === 3) rankDisplay = '<i class="fas fa-medal medal-icon" style="color:#94a3b8"></i>';
 
                     const rowClass = s.id === currentUserInfo.id ? 'style="background-color: #f0f9ff;"' : '';
-                    const displayStream = STREAMS[s.department] || '';
-                    const subText = displayStream ? `<span style="font-size:0.8em; color:var(--primary-color);">(${displayStream})</span>` : (GRADES[s.academic_year] || '-');
+                    const displayStream = getDepartmentLabel(s.department) || '';
+                    const subText = displayStream ? `<span style="font-size:0.8em; color:var(--primary-color);">(${displayStream})</span>` : (getAcademicYearLabel(s.academic_year) || '-');
 
                     // Avatar URL or fallback
                     const avatarUrl = s.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(s.full_name || 'User')}&background=03A9F4&color=fff&size=80`;

@@ -19,6 +19,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 4. Load Other Components
     loadAnnouncements(auth.profile);
     loadDashboardStats(auth.user.id);
+
+    // 5. Initialize subscription banner
+    initSubscriptionBanner(auth.profile);
 });
 
 function updateDashboardProfileUI(profile) {
@@ -163,3 +166,53 @@ window.showPointsExplanation = () => {
         borderRadius: '20px'
     });
 };
+
+/**
+ * Initialize and show subscription banner for non-premium users
+ */
+function initSubscriptionBanner(profile) {
+    // Check if banner was dismissed in this session
+    const bannerDismissed = sessionStorage.getItem('subscription_banner_dismissed');
+    if (bannerDismissed) return;
+
+    if (!profile) return;
+
+    // Check if user has active subscription (matching subscription.js logic)
+    const isPremium = profile.is_active === true;
+
+    console.log('Dashboard Banner check - isPremium:', isPremium, 'profile:', profile);
+
+    if (isPremium) return; // Don't show banner for premium users
+
+    // Show banner
+    const banner = document.getElementById('subscriptionBanner');
+    if (banner) {
+        banner.style.display = 'block';
+
+        // Subscribe button - redirect to pricing page
+        const subscribeBtn = document.getElementById('subscriptionBannerBtn');
+        if (subscribeBtn) {
+            subscribeBtn.onclick = () => {
+                window.location.href = 'pricing.html';
+            };
+        }
+
+        // Close button
+        const closeBtn = document.getElementById('closeBannerBtn');
+        if (closeBtn) {
+            closeBtn.onclick = dismissBanner;
+        }
+    }
+}
+
+/**
+ * Dismiss banner for current session
+ */
+function dismissBanner() {
+    const banner = document.getElementById('subscriptionBanner');
+    if (banner) {
+        banner.style.display = 'none';
+        sessionStorage.setItem('subscription_banner_dismissed', 'true');
+    }
+}
+

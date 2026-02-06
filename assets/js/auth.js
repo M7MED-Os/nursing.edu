@@ -1,6 +1,6 @@
 import { supabase } from "./supabaseClient.js";
 import { showToast, showInputError, clearInputError, getCache, setCache } from "./utils.js";
-import { APP_CONFIG, STREAMS, GRADES, TERMS } from "./constants.js";
+import { APP_CONFIG, ACADEMIC_YEARS, DEPARTMENTS, TERMS } from "./constants.js";
 import { showSuccessAlert, showWarningAlert, showErrorAlert, showInputDialog } from "./utils/alerts.js";
 import { validateEmail, validatePassword, validatePasswordConfirmation, validateRequired, validateSelect } from "./utils/validators.js";
 import { setButtonLoading } from "./utils/dom.js";
