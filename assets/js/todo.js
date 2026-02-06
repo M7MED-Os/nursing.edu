@@ -61,7 +61,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <i class="fas fa-tasks" style="font-size: 4rem; color: #03A9F4; margin-bottom: 1rem;"></i>
                     <h2 style="color: #1e293b; margin-bottom: 1rem;">المهام متاحة للمشتركين فقط</h2>
                     <p style="color: #64748b; margin-bottom: 2rem;">اشترك الآن عشان تقدر تنظم مهامك وتستخدم البومودورو!</p>
-                    <a href="pricing.html" style="display: inline-block; background: #03A9F4; color: white; padding: 0.75rem 2rem; border-radius: 8px; text-decoration: none; font-weight: bold;">
+                    <a href="pending.html" style="display: inline-block; background: #03A9F4; color: white; padding: 0.75rem 2rem; border-radius: 8px; text-decoration: none; font-weight: bold;">
                         <i class="fas fa-star"></i> اشترك الآن
                     </a>
                 </div>

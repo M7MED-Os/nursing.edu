@@ -88,7 +88,7 @@ export async function initSquad() {
                 cancelButtonText: 'ماشي'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    window.location.href = 'pricing.html';
+                    window.location.href = 'pending.html';
                 }
             });
 

@@ -685,7 +685,7 @@ function initPremiumBanner() {
     // Subscribe button
     const subscribeBtn = document.getElementById('premiumBannerBtn');
     if (subscribeBtn) {
-        subscribeBtn.onclick = () => window.location.href = 'pricing.html';
+        subscribeBtn.onclick = () => window.location.href = 'pending.html';
     }
 
     // Close button

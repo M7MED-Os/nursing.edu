@@ -153,7 +153,7 @@ export async function showCreateSquadModal() {
             cancelButtonText: 'إلغاء'
         }).then((result) => {
             if (result.isConfirmed) {
-                window.location.href = 'pricing.html';
+                window.location.href = 'pending.html';
             }
         });
         return;
@@ -268,7 +268,7 @@ export async function showJoinSquadModal() {
             cancelButtonText: 'إلغاء'
         }).then((result) => {
             if (result.isConfirmed) {
-                window.location.href = 'pricing.html';
+                window.location.href = 'pending.html';
             }
         });
         return;

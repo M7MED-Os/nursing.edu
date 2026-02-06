@@ -185,7 +185,7 @@ function initPremiumBanner(profile) {
     // Subscribe button
     const subscribeBtn = document.getElementById('premiumBannerBtn');
     if (subscribeBtn) {
-        subscribeBtn.onclick = () => window.location.href = 'pricing.html';
+        subscribeBtn.onclick = () => window.location.href = 'pending.html';
     }
 
     // Close button
@@ -223,7 +223,7 @@ function initSubscriptionBanner(profile) {
         const subscribeBtn = document.getElementById('subscriptionBannerBtn');
         if (subscribeBtn) {
             subscribeBtn.onclick = () => {
-                window.location.href = 'pricing.html';
+                window.location.href = 'pending.html';
             };
         }
 
