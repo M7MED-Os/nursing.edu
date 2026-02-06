@@ -299,7 +299,7 @@ export function showSubscriptionWarning(expiry) {
         </div>
         <div class="expiry-alert-text">
             <h4>اشتراكك قرب يخلص! ⏳</h4>
-            <p>باقي أيام قليلة وينتهي اشتراكك في: <b>${dateStr}</b></p>
+            <p>اشتراكك هيخلص في: <b>${dateStr}</b></p>
         </div>
         <a href="pricing.html" class="expiry-alert-btn">تجديد الاشتراك</a>
         <button id="closeExpiryWarning" class="expiry-alert-close">
