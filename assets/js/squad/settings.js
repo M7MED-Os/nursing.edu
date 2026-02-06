@@ -262,7 +262,7 @@ export async function showJoinSquadModal() {
             html: `
                 <p>لازم تشترك عشان تقدر تعمل او تنضم لشلة</p>
             `,
-            confirmButtonText: 'اشترك الآن',
+            confirmButtonText: 'اشترك دلوقتي',
             confirmButtonColor: '#03A9F4',
             showCancelButton: true,
             cancelButtonText: 'إلغاء'

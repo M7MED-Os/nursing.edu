@@ -312,35 +312,7 @@ if (editNameBtn) {
                 }
             }
         });
-        const infoHTML = `
-            <div class="info-item">
-                <i class="fas fa-user"></i>
-                <span>${profile.full_name || '-'}</span>
-            </div>
-            <div class="info-item">
-                <i class="fas fa-envelope"></i>
-                <span>${profile.email || '-'}</span>
-            </div>
-            <div class="info-item">
-                <i class="fas fa-graduation-cap"></i>
-                <span>${getAcademicYearLabel(academic_year) || academic_year || '-'
-            }</span>
-            </div>
-            <div class="info-item">
-                <i class="fas fa-calendar-alt"></i>
-                <span>${getTermLabel(current_term) || current_term || '-'
-            }</span>
-            </div>
-            <div class="info-item">
-                <i class="fas fa-building"></i>
-                <span>${getDepartmentLabel(department) || department || '-'
-            }</span>
-            </div>
-            <div class="info-item">
-                <i class="fas fa-phone"></i>
-                <span>${profile.phone || '-'}</span>
-            </div>
-        `;
+
         if (newName && newName.trim() !== currentProfile.full_name) {
             try {
                 Swal.fire({
