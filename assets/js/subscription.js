@@ -100,11 +100,11 @@ class SubscriptionService {
 
         switch (featureName) {
             case 'squads':
-                return this.freemiumConfig.squads_enabled || isPremium;
+                return this.freemiumConfig.squads_config || isPremium;
             case 'tasks':
-                return this.freemiumConfig.tasks_enabled || isPremium;
+                return this.freemiumConfig.tasks_config || isPremium;
             case 'leaderboard':
-                return this.freemiumConfig.leaderboard_enabled || isPremium;
+                return this.freemiumConfig.leaderboard_config || isPremium;
             default:
                 return true;
         }

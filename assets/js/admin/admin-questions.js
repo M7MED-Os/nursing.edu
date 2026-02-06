@@ -35,10 +35,15 @@ export async function renderExamQuestions(exam) {
 
     let html = `
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-             <h3 style="margin:0;">${exam.title} <small style="font-size:0.875rem; color:var(--secondary-color); font-weight:400;">(${questions?.length || 0} سؤال)</small></h3>
-             <button class="btn btn-sm" style="background:#fee2e2; color:#ef4444; border:1px solid #fecaca;" onclick="window.deleteItem('exams', '${exam.id}')">
-                <i class="fas fa-trash-alt"></i> حذف الامتحان
-             </button>
+             <h3 style="margin:0;">${exam.title} <small style="font-size:0.875rem; color:var(--secondary-color); font-weight:400;">(${questions?.length || 0} سؤال - ${exam.time_limit || 30} دقيقة)</small></h3>
+             <div style="display:flex; gap:8px;">
+                 <button class="btn btn-sm" style="background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd;" onclick="window.openEditExamModal(${JSON.stringify(exam).replace(/"/g, '&quot;')})">
+                    <i class="fas fa-edit"></i> تعديل
+                 </button>
+                 <button class="btn btn-sm" style="background:#fee2e2; color:#ef4444; border:1px solid #fecaca;" onclick="window.deleteItem('exams', '${exam.id}')">
+                    <i class="fas fa-trash-alt"></i> حذف
+                 </button>
+             </div>
         </div>
         
         <!-- Freemium Controls for Exam -->
@@ -366,9 +371,58 @@ export async function saveExamFreemiumSetting(lessonId, isFree) {
     }
 }
 
+/**
+ * Open edit exam modal
+ */
+export async function openEditExamModal(exam) {
+    const { openModal, closeModal } = await import('./admin-core.js');
+
+    openModal({
+        title: 'تعديل بيانات الامتحان',
+        body: `
+            <div class="form-group">
+                <label>عنوان الامتحان</label>
+                <input id="editExamTitle" class="form-control" value="${exam.title}">
+            </div>
+            <div class="form-group">
+                <label>مدة الامتحان (بالدقائق)</label>
+                <input type="number" id="editExamTime" class="form-control" value="${exam.time_limit || 30}" min="1">
+            </div>
+        `,
+        onSave: async () => {
+            const updates = {
+                title: document.getElementById('editExamTitle').value,
+                time_limit: parseInt(document.getElementById('editExamTime').value) || 30
+            };
+
+            const { error } = await supabase
+                .from('exams')
+                .update(updates)
+                .eq('id', exam.id);
+
+            if (error) {
+                showErrorAlert('خطأ', 'فشل تحديث الامتحان');
+                return;
+            }
+
+            showSuccessAlert('تم', 'تم تحديث بيانات الامتحان');
+            closeModal();
+
+            // Reload the exam view
+            const { data: updatedExam } = await supabase
+                .from('exams')
+                .select('*')
+                .eq('id', exam.id)
+                .single();
+            if (updatedExam) renderExamQuestions(updatedExam);
+        }
+    });
+}
+
 // Expose functions globally for onclick handlers
 window.saveQuestion = saveQuestion;
 window.editQuestion = editQuestion;
 window.resetQuestionForm = resetQuestionForm;
 window.deleteQuestion = deleteQuestion;
 window.saveExamFreemiumSetting = saveExamFreemiumSetting;
+window.openEditExamModal = openEditExamModal;
