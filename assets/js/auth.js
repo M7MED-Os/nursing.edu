@@ -132,13 +132,6 @@ function handleAccessControl(profile) {
         const diffDays = diffMs / (1000 * 60 * 60 * 24);
         if (diffDays <= 3) showSubscriptionWarning(expiry);
     }
-
-    // Show subscription banner for free users on dashboard
-    // Show premium badge if active
-    if (isActive) {
-        showPremiumBadge();
-    }
-
 }
 
 function updateUserPresence(userId) {
@@ -1151,9 +1144,6 @@ function startSecurityMonitor() {
 }
 
 // End of file
-
-
-
 
 
 
