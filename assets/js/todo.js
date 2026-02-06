@@ -35,6 +35,40 @@ document.addEventListener('DOMContentLoaded', async () => {
     let addingSubTarget = null; // Track which task we are adding a subtask to (index)
 
     const init = async () => {
+        // Check premium/freemium access for tasks
+        const { data: freemiumConfig } = await supabase.rpc('get_freemium_config');
+        const config = freemiumConfig?.[0];
+
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            window.location.href = 'login.html';
+            return;
+        }
+
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('is_active')
+            .eq('id', user.id)
+            .single();
+
+        const isPremium = profile?.is_active === true;
+        const tasksEnabled = config?.tasks_config === true;
+
+        if (!isPremium && !tasksEnabled) {
+            // Hide todo content and show subscription prompt
+            document.querySelector('.todo-page').innerHTML = `
+                <div style="text-align: center; padding: 3rem; background: white; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); max-width: 600px; margin: 2rem auto;">
+                    <i class="fas fa-tasks" style="font-size: 4rem; color: #03A9F4; margin-bottom: 1rem;"></i>
+                    <h2 style="color: #1e293b; margin-bottom: 1rem;">المهام متاحة للمشتركين فقط</h2>
+                    <p style="color: #64748b; margin-bottom: 2rem;">اشترك الآن عشان تقدر تنظم مهامك وتستخدم البومودورو!</p>
+                    <a href="pricing.html" style="display: inline-block; background: #03A9F4; color: white; padding: 0.75rem 2rem; border-radius: 8px; text-decoration: none; font-weight: bold;">
+                        <i class="fas fa-star"></i> اشترك الآن
+                    </a>
+                </div>
+            `;
+            return;
+        }
+
         // Greeting logic removed as new header is used
         // const greetings = ["صباح الخير يا بطل! 🌞", "جاهز لإنجاز أهدافك؟ ✨", "يوم جديد.. بداية قوية! 💪", "ركز على هدفك اليوم 🎯"];
         // if (greetingText) greetingText.textContent = greetings[Math.floor(Math.random() * greetings.length)];

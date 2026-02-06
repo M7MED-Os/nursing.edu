@@ -243,6 +243,38 @@ export async function showCreateSquadModal() {
  * Show join squad modal
  */
 export async function showJoinSquadModal() {
+    // Check premium/freemium access
+    const { data: freemiumConfig } = await supabase.rpc('get_freemium_config');
+    const config = freemiumConfig?.[0];
+
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('is_active')
+        .eq('id', currentProfile.id)
+        .single();
+
+    const isPremium = profile?.is_active === true;
+    const squadsEnabled = config?.squads_config === true;
+
+    if (!isPremium && !squadsEnabled) {
+        Swal.fire({
+            icon: 'info',
+            title: 'الشلل متاحة للمشتركين بس',
+            html: `
+                <p>للأسف، انك تعمل او تنضم لشلة لازم تبقى مشترك عشان.</p>
+            `,
+            confirmButtonText: 'اشترك الآن',
+            confirmButtonColor: '#03A9F4',
+            showCancelButton: true,
+            cancelButtonText: 'إلغاء'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = 'pricing.html';
+            }
+        });
+        return;
+    }
+
     const { value: code } = await Swal.fire({
         title: 'انضم لشلة',
         input: 'text',
