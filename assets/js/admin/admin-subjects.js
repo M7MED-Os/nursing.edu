@@ -51,9 +51,11 @@ export async function loadSubjects() {
     // Mappings from numeric strings to database strings
     const yearMap = { '1': 'first_year', '2': 'second_year', '3': 'third_year', '4': 'fourth_year' };
     const termMap = { '1': 'first_term', '2': 'second_term' };
+    const deptMap = { 'obs_gyn': 'maternity', 'nursing_admin': 'community' };
 
     const dbYear = yearMap[currentContext.academic_year] || currentContext.academic_year;
     const dbTerm = termMap[currentContext.current_term] || currentContext.current_term;
+    const dbDept = deptMap[currentContext.department] || currentContext.department;
 
     // Filter Logic - use current_term and department from context
     let query = supabase.from('subjects').select('*').eq('academic_year', dbYear).order('order_index');
@@ -63,8 +65,8 @@ export async function loadSubjects() {
         query = query.eq('current_term', dbTerm);
     }
     // If viewing by department: show only that department's subjects
-    else if (currentContext.department) {
-        query = query.eq('department', currentContext.department);
+    else if (dbDept) {
+        query = query.eq('department', dbDept);
     }
 
     const { data: subjects, error } = await query;

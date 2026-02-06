@@ -170,7 +170,7 @@ function renderTasks(mainTasks, subTasks) {
  */
 window.addSquadTask = async (parentId = null) => {
     const { value: title } = await Swal.fire({
-        title: parentId ? 'مهمة فرعية جديدة' : 'إيه الهدف المشترك؟',
+        title: parentId ? 'اكتب ال task الفرعية' : 'اكتب ال task',
         input: 'text',
         showCancelButton: true
     });
