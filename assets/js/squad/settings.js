@@ -149,7 +149,7 @@ export async function showCreateSquadModal() {
         title: 'إنشاء شلة جديدة',
         html: `
             <input id="squad-name" class="swal2-input" placeholder="اسم الشلة">
-            <input id="squad-year" type="hidden" value="${studentYear}">
+            <input id="squad-year" type="hidden" value="${studentGrade}">
             ${showDeptSelector ? `
                 <select id="squad-dept" class="swal2-input">
                     <option value="">اختر القسم</option>
