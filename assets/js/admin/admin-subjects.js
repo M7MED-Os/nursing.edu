@@ -48,12 +48,19 @@ export async function loadSubjects() {
     const container = document.getElementById('subjectListView');
     container.innerHTML = `<div class="spinner"></div>`;
 
+    // Mappings from numeric strings to database strings
+    const yearMap = { '1': 'first_year', '2': 'second_year', '3': 'third_year', '4': 'fourth_year' };
+    const termMap = { '1': 'first_term', '2': 'second_term' };
+
+    const dbYear = yearMap[currentContext.academic_year] || currentContext.academic_year;
+    const dbTerm = termMap[currentContext.current_term] || currentContext.current_term;
+
     // Filter Logic - use current_term and department from context
-    let query = supabase.from('subjects').select('*').eq('academic_year', currentContext.academic_year).order('order_index');
+    let query = supabase.from('subjects').select('*').eq('academic_year', dbYear).order('order_index');
 
     // If viewing by term: show all subjects in that term
-    if (currentContext.current_term) {
-        query = query.eq('current_term', currentContext.current_term);
+    if (dbTerm) {
+        query = query.eq('current_term', dbTerm);
     }
     // If viewing by department: show only that department's subjects
     else if (currentContext.department) {
@@ -129,15 +136,19 @@ export function openAddSubjectModal() {
             const order = document.getElementById('subjectOrder').value;
             if (!name) return showWarningAlert('تنبيه', 'الاسم مطلوب');
 
+            // Mappings from numeric strings to database strings
+            const yearMap = { '1': 'first_year', '2': 'second_year', '3': 'third_year', '4': 'fourth_year' };
+            const termMap = { '1': 'first_term', '2': 'second_term' };
+
             const payload = {
                 name_ar: name,
-                academic_year: currentContext.academic_year,
+                academic_year: yearMap[currentContext.academic_year] || currentContext.academic_year,
                 order_index: order
             };
 
             // Set term and department based on context
             if (currentContext.current_term) {
-                payload.current_term = currentContext.current_term;
+                payload.current_term = termMap[currentContext.current_term] || currentContext.current_term;
             }
             if (currentContext.department) {
                 payload.department = currentContext.department;

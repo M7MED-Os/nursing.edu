@@ -1,6 +1,6 @@
 {
-    "name": "تمريض بنها",
-    "short_name": "تمريض بنها",
+    "name": "Banha Nursing",
+    "short_name": "Banha Nursing",
     "start_url": "./login.html",
     "display": "standalone",
     "background_color": "#F9FAFB",

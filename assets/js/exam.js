@@ -109,7 +109,7 @@ async function initExam() {
         // ✅ STEP 4: Initialize UI
 
         if (examTitleMobile) examTitleMobile.textContent = "الامتحان";
-        totalTime = currentQuestions.length * 60;
+        totalTime = (exam.time_limit && exam.time_limit > 0) ? (exam.time_limit * 60) : (currentQuestions.length * 60);
 
         renderQuestions();
         renderNavigator();

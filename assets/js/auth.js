@@ -173,6 +173,7 @@ export function showSubscriptionWarning(expiry) {
         gap: 15px;
         box-shadow: 0 10px 20px rgba(251, 140, 0, 0.1);
         animation: slideIn 0.5s ease-out;
+        position: relative;
     `;
 
     banner.innerHTML = `
@@ -180,10 +181,15 @@ export function showSubscriptionWarning(expiry) {
             <i class="fas fa-hourglass-half"></i>
         </div>
         <div style="flex:1">
-            <h4 style="margin:0; font-size:1.1rem; font-weight:900;">اشتراكك أوشك على الانتهاء! ⚠️</h4>
-            <p style="margin:2px 0 0; font-size:0.9rem; opacity:0.9;">سيفصل الحساب تلقائياً في: <b>${dateStr}</b></p>
+            <h4 style="margin:0; font-size:1.1rem; font-weight:900;">اشتراكك قرب يخلص ⚠️</h4>
+            <p style="margin:2px 0 0; font-size:0.9rem; opacity:0.9;"> الاشتراك هيقف تلقائياً في: <b>${dateStr}</b></p>
         </div>
-        <a href="pending.html" style="background:#fb8c00; color:white; padding:8px 16px; border-radius:10px; text-decoration:none; font-size:0.85rem; font-weight:bold; transition:0.3s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">تجديد الآن</a>
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <a href="pricing.html" style="background:#fb8c00; color:white; padding:8px 16px; border-radius:10px; text-decoration:none; font-size:0.85rem; font-weight:bold; transition:0.3s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">تجديد الآن</a>
+            <button id="closeExpiryWarning" style="background:none; border:none; color:#e65100; cursor:pointer; font-size:1.2rem; padding: 4px; display: flex; align-items: center; justify-content: center; opacity: 0.6; transition: 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.6'">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
     `;
 
     if (parent === document.body) {
@@ -195,6 +201,14 @@ export function showSubscriptionWarning(expiry) {
     }
 
     parent.prepend(banner);
+
+    // Add close functionality
+    document.getElementById('closeExpiryWarning').addEventListener('click', () => {
+        banner.style.opacity = '0';
+        banner.style.transform = 'translateY(-10px)';
+        banner.style.transition = '0.3s ease';
+        setTimeout(() => banner.remove(), 300);
+    });
 }
 
 
