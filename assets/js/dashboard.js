@@ -22,6 +22,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 5. Initialize premium banner
     initPremiumBanner(auth.profile);
+
+    // 6. Check for activation celebration
+    checkActivationCelebration(auth.profile);
 });
 
 function updateDashboardProfileUI(profile) {
@@ -150,7 +153,7 @@ window.showPointsExplanation = () => {
         title: '<span style="font-weight: 800; color: #1e293b; font-size: 1.2rem;">إزاي تجمع نقط؟ 🎯</span>',
         html: `
             <div style="text-align: right; direction: rtl; font-family: 'Cairo', sans-serif; line-height: 1.6;">
-                <div style="background: #f0f9ff; padding: 15px; border-radius: 12px; border-right: 4px solid #03A9F4; color: #334155; font-size: 1rem;">
+                <div style="background: #f0f9ff; padding: 18px; border-radius: 12px; border-right: 4px solid #03A9F4; color: #334155; font-size: 1rem;">
                     كل امتحان بتحله بتزيد في النقط نقطة لكل سؤال صح (لو دي أول مرة تحل الامتحان). 
                     <br>
                     وفي نقط زيادة لو قفلت، ولو حليت كل يوم امتحان لمدة 3 و 5 و 7 أيام.
@@ -246,3 +249,77 @@ function dismissBanner() {
     }
 }
 
+
+/**
+ * Check if the user has a new activation and show celebration
+ */
+function checkActivationCelebration(profile) {
+    if (!profile || !profile.is_active || !profile.subscription_ends_at) return;
+
+    const storageKey = `last_activation_${profile.id}`;
+    const lastKnownActivation = localStorage.getItem(storageKey);
+    const currentActivationValue = profile.subscription_ends_at;
+
+    // If we have a stored value and it matches, we've already shown it
+    if (lastKnownActivation === currentActivationValue) return;
+
+    // Show celebration
+    const expiryDate = new Date(profile.subscription_ends_at);
+    const dateStr = expiryDate.toLocaleDateString('ar-EG', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long'
+    });
+
+    Swal.fire({
+        title: '<span style="font-weight: 900; color: #1e293b; font-size: 1.6rem; display: block; margin-top: 5px;">حسابك اتفعل😘</span>',
+        html: `
+            <div style="text-align: center; direction: rtl; font-family: 'Cairo', sans-serif;">
+                <div style="font-size: 1.1rem; color: #64748b; margin-bottom: 1.5rem; line-height: 1.5;">
+                    حسابك شغال لحد يوم <br> 
+                    <strong style="color: #03A9F4; font-size: 1.3rem; display: block; margin-top: 5px;">${dateStr}</strong>
+                </div>
+                <div style="background: #f0f9ff; padding: 15px; border-radius: 12px; border: 2px dashed #03A9F4; color: #0288D1; font-weight: 800; font-size: 1rem;">
+                    كل المحتوى مفتوح و كل المميزات 🚀
+                </div>
+            </div>
+        `,
+        confirmButtonText: 'يلا بينا',
+        confirmButtonColor: '#03A9F4',
+        width: 'min(95%, 400px)',
+        padding: '1.5rem',
+        borderRadius: '24px',
+        allowOutsideClick: false,
+        didOpen: () => {
+            // Trigger confetti
+            if (typeof confetti === 'function') {
+                const duration = 3 * 1000;
+                const end = Date.now() + duration;
+
+                (function frame() {
+                    confetti({
+                        particleCount: 3,
+                        angle: 60,
+                        spread: 55,
+                        origin: { x: 0 },
+                        colors: ['#03A9F4', '#00bcd4', '#4DD0E1']
+                    });
+                    confetti({
+                        particleCount: 3,
+                        angle: 120,
+                        spread: 55,
+                        origin: { x: 1 },
+                        colors: ['#03A9F4', '#00bcd4', '#4DD0E1']
+                    });
+
+                    if (Date.now() < end) {
+                        requestAnimationFrame(frame);
+                    }
+                }());
+            }
+        }
+    }).then(() => {
+        // Update localStorage so it doesn't show again until next activation
+        localStorage.setItem(storageKey, currentActivationValue);
+    });
+}
