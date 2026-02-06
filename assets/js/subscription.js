@@ -85,8 +85,18 @@ class SubscriptionService {
     isPremium() {
         if (!this.userProfile) return false;
 
-        // Simple check: is_active = true means premium
-        return this.userProfile.is_active === true;
+        // 1. Check if user is admin (always premium)
+        if (this.userProfile.role === 'admin') return true;
+
+        // 2. Check is_active flag
+        const isActive = this.userProfile.is_active === true;
+
+        // 3. Local expiry check (as a backup to the DB flag)
+        const now = new Date();
+        const expiry = this.userProfile.subscription_ends_at ? new Date(this.userProfile.subscription_ends_at) : null;
+        const isExpired = expiry && now > expiry;
+
+        return isActive && !isExpired;
     }
 
     /**
@@ -100,11 +110,11 @@ class SubscriptionService {
 
         switch (featureName) {
             case 'squads':
-                return this.freemiumConfig.squads_config || isPremium;
+                return this.freemiumConfig.squads_enabled || isPremium;
             case 'tasks':
-                return this.freemiumConfig.tasks_config || isPremium;
+                return this.freemiumConfig.tasks_enabled || isPremium;
             case 'leaderboard':
-                return this.freemiumConfig.leaderboard_config || isPremium;
+                return this.freemiumConfig.leaderboard_enabled || isPremium;
             default:
                 return true;
         }

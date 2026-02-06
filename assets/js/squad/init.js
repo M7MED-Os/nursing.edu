@@ -43,26 +43,11 @@ export async function initSquad() {
     }
     setCurrentProfile(profile);
 
+
     // 3. Initialize subscription service
     await initSubscriptionService(profile);
 
-    // 4. FREEMIUM CHECK: Verify access to squads feature
-    if (!subscriptionService.canAccessFeature('squads')) {
-        // Track analytics
-        await supabase.from('freemium_analytics').insert({
-            user_id: user.id,
-            content_type: 'feature',
-            content_id: null,
-            action: 'blocked'
-        }).catch(err => console.warn('Analytics error:', err));
-
-        // Show upgrade prompt
-        await showSubscriptionPopup();
-        window.location.href = 'dashboard.html';
-        return;
-    }
-
-    // 5. Check for Squad Membership - Use Cache (1 min short cache)
+    // 4. Check for Squad Membership - Use Cache (1 min short cache)
     let memberRecord = getCache(`squad_member_${user.id}`);
     if (!memberRecord) {
         const { data: records, error: memberError } = await supabase
@@ -77,6 +62,40 @@ export async function initSquad() {
     }
 
     if (memberRecord && memberRecord.squads) {
+        // AUTO-KICK CHECK: Remove user from squad if subscription expired and squads are premium-only
+        const isPremium = profile?.is_active === true;
+        const squadsEnabled = subscriptionService.freemiumConfig?.squads_enabled === true;
+
+        if (!isPremium && !squadsEnabled) {
+            // User is in a squad but not premium, and squads are premium-only
+            // Remove them from the squad (same as manual leave)
+            await supabase
+                .from('squad_members')
+                .delete()
+                .eq('profile_id', user.id);
+
+            // Clear cache
+            localStorage.removeItem(`squad_member_${user.id}`);
+
+            // Show message and redirect to no-squad view
+            Swal.fire({
+                icon: 'info',
+                title: 'خرجت من الشلة',
+                text: 'اشتراكك خلص والشلل متاحة للمشتركين بس. اشترك عشان تخش مع صحابك تاني!',
+                confirmButtonText: 'اشترك الآن',
+                confirmButtonColor: '#03A9F4',
+                showCancelButton: true,
+                cancelButtonText: 'ماشي'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = 'pricing.html';
+                }
+            });
+
+            showView('noSquad', views);
+            return;
+        }
+
         setCurrentSquad(memberRecord.squads);
 
         // Load members count immediately for accurate calculations

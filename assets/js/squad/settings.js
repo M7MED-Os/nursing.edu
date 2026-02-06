@@ -138,15 +138,14 @@ export async function showCreateSquadModal() {
 
     // Check if user can create squad
     const isPremium = profile.is_active === true;
-    const squadsEnabled = config?.squads_config === true;
+    const squadsEnabled = config?.squads_enabled === true;
 
     if (!isPremium && !squadsEnabled) {
         Swal.fire({
             icon: 'info',
-            title: 'الشلل متاحة للمشتركين فقط',
+            title: 'الشلل للمشتركين بس',
             html: `
-                <p>للأسف، الشلل متاحة حالياً للمشتركين فقط.</p>
-                <p>اشترك الآن عشان تقدر تنشئ شلة وتستمتع بكل المميزات!</p>
+                <p>لازم تشترك عشان تقدر تعمل او تنضم لشلة</p>
             `,
             confirmButtonText: 'اشترك الآن',
             confirmButtonColor: '#03A9F4',
@@ -254,14 +253,14 @@ export async function showJoinSquadModal() {
         .single();
 
     const isPremium = profile?.is_active === true;
-    const squadsEnabled = config?.squads_config === true;
+    const squadsEnabled = config?.squads_enabled === true;
 
     if (!isPremium && !squadsEnabled) {
         Swal.fire({
             icon: 'info',
-            title: 'الشلل متاحة للمشتركين بس',
+            title: 'الشلل للمشتركين بس',
             html: `
-                <p>للأسف، انك تعمل او تنضم لشلة لازم تبقى مشترك عشان.</p>
+                <p>لازم تشترك عشان تقدر تعمل او تنضم لشلة</p>
             `,
             confirmButtonText: 'اشترك الآن',
             confirmButtonColor: '#03A9F4',

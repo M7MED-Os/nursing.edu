@@ -113,7 +113,24 @@ function handleAccessControl(profile) {
     const expiry = profile.subscription_ends_at ? new Date(profile.subscription_ends_at) : null;
     const isExpired = expiry && now > expiry;
     const isActive = profile.is_active;
-    const hasPremium = (profile.role === 'admin') || (isActive && !isExpired);
+
+    // PROACTIVE EXPIRY: Update database if subscription expired but is_active is still true
+    if (isExpired && isActive && profile.role !== 'admin') {
+        console.log("Subscription expired: Updating status...");
+        supabase.from('profiles')
+            .update({ is_active: false })
+            .eq('id', profile.id)
+            .then(() => {
+                profile.is_active = false;
+                // Force reload or redirect to dashboard to trigger access control if needed
+                if (window.location.pathname.includes('dashboard.html')) {
+                    window.location.reload();
+                }
+            })
+            .catch(e => console.error("Auto-expiry update failed", e));
+    }
+
+    const hasPremium = (profile.role === 'admin') || (profile.is_active && !isExpired);
 
     // Redirect logged in users away from auth pages
     const authPages = ["login.html", "register.html"];
@@ -151,63 +168,152 @@ export function showSubscriptionWarning(expiry) {
     // Check if already exists
     if (document.getElementById('expiryWarning')) return;
 
+    // Add modern styles if not already present
+    if (!document.getElementById('expiryWarningStyles')) {
+        const style = document.createElement('style');
+        style.id = 'expiryWarningStyles';
+        style.textContent = `
+            @keyframes slideInDown {
+                from { transform: translate(-50%, -100%); opacity: 0; }
+                to { transform: translate(-50%, 0); opacity: 1; }
+            }
+            .expiry-alert {
+                position: fixed;
+                top: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                width: calc(100% - 30px);
+                max-width: 600px;
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(10px);
+                border: 1px solid rgba(251, 140, 0, 0.3);
+                border-right: 6px solid #fb8c00;
+                border-radius: 20px;
+                padding: 1rem 1.25rem;
+                display: flex;
+                align-items: center;
+                gap: 16px;
+                box-shadow: 0 15px 35px rgba(251, 140, 0, 0.15), 0 5px 15px rgba(0, 0, 0, 0.05);
+                z-index: 10000;
+                animation: slideInDown 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                transition: all 0.4s ease;
+            }
+            .expiry-alert-icon {
+                background: linear-gradient(135deg, #fb8c00 0%, #ffab40 100%);
+                color: white;
+                width: 48px;
+                height: 48px;
+                min-width: 48px;
+                border-radius: 14px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 1.5rem;
+                box-shadow: 0 4px 12px rgba(251, 140, 0, 0.3);
+            }
+            .expiry-alert-text {
+                flex: 1;
+            }
+            .expiry-alert-text h4 {
+                margin: 0;
+                font-size: 1.05rem;
+                font-weight: 800;
+                color: #e65100;
+            }
+            .expiry-alert-text p {
+                margin: 4px 0 0;
+                font-size: 0.85rem;
+                color: #ef6c00;
+                opacity: 0.9;
+            }
+            .expiry-alert-btn {
+                background: #fb8c00;
+                color: white !important;
+                padding: 10px 20px;
+                border-radius: 14px;
+                text-decoration: none;
+                font-size: 0.9rem;
+                font-weight: 700;
+                transition: 0.3s;
+                white-space: nowrap;
+                display: inline-block;
+                box-shadow: 0 4px 10px rgba(251, 140, 0, 0.2);
+            }
+            .expiry-alert-btn:hover {
+                background: #f57c00;
+                transform: translateY(-2px);
+                box-shadow: 0 6px 15px rgba(251, 140, 0, 0.3);
+            }
+            .expiry-alert-close {
+                background: rgba(230, 81, 0, 0.05);
+                border: none;
+                color: #e65100;
+                cursor: pointer;
+                padding: 8px;
+                border-radius: 10px;
+                font-size: 1.1rem;
+                opacity: 0.6;
+                transition: 0.2s;
+            }
+            .expiry-alert-close:hover {
+                opacity: 1;
+                background: rgba(230, 81, 0, 0.1);
+            }
+
+            @media (max-width: 500px) {
+                .expiry-alert {
+                    flex-direction: column;
+                    text-align: center;
+                    padding: 1.5rem;
+                    gap: 12px;
+                }
+                .expiry-alert-icon {
+                    margin: 0 auto;
+                }
+                .expiry-alert-btn {
+                    width: 100%;
+                }
+                .expiry-alert-close {
+                    position: absolute;
+                    top: 10px;
+                    left: 10px;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
     const dateStr = expiry.toLocaleDateString('ar-EG', {
         weekday: 'long',
         day: 'numeric',
-        month: 'long',
-        hour: 'numeric',
-        minute: 'numeric'
+        month: 'long'
     });
 
     const banner = document.createElement('div');
     banner.id = 'expiryWarning';
-    banner.style = `
-        background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
-        border-right: 5px solid #fb8c00;
-        color: #e65100;
-        padding: 1.25rem;
-        border-radius: 16px;
-        margin-top: 1.5rem;
-        display: flex;
-        align-items: center;
-        gap: 15px;
-        box-shadow: 0 10px 20px rgba(251, 140, 0, 0.1);
-        animation: slideIn 0.5s ease-out;
-        position: relative;
-    `;
+    banner.className = 'expiry-alert';
 
     banner.innerHTML = `
-        <div style="background:#fb8c00; color:white; width:45px; height:45px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1.4rem;">
+        <div class="expiry-alert-icon">
             <i class="fas fa-hourglass-half"></i>
         </div>
-        <div style="flex:1">
-            <h4 style="margin:0; font-size:1.1rem; font-weight:900;">اشتراكك قرب يخلص ⚠️</h4>
-            <p style="margin:2px 0 0; font-size:0.9rem; opacity:0.9;"> الاشتراك هيقف تلقائياً في: <b>${dateStr}</b></p>
+        <div class="expiry-alert-text">
+            <h4>اشتراكك قرب يخلص! ⏳</h4>
+            <p>باقي أيام قليلة وينتهي اشتراكك في: <b>${dateStr}</b></p>
         </div>
-        <div style="display: flex; align-items: center; gap: 8px;">
-            <a href="pricing.html" style="background:#fb8c00; color:white; padding:8px 16px; border-radius:10px; text-decoration:none; font-size:0.85rem; font-weight:bold; transition:0.3s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">تجديد الآن</a>
-            <button id="closeExpiryWarning" style="background:none; border:none; color:#e65100; cursor:pointer; font-size:1.2rem; padding: 4px; display: flex; align-items: center; justify-content: center; opacity: 0.6; transition: 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.6'">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
+        <a href="pricing.html" class="expiry-alert-btn">تجديد الاشتراك</a>
+        <button id="closeExpiryWarning" class="expiry-alert-close">
+            <i class="fas fa-times"></i>
+        </button>
     `;
 
-    if (parent === document.body) {
-        banner.style.position = 'fixed';
-        banner.style.top = '20px';
-        banner.style.left = '20px';
-        banner.style.right = '20px';
-        banner.style.zIndex = '10000';
-    }
+    document.body.appendChild(banner);
 
-    parent.prepend(banner);
-
-    // Add close functionality
+    // Add close functionality with animation
     document.getElementById('closeExpiryWarning').addEventListener('click', () => {
         banner.style.opacity = '0';
-        banner.style.transform = 'translateY(-10px)';
-        banner.style.transition = '0.3s ease';
-        setTimeout(() => banner.remove(), 300);
+        banner.style.transform = 'translate(-50%, -20px)';
+        setTimeout(() => banner.remove(), 400);
     });
 }
 

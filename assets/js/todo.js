@@ -52,7 +52,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             .single();
 
         const isPremium = profile?.is_active === true;
-        const tasksEnabled = config?.tasks_config === true;
+        const tasksEnabled = config?.tasks_enabled === true;
 
         if (!isPremium && !tasksEnabled) {
             // Hide todo content and show subscription prompt
