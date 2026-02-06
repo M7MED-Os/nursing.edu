@@ -121,15 +121,42 @@ export async function editSquadBio() {
  * Show create squad modal
  */
 export async function showCreateSquadModal() {
-    // Get current profile to auto-fill
+    // Check premium/freemium access
+    const { data: freemiumConfig } = await supabase.rpc('get_freemium_config');
+    const config = freemiumConfig?.[0];
+
     const { data: profile } = await supabase
         .from('profiles')
-        .select('academic_year, department')
+        .select('academic_year, department, is_active')
         .eq('id', currentProfile.id)
         .single();
 
     if (!profile || !profile.academic_year) {
         console.error('No profile or academic_year found');
+        return;
+    }
+
+    // Check if user can create squad
+    const isPremium = profile.is_active === true;
+    const squadsEnabled = config?.squads_config === true;
+
+    if (!isPremium && !squadsEnabled) {
+        Swal.fire({
+            icon: 'info',
+            title: 'الشلل متاحة للمشتركين فقط',
+            html: `
+                <p>للأسف، الشلل متاحة حالياً للمشتركين فقط.</p>
+                <p>اشترك الآن عشان تقدر تنشئ شلة وتستمتع بكل المميزات!</p>
+            `,
+            confirmButtonText: 'اشترك الآن',
+            confirmButtonColor: '#03A9F4',
+            showCancelButton: true,
+            cancelButtonText: 'إلغاء'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = 'pricing.html';
+            }
+        });
         return;
     }
 
