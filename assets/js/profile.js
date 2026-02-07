@@ -1,9 +1,8 @@
 import { supabase } from "./supabaseClient.js";
 import { showToast, showInputError } from './utils.js';
 import { getAcademicYearLabel, getTermLabel, getDepartmentLabel } from './constants.js';
-import { setButtonLoading } from "./utils/dom.js";
 import { openAvatarModal } from "./avatar-modal.js";
-import { generateAvatar, calculateLevel, getLevelColor, getLevelLegend, getLevelMetadata, LEVEL_MULTIPLIER } from './avatars.js';
+import { generateAvatar, calculateLevel, getLevelColor, getLevelLegend, LEVEL_MULTIPLIER } from './avatars.js';
 import { createLevelBadge, createLevelProgress, applyLevelTheme } from './level-badge.js';
 
 // ==========================
@@ -13,7 +12,7 @@ import { createLevelBadge, createLevelProgress, applyLevelTheme } from './level-
 let currentUser = null;
 let currentProfile = null;
 
-import { checkAuth, refreshUserProfile } from "./auth.js";
+import { checkAuth } from "./auth.js";
 
 async function loadProfile() {
     // 1. Central Auth & Sync
@@ -449,23 +448,39 @@ async function loadPrivacySettings() {
     try {
         const { data: profile } = await supabase
             .from('profiles')
-            .select('privacy_avatar, privacy_bio, privacy_stats, privacy_progress, privacy_squad')
+            .select('privacy_avatar, privacy_bio, privacy_stats, privacy_progress, privacy_squad, show_on_leaderboard')
             .eq('id', currentProfile.id)
             .single();
 
         if (profile) {
             // Wait for modal to load if needed
             setTimeout(() => {
-                const avatarEl = document.getElementById('privacyAvatar');
-                const bioEl = document.getElementById('privacyBio');
-                const levelEl = document.getElementById('privacyLevel');
-                const squadEl = document.getElementById('privacySquad');
+                // Set active classes for choice buttons
+                const groups = ['privacyAvatar', 'privacyBio', 'privacyLevel', 'privacySquad'];
+                groups.forEach(groupId => {
+                    const group = document.querySelector(`.choice-group[data-id="${groupId}"]`);
+                    if (group) {
+                        // Map privacyLevel to privacy_stats column
+                        const colName = groupId === 'privacyLevel' ? 'privacy_stats' : groupId.replace('privacy', 'privacy_').toLowerCase();
+                        const val = profile[colName] || 'public';
+                        const btn = group.querySelector(`.choice-btn[data-value="${val}"]`);
+                        if (btn) {
+                            group.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('active'));
+                            btn.classList.add('active');
+                        }
+                    }
+                });
 
-                if (avatarEl) avatarEl.value = profile.privacy_avatar || 'public';
-                if (bioEl) bioEl.value = profile.privacy_bio || 'public';
-                // Consolidate level/stats/progress settings
-                if (levelEl) levelEl.value = profile.privacy_stats || 'public';
-                if (squadEl) squadEl.value = profile.privacy_squad || 'public';
+                // Leaderboard
+                const lbGroup = document.querySelector('.choice-group[data-id="privacyLeaderboard"]');
+                if (lbGroup) {
+                    const val = profile.show_on_leaderboard === false ? 'false' : 'true';
+                    const btn = lbGroup.querySelector(`.choice-btn[data-value="${val}"]`);
+                    if (btn) {
+                        lbGroup.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                    }
+                }
             }, 100);
         }
     } catch (err) {
@@ -476,14 +491,18 @@ async function loadPrivacySettings() {
 window.savePrivacySettings = async function () {
     if (!currentProfile) return;
 
-    const levelValue = document.getElementById('privacyLevel').value;
+    const getChoice = (id) => {
+        const active = document.querySelector(`.choice-group[data-id="${id}"] .choice-btn.active`);
+        return active ? active.dataset.value : null;
+    };
 
     const privacySettings = {
-        privacy_avatar: document.getElementById('privacyAvatar').value,
-        privacy_bio: document.getElementById('privacyBio').value,
-        privacy_stats: levelValue,
-        privacy_progress: levelValue,
-        privacy_squad: document.getElementById('privacySquad').value
+        privacy_avatar: getChoice('privacyAvatar'),
+        privacy_bio: getChoice('privacyBio'),
+        privacy_stats: getChoice('privacyLevel'),
+        privacy_progress: getChoice('privacyLevel'),
+        privacy_squad: getChoice('privacySquad'),
+        show_on_leaderboard: getChoice('privacyLeaderboard') === 'true'
     };
 
     try {
@@ -523,6 +542,23 @@ window.closePrivacyModal = function () {
         document.body.style.overflow = 'auto';
     }
 };
+
+// Choice Chip Logic
+document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.choice-btn');
+    if (btn) {
+        const group = btn.closest('.choice-group');
+        if (group) {
+            group.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            // Subtle Haptic feedback feel
+            if (window.navigator && window.navigator.vibrate) {
+                window.navigator.vibrate(5);
+            }
+        }
+    }
+});
 
 // Level Guide Button
 const showLevelGuideBtn = document.getElementById('showLevelGuideBtn');

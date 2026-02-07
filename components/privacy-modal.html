@@ -90,7 +90,7 @@
             flex: 1;
             scroll-behavior: smooth;
         ">
-            <div style="display: grid; gap: 1.25rem;">
+            <div style="display: grid; gap: 1.5rem;">
                 <!-- 1. Avatar -->
                 <div class="privacy-card">
                     <label class="privacy-label">
@@ -99,11 +99,11 @@
                         </span>
                         الصورة الشخصية
                     </label>
-                    <select id="privacyAvatar" class="privacy-select-opt">
-                        <option value="public">🌍 الكل</option>
-                        <option value="squad">👥 الشلة فقط</option>
-                        <option value="private">🔒 انا فقط</option>
-                    </select>
+                    <div class="choice-group" data-id="privacyAvatar">
+                        <button class="choice-btn" data-value="public">🌍 الكل</button>
+                        <button class="choice-btn" data-value="squad">👥 الشلة</button>
+                        <button class="choice-btn" data-value="private">🔒 أنا</button>
+                    </div>
                 </div>
 
                 <!-- 2. Bio -->
@@ -114,26 +114,26 @@
                         </span>
                         البايو
                     </label>
-                    <select id="privacyBio" class="privacy-select-opt">
-                        <option value="public">🌍 الكل</option>
-                        <option value="squad">👥 الشلة فقط</option>
-                        <option value="private">🔒 انا فقط</option>
-                    </select>
+                    <div class="choice-group" data-id="privacyBio">
+                        <button class="choice-btn" data-value="public">🌍 الكل</button>
+                        <button class="choice-btn" data-value="squad">👥 الشلة</button>
+                        <button class="choice-btn" data-value="private">🔒 أنا</button>
+                    </div>
                 </div>
 
-                <!-- 3. Level (Consolidated) -->
+                <!-- 3. Level -->
                 <div class="privacy-card">
                     <label class="privacy-label">
                         <span class="privacy-icon-wrapper">
                             <i class="fas fa-chart-line"></i>
                         </span>
-                        المستوى
+                        المستوى والإحصائيات
                     </label>
-                    <select id="privacyLevel" class="privacy-select-opt">
-                        <option value="public">🌍 الكل</option>
-                        <option value="squad">👥 الشلة فقط</option>
-                        <option value="private">🔒 انا فقط</option>
-                    </select>
+                    <div class="choice-group" data-id="privacyLevel">
+                        <button class="choice-btn" data-value="public">🌍 الكل</button>
+                        <button class="choice-btn" data-value="squad">👥 الشلة</button>
+                        <button class="choice-btn" data-value="private">🔒 أنا</button>
+                    </div>
                 </div>
 
                 <!-- 4. Squad -->
@@ -144,11 +144,25 @@
                         </span>
                         شلتي
                     </label>
-                    <select id="privacySquad" class="privacy-select-opt">
-                        <option value="public">🌍 الكل</option>
-                        <option value="squad">👥 الشلة فقط</option>
-                        <option value="private">🔒 انا فقط</option>
-                    </select>
+                    <div class="choice-group" data-id="privacySquad">
+                        <button class="choice-btn" data-value="public">🌍 الكل</button>
+                        <button class="choice-btn" data-value="squad">👥 الشلة</button>
+                        <button class="choice-btn" data-value="private">🔒 أنا</button>
+                    </div>
+                </div>
+
+                <!-- 5. Leaderboard Visibility -->
+                <div class="privacy-card">
+                    <label class="privacy-label">
+                        <span class="privacy-icon-wrapper">
+                            <i class="fas fa-trophy"></i>
+                        </span>
+                        الظهور في الأوائل
+                    </label>
+                    <div class="choice-group" data-id="privacyLeaderboard">
+                        <button class="choice-btn" data-value="true">✅ ظهور</button>
+                        <button class="choice-btn" data-value="false">🔒 إخفاء</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -269,35 +283,52 @@
         transform: rotate(-10deg);
     }
 
-    .privacy-select-opt {
-        width: 100%;
-        padding: 0.875rem 1rem;
-        border-radius: 12px;
-        border: 2px solid #f1f5f9;
-        background: #f8fafc;
-        color: #334155;
-        font-size: 0.95rem;
+    .choice-group {
+        display: flex;
+        gap: 8px;
+        background: #f1f5f9;
+        padding: 6px;
+        border-radius: 14px;
+        border: 1px solid #e2e8f0;
+    }
+
+    .choice-btn {
+        flex: 1;
+        padding: 10px 8px;
+        border: none;
+        background: transparent;
+        color: #64748b;
+        font-size: 0.85rem;
         font-weight: 700;
+        border-radius: 10px;
         cursor: pointer;
-        transition: all 0.2s ease;
-        -webkit-appearance: none;
-        appearance: none;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
-        background-repeat: no-repeat;
-        background-position: left 1rem center;
-        background-size: 1.25rem;
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         font-family: 'Cairo', sans-serif;
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
     }
 
-    .privacy-select-opt:focus {
-        outline: none;
-        border-color: #03A9F4;
+    .choice-btn:hover {
+        background: rgba(255, 255, 255, 0.5);
+        color: #1e293b;
+    }
+
+    .choice-btn.active {
         background: white;
-        box-shadow: 0 0 0 4px rgba(3, 169, 244, 0.1);
+        color: #03A9F4;
+        box-shadow: 0 4px 12px rgba(3, 169, 244, 0.12);
+        transform: scale(1.02);
     }
 
-    .privacy-select-opt option {
-        padding: 1rem;
-        font-weight: 600;
+    .choice-btn.active::before {
+        content: '';
+        width: 6px;
+        height: 6px;
+        background: #03A9F4;
+        border-radius: 50%;
+        display: inline-block;
     }
 </style>
