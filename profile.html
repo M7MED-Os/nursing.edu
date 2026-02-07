@@ -23,6 +23,105 @@
             max-width: 700px;
             margin: 2rem auto;
         }
+
+        /* Subscription Card Styles */
+        .sub-card {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            color: white;
+            padding: 2rem;
+            margin: 1.5rem;
+            border-radius: 24px;
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .sub-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .sub-icon-box {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(56, 189, 248, 0.4);
+            flex-shrink: 0;
+        }
+
+        .sub-info-grid {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .sub-item {
+            background: rgba(255, 255, 255, 0.08);
+            padding: 1rem;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+        }
+
+        .sub-dates-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .sub-timer-box {
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.2) 0%, rgba(14, 165, 233, 0.2) 100%);
+            padding: 1.25rem;
+            border-radius: 12px;
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .time-pill {
+            background: rgba(56, 189, 248, 0.3);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #38bdf8;
+            white-space: normal;
+            text-align: center;
+            line-height: 1.4;
+        }
+
+        /* Responsive Adjustments */
+        @media (max-width: 480px) {
+            .sub-card {
+                padding: 1.5rem 1rem;
+                margin: 1rem;
+            }
+
+            .sub-dates-container {
+                grid-template-columns: 1fr;
+            }
+
+            .sub-timer-box {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+            }
+
+            .time-pill {
+                width: 100%;
+            }
+
+            .sub-header h3 {
+                font-size: 1.1rem;
+            }
+        }
     </style>
 </head>
 
@@ -305,46 +404,19 @@
                 </div>
 
                 <!-- Subscription Card -->
-                <div id="subscriptionCard" style="
-                    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-                    color: white;
-                    padding: 2rem;
-                    margin: 1.5rem;
-                    border-radius: 24px;
-                    box-shadow: 0 12px 32px rgba(0,0,0,0.15);
-                    position: relative;
-                    overflow: hidden;
-                ">
-                    <!-- Decorative Background -->
-                    <div
-                        style="position: absolute; top: -80px; right: -80px; width: 250px; height: 250px; background: rgba(56, 189, 248, 0.1); border-radius: 50%; filter: blur(40px);">
-                    </div>
-                    <div
-                        style="position: absolute; bottom: -60px; left: -60px; width: 200px; height: 200px; background: rgba(251, 191, 36, 0.1); border-radius: 50%; filter: blur(40px);">
-                    </div>
-
+                <div id="subscriptionCard" class="sub-card">
                     <div style="position: relative; z-index: 1;">
                         <!-- Header -->
-                        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.5rem;">
-                            <div style="
-                                width: 48px;
-                                height: 48px;
-                                border-radius: 12px;
-                                background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
-                                display: flex;
-                                align-items: center;
-                                justify-content: center;
-                                box-shadow: 0 4px 12px rgba(56, 189, 248, 0.4);
-                            ">
+                        <div class="sub-header">
+                            <div class="sub-icon-box">
                                 <i class="fas fa-crown" style="font-size: 1.5rem; color: white;"></i>
                             </div>
-                            <h3 style="margin: 0; font-size: 1.25rem; font-weight: 700;">خطة الاشتراك الحالية</h3>
+                            <h3 style="margin: 0; font-weight: 700;">خطة الاشتراك الحالية</h3>
                         </div>
 
                         <!-- Info Grid -->
-                        <div style="display: grid; gap: 1rem;">
-                            <div
-                                style="background: rgba(255,255,255,0.08); padding: 1rem; border-radius: 12px; backdrop-filter: blur(10px);">
+                        <div class="sub-info-grid">
+                            <div class="sub-item">
                                 <div style="display: flex; justify-content: space-between; align-items: center;">
                                     <span style="opacity: 0.8; font-size: 0.9rem;">
                                         <i class="fas fa-gem" style="margin-left: 8px; color: #38bdf8;"></i>
@@ -354,13 +426,13 @@
                                 </div>
                             </div>
 
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                                <div style="background: rgba(255,255,255,0.08); padding: 1rem; border-radius: 12px;">
+                            <div class="sub-dates-container">
+                                <div class="sub-item">
                                     <div style="opacity: 0.7; font-size: 0.75rem; margin-bottom: 0.25rem;">تاريخ البدء
                                     </div>
                                     <div id="subStart" style="font-weight: 600; font-size: 0.9rem;">-</div>
                                 </div>
-                                <div style="background: rgba(255,255,255,0.08); padding: 1rem; border-radius: 12px;">
+                                <div class="sub-item">
                                     <div style="opacity: 0.7; font-size: 0.75rem; margin-bottom: 0.25rem;">تاريخ
                                         الانتهاء</div>
                                     <div id="subEnd" style="font-weight: 600; font-size: 0.9rem; color: #fbbf24;">-
@@ -368,22 +440,12 @@
                                 </div>
                             </div>
 
-                            <div
-                                style="background: linear-gradient(135deg, rgba(56, 189, 248, 0.2) 0%, rgba(14, 165, 233, 0.2) 100%); padding: 1.25rem; border-radius: 12px; border: 1px solid rgba(56, 189, 248, 0.3);">
-                                <div style="display: flex; justify-content: space-between; align-items: center;">
-                                    <span style="font-size: 0.9rem; display: flex; align-items: center; gap: 8px;">
-                                        <i class="fas fa-clock" style="color: #38bdf8;"></i>
-                                        باقي لك
-                                    </span>
-                                    <span id="timeLeft" style="
-                                        background: rgba(56, 189, 248, 0.3);
-                                        padding: 6px 14px;
-                                        border-radius: 20px;
-                                        font-size: 0.85rem;
-                                        font-weight: 700;
-                                        color: #38bdf8;
-                                    ">-</span>
-                                </div>
+                            <div class="sub-timer-box">
+                                <span style="font-size: 0.9rem; display: flex; align-items: center; gap: 8px;">
+                                    <i class="fas fa-clock" style="color: #38bdf8;"></i>
+                                    باقي لك
+                                </span>
+                                <span id="timeLeft" class="time-pill">-</span>
                             </div>
                         </div>
                     </div>

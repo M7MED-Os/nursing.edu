@@ -280,7 +280,7 @@ function checkActivationCelebration(profile) {
                     <strong style="color: #03A9F4; font-size: 1.3rem; display: block; margin-top: 5px;">${dateStr}</strong>
                 </div>
                 <div style="background: #f0f9ff; padding: 15px; border-radius: 12px; border: 2px dashed #03A9F4; color: #0288D1; font-weight: 800; font-size: 1rem;">
-                    كل المحتوى مفتوح و كل المميزات 🚀
+                   كل المحتوى و المميزات مفتوحه 🚀
                 </div>
             </div>
         `,
