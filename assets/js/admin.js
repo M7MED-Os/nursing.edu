@@ -283,6 +283,10 @@ window.loadStudents = async () => {
                 }
             })()}
                     
+                    <a href="student-profile.html?id=${s.id}" target="_blank" class="btn btn-primary btn-sm" style="width:34px; height:34px; display:flex; align-items:center; justify-content:center; padding:0; flex-shrink:0; background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd;" title="معاينة البروفايل">
+                        <i class="fas fa-eye" style="font-size:0.85rem;"></i>
+                    </a>
+
                     <button class="btn btn-primary btn-sm" style="width:34px; height:34px; display:flex; align-items:center; justify-content:center; padding:0; flex-shrink:0;" 
                             onclick="openEditStudent('${s.id}')" title="تعديل">
                         <i class="fas fa-pencil-alt" style="font-size:0.85rem;"></i>
@@ -1053,8 +1057,11 @@ async function loadSquadsAdmin() {
                 </button>
             </td>
             <td data-label="إجراءات">
-                <div style="display:flex; gap:8px; justify-content:center;">
-                    <button class="btn btn-sm" style="background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd; width:34px; height:34px; display:flex; align-items:center; justify-content:center; padding:0;" 
+                <div style="display:flex; gap:8px; justify-content: flex-end;">
+                    <a href="squad-profile.html?id=${s.id}" target="_blank" class="btn btn-sm" style="background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd; width:34px; height:34px; display:flex; align-items:center; justify-content:center; padding:0;" title="معاينة البروفايل">
+                        <i class="fas fa-eye"></i>
+                    </a>
+                    <button class="btn btn-sm" style="background:#f1f5f9; color:#475569; border:1px solid #e2e8f0; width:34px; height:34px; display:flex; align-items:center; justify-content:center; padding:0;" 
                             onclick="openEditSquadModal(${JSON.stringify(s).replace(/"/g, '&quot;')})" title="تعديل الشلة">
                         <i class="fas fa-edit"></i>
                     </button>
