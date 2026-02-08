@@ -253,15 +253,13 @@ function dismissBanner() {
 /**
  * Check if the user has a new activation and show celebration
  */
-function checkActivationCelebration(profile) {
+async function checkActivationCelebration(profile) {
     if (!profile || !profile.is_active || !profile.subscription_ends_at) return;
 
-    const storageKey = `last_activation_${profile.id}`;
-    const lastKnownActivation = localStorage.getItem(storageKey);
     const currentActivationValue = profile.subscription_ends_at;
 
-    // If we have a stored value and it matches, we've already shown it
-    if (lastKnownActivation === currentActivationValue) return;
+    // Use DB-backed persistence instead of localStorage to handle Incognito/Multiple devices
+    if (profile.last_activation_shown === currentActivationValue) return;
 
     // Show celebration
     const expiryDate = new Date(profile.subscription_ends_at);
@@ -270,6 +268,11 @@ function checkActivationCelebration(profile) {
         day: 'numeric',
         month: 'long'
     });
+
+    // Mark as shown in DB immediately
+    await supabase.from('profiles')
+        .update({ last_activation_shown: currentActivationValue })
+        .eq('id', profile.id);
 
     Swal.fire({
         title: '<span style="font-weight: 900; color: #1e293b; font-size: 1.6rem; display: block; margin-top: 5px;">حسابك اتفعل😘</span>',
@@ -318,8 +321,5 @@ function checkActivationCelebration(profile) {
                 }());
             }
         }
-    }).then(() => {
-        // Update localStorage so it doesn't show again until next activation
-        localStorage.setItem(storageKey, currentActivationValue);
     });
 }
