@@ -979,10 +979,11 @@ async function renderSubjects(userMetadata) {
 
     // Render sections
     let hasSubjects = false;
+    const isJuniorYear = (academic_year === 'first_year' || academic_year === 'second_year');
 
     // Section 1: Shared Subjects
     if (sharedSubjects.length > 0) {
-        renderSection("المواد المشتركة", sharedSubjects, grid);
+        renderSection(isJuniorYear ? null : "المواد المشتركة", sharedSubjects, grid);
         hasSubjects = true;
     }
 
@@ -996,7 +997,7 @@ async function renderSubjects(userMetadata) {
             'psychiatric': 'قسم النفسية'
         };
         const deptName = deptNames[department] || department;
-        renderSection(`مواد ${deptName}`, departmentSubjects, grid);
+        renderSection(isJuniorYear ? null : `مواد ${deptName}`, departmentSubjects, grid);
         hasSubjects = true;
     }
 
