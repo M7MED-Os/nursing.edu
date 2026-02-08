@@ -136,16 +136,16 @@ class SubscriptionService {
 
     /**
      * Check if user can access an exam
-     * @param {object} lesson - Parent lesson object with is_free_exam property
+     * @param {object} exam - Exam object with is_free property
      */
-    canAccessExam(lesson) {
-        if (!lesson) return false;
+    canAccessExam(exam) {
+        if (!exam) return false;
 
         // Premium users can access everything
         if (this.isPremium()) return true;
 
-        // Free users can only access free exams
-        return lesson.is_free_exam === true;
+        // Free users can only access free exams (independently)
+        return exam.is_free === true;
     }
 
     /**

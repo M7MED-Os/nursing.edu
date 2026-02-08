@@ -47,21 +47,19 @@ export async function renderExamQuestions(exam) {
         </div>
         
         <!-- Freemium Controls for Exam -->
-        ${exam.lesson_id ? `
         <div style="margin-bottom: 1.5rem; padding: 1rem; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; margin: 0;">
-                    <input type="checkbox" id="examFreemiumToggle" ${parentLesson?.is_free_exam ? 'checked' : ''} 
-                           onchange="window.saveExamFreemiumSetting('${exam.lesson_id}', this.checked)"
+                    <input type="checkbox" id="examFreemiumToggle" ${exam.is_free ? 'checked' : ''} 
+                           onchange="window.saveExamFreemiumSetting('${exam.id}', this.checked)"
                            style="width: 18px; height: 18px; cursor: pointer;">
                     <span style="font-size: 0.9rem; font-weight: 500;">
-                        <i class="fas fa-crown" style="color: #0ea5e9;"></i> مجاني
+                        <i class="fas fa-crown" style="color: #0ea5e9;"></i> امتحان مجاني (متاح للجميع)
                     </span>
                 </label>
-                <span style="font-size: 0.75rem; color: #64748b;">متاح لغير المشتركين</span>
+                <span style="font-size: 0.75rem; color: #64748b;">هذا الامتحان متاح لغير المشتركين بشكل مستقل</span>
             </div>
         </div>
-        ` : ''}
         
         <div style="background:white; padding:1.5rem; border-radius:var(--radius-md); border:1px solid var(--border-color); margin-bottom:2rem; box-shadow:0 1px 2px rgba(0,0,0,0.05);">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem;">
@@ -358,16 +356,16 @@ export async function deleteQuestion(qId, examId) {
 }
 
 /**
- * Save exam freemium setting
+ * Save exam freemium setting (Instant)
  */
-export async function saveExamFreemiumSetting(lessonId, isFree) {
-    const { error } = await supabase.from('lessons').update({ is_free_exam: isFree }).eq('id', lessonId);
+export async function saveExamFreemiumSetting(examId, isFree) {
+    const { error } = await supabase.from('exams').update({ is_free: isFree }).eq('id', examId);
 
     if (error) {
-        showErrorAlert('\u062e\u0637\u0623', '\u062a\u0639\u0630\u0631 \u062d\u0641\u0638 \u0627\u0644\u0625\u0639\u062f\u0627\u062f\u0627\u062a');
+        showErrorAlert('خطأ', 'تعذر حفظ إعدادات الامتحان');
         console.error(error);
     } else {
-        showSuccessAlert('\u062a\u0645 \u0627\u0644\u062d\u0641\u0638', '\u062a\u0645 \u062a\u062d\u062f\u064a\u062b \u0625\u0639\u062f\u0627\u062f\u0627\u062a \u0627\u0644\u0627\u0645\u062a\u062d\u0627\u0646', 1500);
+        showSuccessAlert('تم الحفظ', 'تم تحديث إعدادات الامتحان بنجاح', 1500);
     }
 }
 

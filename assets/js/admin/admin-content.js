@@ -191,13 +191,15 @@ export function openEditor(type, data) {
                         <i class="fas fa-crown" style="color: #0ea5e9;"></i> إعدادات الوصول
                     </h5>
                     <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; margin-bottom: 0;">
-                        <input type="checkbox" id="lessonContentFree" ${data.is_free ? 'checked' : ''} style="width: 18px; height: 18px; cursor: pointer;">
-                        <span style="font-size: 0.9rem;">مجاني</span>
+                        <input type="checkbox" id="lessonContentFree" ${data.is_free ? 'checked' : ''} 
+                               onchange="window.saveLessonFreemiumSetting('${data.id}', this.checked)"
+                               style="width: 18px; height: 18px; cursor: pointer;">
+                        <span style="font-size: 0.9rem;">محاضرة مجانية (متاحة للجميع)</span>
                     </label>
                 </div>
 
                 <button class="btn btn-primary w-100" onclick="window.saveLectureData('${data.id}')">
-                    <i class="fas fa-save"></i> حفظ المحتوى والفيديو
+                    <i class="fas fa-save"></i> حفظ الفيديو والنص
                 </button>
             </div>
 
@@ -262,14 +264,11 @@ export function openAddExamModal(parentType, parentId) {
             const payload = {
                 title: document.getElementById('eTitle').value,
                 time_limit: parseInt(document.getElementById('eTime').value) || 30,
-                subject_id: currentContext.subject.id
+                subject_id: currentContext.subject.id,
+                is_free: document.getElementById('examFree').checked // Save directly to exam
             };
             if (parentType === 'lesson') {
                 payload.lesson_id = parentId;
-                // Get lesson's is_free_exam setting from checkbox
-                const isFreeExam = document.getElementById('examFree').checked;
-                // Update the parent lesson's is_free_exam field
-                await supabase.from('lessons').update({ is_free_exam: isFreeExam }).eq('id', parentId);
             } else {
                 payload.chapter_id = parentId;
             }
@@ -343,23 +342,35 @@ export function openEditNodeModal(type, data) {
 }
 
 /**
- * Save lecture data (content + video + freemium settings)
+ * Save lecture data (content + video)
  */
 export async function saveLectureData(lessonId) {
     const content = document.getElementById('lessonContent').value;
     const videoUrl = document.getElementById('lessonVideoUrl').value;
-    const isFree = document.getElementById('lessonContentFree').checked;
 
     const { error } = await supabase.from('lessons').update({
         content: content,
-        video_url: videoUrl,
-        is_free: isFree
+        video_url: videoUrl
     }).eq('id', lessonId);
 
     if (error) {
         showErrorAlert('خطأ', 'تعذر حفظ البيانات: ' + error.message);
     } else {
-        showSuccessAlert('تم الحفظ', 'تم تحديث محتوى المحاضرة والإعدادات بنجاح', 1500);
+        showSuccessAlert('تم الحفظ', 'تم تحديث محتوى المحاضرة بنجاح', 1500);
+    }
+}
+
+/**
+ * Save lesson freemium setting (Instant)
+ */
+export async function saveLessonFreemiumSetting(lessonId, isFree) {
+    const { error } = await supabase.from('lessons').update({ is_free: isFree }).eq('id', lessonId);
+
+    if (error) {
+        showErrorAlert('خطأ', 'تعذر حفظ إعدادات الوصول');
+        console.error(error);
+    } else {
+        showSuccessAlert('تم الحفظ', 'تم تحديث إعدادات المحاضرة بنجاح', 1500);
     }
 }
 
@@ -371,3 +382,4 @@ window.openAddExamModal = openAddExamModal;
 window.deleteItem = deleteItem;
 window.openEditNodeModal = openEditNodeModal;
 window.saveLectureData = saveLectureData;
+window.saveLessonFreemiumSetting = saveLessonFreemiumSetting;

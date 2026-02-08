@@ -69,19 +69,20 @@ async function loadSubjectContent() {
             if (chaptersError) throw chaptersError;
             chapters = chaptersData;
 
-            // Fetch all lessons using RPC (with freemium filtering)
-            allLessons = [];
-            for (const chapter of chapters || []) {
-                const lessons = await subscriptionService.fetchAccessibleLessons(chapter.id);
-                allLessons = allLessons.concat(lessons.map(l => ({ ...l, chapter_id: chapter.id })));
-            }
+            // Fetch all lessons directly (independent of subscription for rendering)
+            const { data: lessonsData } = await supabase
+                .from('lessons')
+                .select('*')
+                .in('chapter_id', chapters.map(c => c.id))
+                .order('order_index');
+            allLessons = lessonsData || [];
 
-            // Fetch all exams
+            // Fetch all exams for this subject
             const { data: examsData, error: examsError } = await supabase
                 .from('exams')
                 .select('*')
                 .or(`subject_id.eq.${subjectId},lesson_id.in.(${allLessons.map(l => l.id).join(',') || 'null'})`)
-                .order('created_at');
+                .order('order_index');
 
             if (examsError) console.error('Exams error:', examsError);
             exams = examsData;
@@ -280,14 +281,9 @@ function renderContent(chapters, lessons, exams, container, mode, squadId, solve
             chapterLessons.forEach(lesson => {
                 const lessonExams = exams.filter(e => e.lesson_id === lesson.id);
 
-                // SECURITY: Use RPC-provided can_access flag (server-side security)
-                const canAccessLesson = lesson.can_access || false;
-
-                // For exams: check lesson's is_free_exam flag
-                // Note: RPC already filtered content, this is just for UI
-                const canAccessExam = lesson.can_access && lesson.is_free_exam ? true :
-                    lesson.can_access ? true :
-                        false;
+                // SECURITY: Check each item independently
+                const canAccessLesson = lesson.is_free || isPremium;
+                const canAccessExam = (exam) => exam.is_free || isPremium;
 
                 let examsHtml = "";
 
@@ -299,7 +295,9 @@ function renderContent(chapters, lessons, exams, container, mode, squadId, solve
                         const iconColor = (!isSquadMode && isSolved) ? '#10b981' : 'inherit';
                         const examTitle = exam.title || `نموذج أسئلة ${idx + 1}`;
 
-                        if (!canAccessExam) {
+                        const canExamOpen = canAccessExam(exam);
+
+                        if (!canExamOpen) {
                             // Locked exam
                             examsHtml += `
                                 <a href="javascript:void(0)" onclick="window.showLockedExamPopup()" class="exam-btn-sm locked">
@@ -362,10 +360,17 @@ function renderContent(chapters, lessons, exams, container, mode, squadId, solve
                 const iconColor = (!isSquadMode && isSolved) ? '#10b981' : 'inherit';
                 const examTitle = exam.title;
 
+                const canExamOpen = canAccessExam(exam);
+
                 if (isSquadMode) {
                     chapterExamsHtml += `
                         <a href="javascript:void(0)" onclick="selectSquadExam('${exam.id}', '${examTitle}', '${squadId}')" class="exam-btn-sm" style="background: var(--bg-light); border-color: var(--text-light); color: var(--text-dark);">
                             <i class="fas ${iconClass}"></i> ${examTitle}
+                        </a>`;
+                } else if (!canExamOpen) {
+                    chapterExamsHtml += `
+                        <a href="javascript:void(0)" onclick="window.showLockedExamPopup()" class="exam-btn-sm locked">
+                            <i class="fas fa-lock"></i> ${examTitle}
                         </a>`;
                 } else {
                     chapterExamsHtml += `
