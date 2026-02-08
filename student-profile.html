@@ -537,7 +537,7 @@
             }
 
             const { data: statsData } = await supabase.rpc('get_user_stats', { p_user_id: student.id });
-            const stats = statsData || {};
+            const stats = (statsData && statsData.length > 0) ? statsData[0] : {};
 
             const level = calculateLevel(student.points || 0);
             const totalExams = stats.total_exams || 0;
