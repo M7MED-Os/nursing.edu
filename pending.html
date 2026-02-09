@@ -341,8 +341,8 @@
             </div>
 
             <div class="cta-container">
-                <a href="https://wa.me/201117691093?text=%20أنا%دفعت%20الاشتراك%20وعاوز%20أفعل%20حسابي%20باسم:"
-                    target="_blank" class="btn-whatsapp">
+                <a href="https://wa.me/201117691093?text=عاوز%20افعل%20الاكونت%20بتاعي" target="_blank"
+                    class="btn-whatsapp" id="whatsappLink">
                     <i class="fab fa-whatsapp"></i>
                     تفعيل الحساب (ارسال الوصل)
                 </a>
@@ -358,6 +358,8 @@
     <script type="module">
         import { supabase } from "./assets/js/supabaseClient.js";
         import { clearCache } from "./assets/js/utils.js";
+
+        const whatsappLink = document.getElementById('whatsappLink');
 
         // نسخ الرقم بسهولة
         window.copyNumber = (num, el) => {
@@ -389,11 +391,17 @@
 
             // 1. Initial Check
             const { data: profile } = await supabase.from('profiles')
-                .select('is_active, subscription_ends_at')
+                .select('is_active, subscription_ends_at, full_name')
                 .eq('id', user.id)
                 .single();
 
             if (profile) {
+                // Update WhatsApp Link with Name
+                if (whatsappLink && profile.full_name) {
+                    const message = `عاوز افعل الاكونت بتاعي ب اسم ${profile.full_name}`;
+                    whatsappLink.href = `https://wa.me/201117691093?text=${encodeURIComponent(message)}`;
+                }
+
                 const now = new Date();
                 const expiry = profile.subscription_ends_at ? new Date(profile.subscription_ends_at) : null;
                 const isExpired = expiry && now > expiry;
