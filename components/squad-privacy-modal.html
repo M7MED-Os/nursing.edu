@@ -97,12 +97,12 @@
                         <span class="privacy-icon-wrapper-squad">
                             <i class="fas fa-camera"></i>
                         </span>
-                        صورة الشلة
+                        الصورة
                     </label>
-                    <select id="squadPrivacyAvatar" class="privacy-select-opt-squad">
-                        <option value="public">🌍 الكل</option>
-                        <option value="members">👥 الأعضاء فقط</option>
-                    </select>
+                    <div class="choice-group-squad" data-id="squadPrivacyAvatar">
+                        <button class="choice-btn-squad" data-value="public">🌍 الكل</button>
+                        <button class="choice-btn-squad" data-value="members">👥 الأعضاء</button>
+                    </div>
                 </div>
 
                 <!-- 2. Squad Bio -->
@@ -111,15 +111,15 @@
                         <span class="privacy-icon-wrapper-squad">
                             <i class="fas fa-quote-right"></i>
                         </span>
-                        نبذة الشلة
+                        البايو
                     </label>
-                    <select id="squadPrivacyBio" class="privacy-select-opt-squad">
-                        <option value="public">🌍 الكل</option>
-                        <option value="members">👥 الأعضاء فقط</option>
-                    </select>
+                    <div class="choice-group-squad" data-id="squadPrivacyBio">
+                        <button class="choice-btn-squad" data-value="public">🌍 الكل</button>
+                        <button class="choice-btn-squad" data-value="members">👥 الأعضاء</button>
+                    </div>
                 </div>
 
-                <!-- 3. Squad Level (Consolidated Stats & Progress) -->
+                <!-- 3. Squad Level -->
                 <div class="privacy-card-squad">
                     <label class="privacy-label-squad">
                         <span class="privacy-icon-wrapper-squad">
@@ -127,24 +127,52 @@
                         </span>
                         المستوى
                     </label>
-                    <select id="squadPrivacyLevel" class="privacy-select-opt-squad">
-                        <option value="public">🌍 الكل</option>
-                        <option value="members">👥 الأعضاء فقط</option>
-                    </select>
+                    <div class="choice-group-squad" data-id="squadPrivacyLevel">
+                        <button class="choice-btn-squad" data-value="public">🌍 الكل</button>
+                        <button class="choice-btn-squad" data-value="members">👥 الأعضاء</button>
+                    </div>
                 </div>
 
-                <!-- 4. Squad Members -->
+                <!-- 4. Squad Statistics -->
+                <div class="privacy-card-squad">
+                    <label class="privacy-label-squad">
+                        <span class="privacy-icon-wrapper-squad">
+                            <i class="fas fa-percentage"></i>
+                        </span>
+                        الإحصائيات
+                    </label>
+                    <div class="choice-group-squad" data-id="squadPrivacyStats">
+                        <button class="choice-btn-squad" data-value="public">🌍 الكل</button>
+                        <button class="choice-btn-squad" data-value="members">👥 الأعضاء</button>
+                    </div>
+                </div>
+
+                <!-- 5. Squad Members -->
                 <div class="privacy-card-squad">
                     <label class="privacy-label-squad">
                         <span class="privacy-icon-wrapper-squad">
                             <i class="fas fa-users"></i>
                         </span>
-                        قائمة الأعضاء
+                        قايمة الاعضاء
                     </label>
-                    <select id="squadPrivacyMembers" class="privacy-select-opt-squad">
-                        <option value="public">🌍 الكل</option>
-                        <option value="members">👥 الأعضاء فقط</option>
-                    </select>
+                    <div class="choice-group-squad" data-id="squadPrivacyMembers">
+                        <button class="choice-btn-squad" data-value="public">🌍 الكل</button>
+                        <button class="choice-btn-squad" data-value="members">👥 الأعضاء</button>
+                    </div>
+                </div>
+
+                <!-- 6. Leaderboard Visibility -->
+                <div class="privacy-card-squad">
+                    <label class="privacy-label-squad">
+                        <span class="privacy-icon-wrapper-squad">
+                            <i class="fas fa-trophy"></i>
+                        </span>
+                        الظهور في الأوائل
+                    </label>
+                    <div class="choice-group-squad" data-id="squadPrivacyLeaderboard">
+                        <button class="choice-btn-squad" data-value="true">✅ ظهور</button>
+                        <button class="choice-btn-squad" data-value="false">� إخفاء</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -156,39 +184,11 @@
             background: white;
             display: flex;
             flex-direction: column;
-            gap: 1rem;
+            gap: 1.25rem;
             flex-shrink: 0;
             box-shadow: 0 -10px 20px rgba(0,0,0,0.02);
         ">
-            <!-- Danger Actions Section -->
-            <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
-                <!-- Delete Squad Button (for owner/admin) -->
-                <button id="deleteSquadBtn" onclick="deleteSquad()" style="
-                    flex: 1;
-                    min-width: 140px;
-                    background: linear-gradient(135deg, #7f1d1d 0%, #450a0a 100%);
-                    border: none;
-                    color: white;
-                    padding: 0.75rem 1rem;
-                    border-radius: 12px;
-                    font-weight: 700;
-                    cursor: pointer;
-                    transition: all 0.3s ease;
-                    font-family: inherit;
-                    display: none;
-                    align-items: center;
-                    justify-content: center;
-                    gap: 0.5rem;
-                    font-size: 0.9rem;
-                    box-shadow: 0 4px 12px rgba(127, 29, 29, 0.35);
-                " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(127, 29, 29, 0.45)'"
-                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(127, 29, 29, 0.35)'">
-                    <i class="fas fa-trash-alt"></i>
-                    حذف الشلة نهائياً
-                </button>
-            </div>
-
-            <!-- Primary Actions Section -->
+            <!-- Primary Actions -->
             <div style="display: flex; gap: 1rem;">
                 <button onclick="closeSquadPrivacyModal()" style="
                     flex: 1;
@@ -225,6 +225,34 @@
                     onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 8px 24px rgba(3, 169, 244, 0.3)'">
                     <i class="fas fa-check-circle" style="font-size: 1.1rem;"></i>
                     حفظ التحديثات
+                </button>
+            </div>
+
+            <!-- Divider -->
+            <div style="height: 1px; background: #f1f5f9; width: 100%;"></div>
+
+            <!-- Danger Zone -->
+            <div style="display: flex; justify-content: center;">
+                <button id="deleteSquadBtn" onclick="deleteSquad()" style="
+                    width: 100%;
+                    background: #fff5f5;
+                    border: 1px solid #feb2b2;
+                    color: #c53030;
+                    padding: 0.75rem 1rem;
+                    border-radius: 12px;
+                    font-weight: 700;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                    font-family: inherit;
+                    display: none;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 0.6rem;
+                    font-size: 0.9rem;
+                " onmouseover="this.style.background='#feb2b2'; this.style.color='#9b2c2c'"
+                    onmouseout="this.style.background='#fff5f5'; this.style.color='#c53030'">
+                    <i class="fas fa-trash-alt"></i>
+                    حذف الشلة نهائياً
                 </button>
             </div>
         </div>
@@ -297,37 +325,52 @@
         transform: rotate(-10deg);
     }
 
-    .privacy-select-opt-squad {
-        width: 100%;
-        padding: 0.875rem 1rem;
-        border-radius: 12px;
-        border: 2px solid #f1f5f9;
-        background: #f8fafc;
-        color: #334155;
-        font-size: 0.95rem;
+    .choice-group-squad {
+        display: flex;
+        gap: 8px;
+        background: #f1f5f9;
+        padding: 6px;
+        border-radius: 14px;
+        border: 1px solid #e2e8f0;
+    }
+
+    .choice-btn-squad {
+        flex: 1;
+        padding: 10px 8px;
+        border: none;
+        background: transparent;
+        color: #64748b;
+        font-size: 0.85rem;
         font-weight: 700;
+        border-radius: 10px;
         cursor: pointer;
-        transition: all 0.2s ease;
-        -webkit-appearance: none;
-        appearance: none;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
-        background-repeat: no-repeat;
-        background-position: left 1rem center;
-        background-size: 1.25rem;
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         font-family: 'Cairo', sans-serif;
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
     }
 
-    .privacy-select-opt-squad:focus {
-        outline: none;
-        border-color: #03A9F4;
-        background: white;
-        box-shadow: 0 0 0 4px rgba(3, 169, 244, 0.1);
+    .choice-btn-squad:hover {
+        background: rgba(255, 255, 255, 0.5);
+        color: #1e293b;
     }
 
-    .privacy-select-opt-squad option {
+    .choice-btn-squad.active {
         background: white;
-        color: #334155;
-        padding: 1rem;
-        font-weight: 600;
+        color: #03A9F4;
+        box-shadow: 0 4px 12px rgba(3, 169, 244, 0.12);
+        transform: scale(1.02);
+    }
+
+    .choice-btn-squad.active::before {
+        content: '';
+        width: 6px;
+        height: 6px;
+        background: #03A9F4;
+        border-radius: 50%;
+        display: inline-block;
     }
 </style>

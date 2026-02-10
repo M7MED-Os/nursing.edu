@@ -140,6 +140,8 @@
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 1rem;
             margin-top: 2rem;
+            direction: ltr;
+            /* Force LTR for English stats */
         }
 
         .stat-card {
@@ -170,12 +172,14 @@
             font-weight: 900;
             color: var(--text-dark);
             margin: 0.5rem 0;
+            text-align: center;
         }
 
         .stat-label {
             font-size: 0.85rem;
             color: var(--text-light);
             font-weight: 600;
+            direction: ltr;
         }
 
         .profile-section {
@@ -184,6 +188,8 @@
             padding: 1.5rem;
             margin-top: 1.5rem;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            direction: ltr;
+            /* Force LTR for English sections */
         }
 
         .section-title {
@@ -194,6 +200,8 @@
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            direction: ltr;
+            /* Align with English titles */
         }
 
         .section-title i {
@@ -210,6 +218,8 @@
             text-decoration: none;
             color: var(--text-dark);
             transition: all 0.3s ease;
+            direction: ltr;
+            /* Force alignment for English meta */
         }
 
         .squad-link:hover {
@@ -227,6 +237,7 @@
 
         .squad-info {
             flex: 1;
+            text-align: left;
         }
 
         .squad-name {
@@ -352,7 +363,7 @@
         <div class="profile-section" id="squadSection" style="display: none;">
             <h3 class="section-title">
                 <i class="fas fa-users"></i>
-                الشلة الحالية
+                Current Squad
             </h3>
             <div id="squadContent"></div>
         </div>
@@ -470,6 +481,9 @@
             const showAvatar = ctx && isVisible(ctx.privacySettings.avatar, ctx.isOwner, ctx.isSameSquad);
             const showBio = ctx && isVisible(ctx.privacySettings.bio, ctx.isOwner, ctx.isSameSquad);
 
+            // Privacy check for level badge
+            const showProgress = ctx && isVisible(ctx.privacySettings.progress, ctx.isOwner, ctx.isSameSquad);
+
             // Avatar HTML
             let avatarHTML;
             if (showAvatar) {
@@ -478,7 +492,7 @@
                     <div class="profile-avatar-container">
                         <img src="${avatarUrl}" alt="${student.full_name}" class="profile-avatar" style="border-color: ${levelColor};">
                         <div class="profile-level-badge">
-                            ${levelBadgeHTML}
+                            ${showProgress ? levelBadgeHTML : ''}
                         </div>
                     </div>
                 `;
@@ -487,7 +501,7 @@
                     <div class="profile-avatar-container">
                         ${createLockedAvatar()}
                         <div class="profile-level-badge">
-                            ${levelBadgeHTML}
+                            ${showProgress ? levelBadgeHTML : ''}
                         </div>
                     </div>
                 `;
@@ -594,7 +608,30 @@
 
             if (membership && membership.squads) {
                 const squad = membership.squads;
-                const squadAvatar = squad.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(squad.name)}&background=10b981&color=fff&size=100`;
+
+                // Privacy check for squad avatar
+                // Check if viewer is in this squad
+                const { data: viewerMembership } = await supabase
+                    .from('squad_members')
+                    .select('squad_id')
+                    .eq('profile_id', (await supabase.auth.getUser()).data.user?.id)
+                    .eq('squad_id', squad.id)
+                    .maybeSingle();
+
+                const isMemberOfSquad = !!viewerMembership;
+                const showSquadAvatar = isVisible(squad.privacy_avatar || 'public', ctx.isOwner, isMemberOfSquad);
+
+                let squadAvatarHTML;
+                if (showSquadAvatar) {
+                    const avatarUrl = squad.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(squad.name)}&background=10b981&color=fff&size=100`;
+                    squadAvatarHTML = `<img src="${avatarUrl}" alt="${squad.name}" class="squad-avatar">`;
+                } else {
+                    squadAvatarHTML = `
+                        <div class="squad-avatar-locked" style="width: 50px; height: 50px; border-radius: 50%; background: #e2e8f0; display: flex; align-items: center; justify-content: center; color: #94a3b8;">
+                            <i class="fas fa-lock" style="font-size: 1.2rem;"></i>
+                        </div>
+                    `;
+                }
 
                 const { count: memberCount } = await supabase
                     .from('squad_members')
@@ -604,15 +641,15 @@
                 sectionEl.style.display = 'block';
                 contentEl.innerHTML = `
                     <a href="squad-profile.html?id=${squad.id}" class="squad-link">
-                        <img src="${squadAvatar}" alt="${squad.name}" class="squad-avatar">
+                        ${squadAvatarHTML}
                         <div class="squad-info">
                             <div class="squad-name">${squad.name}</div>
                             <div class="squad-meta">
-                                <i class="fas fa-users"></i> ${memberCount || 0} عضو
-                                • <i class="fas fa-trophy"></i> ${squad.points || 0} نقطة
+                                <i class="fas fa-users"></i> ${memberCount || 0} Members
+                                • <i class="fas fa-trophy"></i> ${squad.points || 0} Points
                             </div>
                         </div>
-                        <i class="fas fa-chevron-left"></i>
+                        <i class="fas fa-chevron-right"></i>
                     </a>
                 `;
             }

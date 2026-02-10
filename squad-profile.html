@@ -148,6 +148,8 @@
             grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
             gap: 1rem;
             margin-top: 2rem;
+            direction: ltr;
+            /* Force LTR for English stats */
         }
 
         .stat-card {
@@ -178,12 +180,15 @@
             font-weight: 900;
             color: var(--text-dark);
             margin: 0.5rem 0;
+            text-align: center;
         }
 
         .stat-label {
             font-size: 0.85rem;
             color: var(--text-light);
             font-weight: 600;
+            direction: ltr;
+            /* Align with English labels */
         }
 
         .members-section {
@@ -192,6 +197,8 @@
             padding: 1.5rem;
             margin-top: 1.5rem;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            direction: ltr;
+            /* Force LTR for English sections */
         }
 
         .section-title {
@@ -202,6 +209,7 @@
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            direction: ltr;
         }
 
         .section-title i {
@@ -225,6 +233,8 @@
             color: var(--text-dark);
             transition: all 0.3s ease;
             border: 2px solid transparent;
+            direction: rtl;
+            /* Keep card content RTL for Arabic labels */
         }
 
         .member-card:hover {
@@ -419,7 +429,7 @@
         <div class="members-section">
             <h3 class="section-title">
                 <i class="fas fa-users"></i>
-                أعضاء الشلة
+                Squad Members
             </h3>
             <div class="members-grid" id="membersGrid">
                 <!-- Will be populated by JS -->
@@ -430,7 +440,7 @@
         <div class="members-section" id="levelSection">
             <h3 class="section-title">
                 <i class="fas fa-chart-line"></i>
-                التقدم في المستوى
+                Squad Level Progress
             </h3>
             <div id="levelProgress"></div>
         </div>
@@ -543,20 +553,28 @@
 
             const headerEl = document.getElementById('squadHeader');
             if (headerEl) {
-                // Avatar HTML
+                // Privacy check for level badge
+                const showProgress = ctx && isVisible(ctx.privacySettings.progress, ctx.isOwner, ctx.isMember);
+
+                // Avatar & Level Badge HTML
                 let avatarHTML;
+                const badgeHTML = showProgress ? `<div class="squad-level-badge">${levelBadgeHTML}</div>` : '';
+
                 if (showAvatar) {
                     const avatarUrl = squad.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(squad.name)}&background=10b981&color=fff&size=200`;
                     avatarHTML = `
-                        <div class="squad-avatar-container">
-                            <img src="${avatarUrl}" alt="${squad.name}" class="squad-avatar" style="border-color: ${levelColor};">
-                            <div class="squad-level-badge">
-                                ${levelBadgeHTML}
-                            </div>
-                        </div>
-                    `;
+                    <div class="squad-avatar-container">
+                        <img src="${avatarUrl}" alt="${squad.name}" class="squad-avatar" style="border-color: ${levelColor};">
+                        ${badgeHTML}
+                    </div>
+                `;
                 } else {
-                    avatarHTML = createLockedAvatar();
+                    avatarHTML = `
+                    <div class="squad-avatar-container">
+                        ${createLockedAvatar()}
+                        ${badgeHTML}
+                    </div>
+                `;
                 }
 
                 // Bio HTML
@@ -621,22 +639,22 @@
                 <div class="stat-card">
                     <div class="stat-icon"><i class="fas fa-trophy"></i></div>
                     <div class="stat-value">${squad.points || 0}</div>
-                    <div class="stat-label">النقاط الإجمالية</div>
+                    <div class="stat-label">Points</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-icon"><i class="fas fa-star"></i></div>
                     <div class="stat-value">${level}</div>
-                    <div class="stat-label">مستوى الشلة</div>
+                    <div class="stat-label">Squad Level</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-icon"><i class="fas fa-users"></i></div>
                     <div class="stat-value">${memberCount || 0}</div>
-                    <div class="stat-label">عدد الأعضاء</div>
+                    <div class="stat-label">Members</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
                     <div class="stat-value">${challengesCount || 0}</div>
-                    <div class="stat-label">التحديات المنجزة</div>
+                    <div class="stat-label">Challenges</div>
                 </div>
             `;
         }
@@ -725,7 +743,7 @@
                                 </div>
                             </div>
                         </div>
-                        ${isSquadOwner ? '<span class="owner-badge"><i class="fas fa-crown"></i> المالك</span>' : ''}
+                        ${isSquadOwner ? '<span class="owner-badge" style="display: none;"><i class="fas fa-crown"></i> المالك</span>' : ''}
                     </a>
                 `;
             }).join('');

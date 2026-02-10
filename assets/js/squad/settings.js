@@ -368,13 +368,29 @@ window.closeSquadPrivacyModal = function () {
     }
 };
 
+// Choice Chip Logic for Squad Modal
+document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.choice-btn-squad');
+    if (btn) {
+        const group = btn.closest('.choice-group-squad');
+        if (group) {
+            group.querySelectorAll('.choice-btn-squad').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            if (window.navigator && window.navigator.vibrate) {
+                window.navigator.vibrate(5);
+            }
+        }
+    }
+});
+
 async function loadSquadPrivacySettings() {
     if (!currentSquad) return;
 
     try {
         const { data: squad } = await supabase
             .from('squads')
-            .select('privacy_avatar, privacy_bio, privacy_stats, privacy_members, privacy_progress')
+            .select('privacy_avatar, privacy_bio, privacy_stats, privacy_members, privacy_progress, show_on_leaderboard')
             .eq('id', currentSquad.id)
             .single();
 
@@ -382,18 +398,35 @@ async function loadSquadPrivacySettings() {
             // Update currentSquad object locally
             Object.assign(currentSquad, squad);
 
-            // Wait for modal DOM to be ready
-            setTimeout(() => {
-                const avatarEl = document.getElementById('squadPrivacyAvatar');
-                const bioEl = document.getElementById('squadPrivacyBio');
-                const levelEl = document.getElementById('squadPrivacyLevel');
-                const membersEl = document.getElementById('squadPrivacyMembers');
+            // Set active classes for choice buttons
+            const groups = ['squadPrivacyAvatar', 'squadPrivacyBio', 'squadPrivacyLevel', 'squadPrivacyStats', 'squadPrivacyMembers'];
+            groups.forEach(groupId => {
+                const group = document.querySelector(`.choice-group-squad[data-id="${groupId}"]`);
+                if (group) {
+                    // Map internal names
+                    let colName = groupId.replace('squadPrivacy', 'privacy_').toLowerCase();
+                    if (groupId === 'squadPrivacyLevel') colName = 'privacy_progress';
+                    if (groupId === 'squadPrivacyStats') colName = 'privacy_stats';
 
-                if (avatarEl) avatarEl.value = squad.privacy_avatar || 'public';
-                if (bioEl) bioEl.value = squad.privacy_bio || 'public';
-                if (levelEl) levelEl.value = squad.privacy_stats || 'public';
-                if (membersEl) membersEl.value = squad.privacy_members || 'public';
-            }, 50);
+                    const val = squad[colName] || 'public';
+                    const btn = group.querySelector(`.choice-btn-squad[data-value="${val}"]`);
+                    if (btn) {
+                        group.querySelectorAll('.choice-btn-squad').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                    }
+                }
+            });
+
+            // Leaderboard
+            const lbGroup = document.querySelector('.choice-group-squad[data-id="squadPrivacyLeaderboard"]');
+            if (lbGroup) {
+                const val = squad.show_on_leaderboard === false ? 'false' : 'true';
+                const btn = lbGroup.querySelector(`.choice-btn-squad[data-value="${val}"]`);
+                if (btn) {
+                    lbGroup.querySelectorAll('.choice-btn-squad').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                }
+            }
         }
     } catch (err) {
         console.error('Error loading squad privacy:', err);
@@ -403,25 +436,30 @@ async function loadSquadPrivacySettings() {
 window.saveSquadPrivacySettings = async function () {
     if (!currentSquad) return;
 
-    const levelValue = document.getElementById('squadPrivacyLevel').value;
-    const updates = {
-        privacy_avatar: document.getElementById('squadPrivacyAvatar').value,
-        privacy_bio: document.getElementById('squadPrivacyBio').value,
-        privacy_stats: levelValue,
-        privacy_progress: levelValue,
-        privacy_members: document.getElementById('squadPrivacyMembers').value
+    const getChoice = (id) => {
+        const active = document.querySelector(`.choice-group-squad[data-id="${id}"] .choice-btn-squad.active`);
+        return active ? active.dataset.value : null;
+    };
+
+    const squadSettings = {
+        privacy_avatar: getChoice('squadPrivacyAvatar'),
+        privacy_bio: getChoice('squadPrivacyBio'),
+        privacy_progress: getChoice('squadPrivacyLevel'),
+        privacy_stats: getChoice('squadPrivacyStats'),
+        privacy_members: getChoice('squadPrivacyMembers'),
+        show_on_leaderboard: getChoice('squadPrivacyLeaderboard') === 'true'
     };
 
     try {
         const { error } = await supabase
             .from('squads')
-            .update(updates)
+            .update(squadSettings)
             .eq('id', currentSquad.id);
 
         if (error) throw error;
 
         // Update local state
-        Object.assign(currentSquad, updates);
+        Object.assign(currentSquad, squadSettings);
 
         window.closeSquadPrivacyModal();
 

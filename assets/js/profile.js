@@ -456,12 +456,15 @@ async function loadPrivacySettings() {
             // Wait for modal to load if needed
             setTimeout(() => {
                 // Set active classes for choice buttons
-                const groups = ['privacyAvatar', 'privacyBio', 'privacyLevel', 'privacySquad'];
+                const groups = ['privacyAvatar', 'privacyBio', 'privacyLevel', 'privacyStats', 'privacySquad'];
                 groups.forEach(groupId => {
                     const group = document.querySelector(`.choice-group[data-id="${groupId}"]`);
                     if (group) {
-                        // Map privacyLevel to privacy_stats column
-                        const colName = groupId === 'privacyLevel' ? 'privacy_stats' : groupId.replace('privacy', 'privacy_').toLowerCase();
+                        // Map privacyLevel to privacy_progress and privacyStats to privacy_stats
+                        let colName = groupId.replace('privacy', 'privacy_').toLowerCase();
+                        if (groupId === 'privacyLevel') colName = 'privacy_progress';
+                        if (groupId === 'privacyStats') colName = 'privacy_stats';
+
                         const val = profile[colName] || 'public';
                         const btn = group.querySelector(`.choice-btn[data-value="${val}"]`);
                         if (btn) {
@@ -499,8 +502,8 @@ window.savePrivacySettings = async function () {
     const privacySettings = {
         privacy_avatar: getChoice('privacyAvatar'),
         privacy_bio: getChoice('privacyBio'),
-        privacy_stats: getChoice('privacyLevel'),
         privacy_progress: getChoice('privacyLevel'),
+        privacy_stats: getChoice('privacyStats'),
         privacy_squad: getChoice('privacySquad'),
         show_on_leaderboard: getChoice('privacyLeaderboard') === 'true'
     };

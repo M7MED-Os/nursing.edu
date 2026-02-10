@@ -114,7 +114,7 @@ export function createLevelProgress(currentPoints, multiplier = LEVEL_MULTIPLIER
                 <div style="
                     width: ${meta.progress}%;
                     height: 100%;
-                    background: linear-gradient(to left, ${meta.color} 0%, ${meta.nextColor} 100%);
+                    background: linear-gradient(to right, ${meta.color} 0%, ${meta.nextColor} 100%);
                     border-radius: 10px;
                     transition: width 0.3s ease;
                     box-shadow: 0 0 10px ${meta.color}40;
