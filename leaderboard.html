@@ -631,7 +631,7 @@
         }
 
         .pinned-rank-score {
-            text-align: left;
+            text-align: center;
         }
 
         .pinned-rank-score b {
@@ -1094,7 +1094,16 @@
                     const year = getAcademicYearLabel(s.academic_year);
                     subInfo = dept ? `${year} - ${dept}` : year;
                 } else {
-                    subInfo = getAcademicYearLabel(s.academic_year) || 'شلة دفعة';
+                    const dept = getDepartmentLabel(s.department);
+                    const year = getAcademicYearLabel(s.academic_year);
+                    // For squads: Show Year - Dept for 3rd/4th years, just year for others (no departments)
+                    if ((s.academic_year === 'third_year' || s.academic_year === 'fourth_year') && dept) {
+                        subInfo = `${year} - ${dept}`;
+                    } else if (s.academic_year === 'first_year' || s.academic_year === 'second_year') {
+                        subInfo = year;
+                    } else {
+                        subInfo = year || '';
+                    }
                 }
 
                 // Unified Privacy check for avatar
@@ -1283,7 +1292,7 @@
             // Note: userRank is calculated based on the returned data list
             if (userRank === 0) {
                 // User is not in top students list
-                const motivationMsg = `باقي لك شوية مجهود وتدخل القائمة!`;
+                const motivationMsg = `حل امتحانات اكتر عشان تظهر في القايمة. باقيلك:`;
 
                 const bar = document.createElement('div');
                 bar.className = 'pinned-rank-bar';
