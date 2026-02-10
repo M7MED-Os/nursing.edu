@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>المحاضرة | تمريض بنها</title>
     <link rel="stylesheet" href="assets/css/style.css">
-    <link rel="stylesheet" href="assets/css/style.css">
     <link rel="manifest" href="manifest.json">
 
     <!-- Favicons -->
@@ -32,9 +31,7 @@
             --card-radius: 16px;
         }
 
-        body {
-            background-color: var(--bg-body);
-        }
+
 
         /* Reading Progress Bar */
         .reading-progress {
@@ -674,8 +671,24 @@
             box-shadow: var(--shadow-md);
         }
 
+        /* Specialized Scrollbar for Tables */
+        .table-wrapper::-webkit-scrollbar {
+            height: 8px;
+        }
+
+        .table-wrapper::-webkit-scrollbar-thumb {
+            background: rgba(30, 179, 245, 0.2);
+            border: 2px solid #ffffff;
+        }
+
+        .table-wrapper::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-color);
+        }
+
         table {
             width: 100%;
+            min-width: 600px;
+            /* Forces scroll on small screens */
             border-collapse: separate;
             border-spacing: 0;
             margin: 0;

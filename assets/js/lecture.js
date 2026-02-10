@@ -72,6 +72,7 @@ async function loadLecture(lessonId) {
         if (lesson.content) {
             lectureContent.innerHTML = lesson.content;
             // Post-process content for enhanced UI
+            wrapTables(lectureContent);
             wrapBilingualCards(lectureContent);
             generateTOC(lectureContent);
             initFocusMode();
@@ -164,6 +165,22 @@ function wrapBilingualCards(container) {
             i++;
         }
     }
+}
+
+/**
+ * Automatically wrap tables in .table-wrapper for horizontal scroll
+ */
+function wrapTables(container) {
+    const tables = container.querySelectorAll('table');
+    tables.forEach(table => {
+        // Only wrap if not already wrapped
+        if (!table.parentElement.classList.contains('table-wrapper')) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'table-wrapper';
+            table.parentNode.insertBefore(wrapper, table);
+            wrapper.appendChild(table);
+        }
+    });
 }
 
 /**
