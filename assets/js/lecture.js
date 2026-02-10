@@ -71,6 +71,10 @@ async function loadLecture(lessonId) {
         // ✅ STEP 3: Display content (already filtered by RPC)
         if (lesson.content) {
             lectureContent.innerHTML = lesson.content;
+            // Post-process content for enhanced UI
+            wrapBilingualCards(lectureContent);
+            generateTOC(lectureContent);
+            initFocusMode();
         } else {
             lectureContent.innerHTML = '<p style="text-align: center; color: #64748b;">لا يوجد محتوى متاح</p>';
         }
@@ -137,6 +141,113 @@ async function loadLecture(lessonId) {
             window.location.href = 'dashboard.html';
         });
     }
+}
+
+/**
+ * Wrap adjacent .en and .ar paragraphs into a single .translation-card
+ */
+function wrapBilingualCards(container) {
+    const children = Array.from(container.children);
+    let i = 0;
+    while (i < children.length) {
+        const current = children[i];
+        const next = children[i + 1];
+
+        if (current.classList.contains('en') && next && next.classList.contains('ar')) {
+            const card = document.createElement('div');
+            card.className = 'translation-card';
+            container.insertBefore(card, current);
+            card.appendChild(current);
+            card.appendChild(next);
+            i += 2;
+        } else {
+            i++;
+        }
+    }
+}
+
+/**
+ * Generate Dynamic Table of Contents
+ */
+function generateTOC(container) {
+    const headers = container.querySelectorAll('h2, h3');
+    const tocContainer = document.getElementById('tocContainer');
+    const tocList = document.getElementById('tocList');
+    const tocOverlay = document.getElementById('tocOverlay');
+    const tocToggleBtn = document.getElementById('tocToggleBtn');
+
+    if (headers.length < 2) {
+        if (tocContainer) tocContainer.style.display = 'none';
+        if (tocToggleBtn) tocToggleBtn.style.display = 'none';
+        return;
+    }
+
+    if (tocContainer) tocContainer.style.display = 'block';
+    if (tocList) tocList.innerHTML = '';
+
+    headers.forEach((header, index) => {
+        if (!header.id) header.id = `section-${index}`;
+        const item = document.createElement('div');
+        item.className = 'toc-item';
+        const link = document.createElement('a');
+        link.href = `#${header.id}`;
+        link.className = `toc-link ${header.tagName.toLowerCase()}-link`;
+        link.textContent = header.innerText.split('\n')[0].trim();
+        link.onclick = (e) => {
+            e.preventDefault();
+            closeTOC();
+            const offset = 120;
+            const elementPosition = header.getBoundingClientRect().top;
+            const offsetPosition = elementPosition + window.pageYOffset - offset;
+            window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
+        };
+        item.appendChild(link);
+        tocList.appendChild(item);
+    });
+
+    const openTOC = () => {
+        if (!tocContainer || !tocOverlay) return;
+        tocContainer.classList.add('open');
+        tocOverlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    };
+
+    const closeTOC = () => {
+        if (!tocContainer || !tocOverlay) return;
+        tocContainer.classList.remove('open');
+        tocOverlay.classList.remove('active');
+        document.body.style.overflow = '';
+    };
+
+    if (tocToggleBtn) tocToggleBtn.onclick = openTOC;
+    if (tocOverlay) tocOverlay.onclick = closeTOC;
+
+    window.addEventListener('scroll', () => {
+        let current = '';
+        const scrollPos = window.pageYOffset + 150;
+        headers.forEach(header => {
+            if (scrollPos > header.offsetTop) current = header.id;
+        });
+        document.querySelectorAll('.toc-link').forEach(link => {
+            link.classList.remove('active');
+            if (link.getAttribute('href') === `#${current}`) link.classList.add('active');
+        });
+    });
+}
+
+/**
+ * Initialize Focus Mode
+ */
+function initFocusMode() {
+    const btn = document.getElementById('focusModeBtn');
+    if (!btn) return;
+
+    btn.onclick = () => {
+        const isActive = document.body.classList.toggle('focus-mode');
+        btn.classList.toggle('active');
+        btn.querySelector('span').textContent = isActive ? 'Unfocus' : 'Focus';
+        btn.querySelector('i').className = isActive ? 'fas fa-compress' : 'fas fa-expand';
+    };
 }
 
 /**
