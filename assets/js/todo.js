@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Todo List Manager - V4.2 (Subtask Popup Updated)
  */
 import { supabase } from "./supabaseClient.js";
@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const progressBar = document.getElementById('progressBarFill');
     const progressPercent = document.getElementById('progressPercentage');
     const summaryText = document.getElementById('taskCountSummary');
-    const greetingText = document.getElementById('greetingText');
+    const greetingTitle = document.getElementById('greetingTitle');
 
     // Modals
     const deleteModal = document.getElementById('deleteModal');
@@ -33,6 +33,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     let editingTarget = { tIdx: null, sIdx: null }; // Track what is being edited
     let deletionTarget = { tIdx: null, sIdx: null }; // Track what is being deleted
     let addingSubTarget = null; // Track which task we are adding a subtask to (index)
+    let collapsedTasks = {}; // Store collapse state by task ID
 
     const init = async () => {
         // Check premium/freemium access for tasks
@@ -47,7 +48,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const { data: profile } = await supabase
             .from('profiles')
-            .select('is_active')
+            .select('is_active, full_name')
             .eq('id', user.id)
             .single();
 
@@ -69,9 +70,21 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        // Greeting logic removed as new header is used
-        // const greetings = ["صباح الخير يا بطل! 🌞", "جاهز لإنجاز أهدافك؟ ✨", "يوم جديد.. بداية قوية! 💪", "ركز على هدفك اليوم 🎯"];
-        // if (greetingText) greetingText.textContent = greetings[Math.floor(Math.random() * greetings.length)];
+        // Personalized Dynamic Greeting
+        if (greetingTitle) {
+            const hour = new Date().getHours();
+            const fullName = profile?.full_name || 'يا بطل';
+            const firstName = fullName.split(' ')[0];
+            let timeGreeting = '';
+
+            if (hour >= 5 && hour < 12) {
+                timeGreeting = 'صباح الخير';
+            } else {
+                timeGreeting = 'مساء الخير';
+            }
+            greetingTitle.textContent = `${timeGreeting} يا ${firstName}`;
+        }
+
         await loadTasksFromDB();
     };
 
@@ -91,17 +104,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         tasks = data || [];
-        renderTasks();
+        renderTasks(true);
     };
 
-    const renderTasks = () => {
+    const renderTasks = (isInitial = false) => {
         todoList.innerHTML = '';
         if (tasks.length === 0) {
             emptyState.style.display = 'flex';
         } else {
             emptyState.style.display = 'none';
             tasks.forEach((task, index) => {
-                todoList.appendChild(createTaskElement(task, index));
+                const el = createTaskElement(task, index);
+                if (isInitial) {
+                    el.classList.add('entrance-anim');
+                    el.style.animationDelay = `${index * 50}ms`;
+                }
+                todoList.appendChild(el);
             });
         }
         updateGlobalProgress();
@@ -109,48 +127,73 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const createTaskElement = (task, index) => {
         const card = document.createElement('div');
-        card.className = `task-card ${task.completed ? 'completed' : ''}`;
-        card.dataset.color = index % 5;
+        const colorClass = `task-color-${(index % 6) + 1}`;
+        card.className = `task-row ${task.completed ? 'completed' : ''} ${colorClass}`;
+        card.dataset.id = task.id;
 
-        // Subtasks Logic
+        const subtasks = task.subtasks || [];
+        const completedSubs = subtasks.filter(s => s.completed).length;
+        const hasSubs = subtasks.length > 0;
+
+        // Subtask Progress Indicator
+        const progressHTML = hasSubs ? `
+            <span class="row-progress">${completedSubs}/${subtasks.length}</span>
+        ` : '';
+
+        // Subtasks Markup
         let subtasksHTML = '';
-        if (task.subtasks && task.subtasks.length > 0) {
-            subtasksHTML = `<div class="subtasks-wrapper">`;
-            (task.subtasks || []).forEach((sub, subIndex) => {
-                subtasksHTML += `
-                        <div class="subtask-item ${sub.completed ? 'completed' : ''}">
-                            <div class="sub-checkbox" onclick="window.toggleSubtask(${index}, ${subIndex})">
-                                <i class="fas fa-check"></i>
+        if (hasSubs) {
+            subtasksHTML = `
+                <div class="row-subtasks">
+                    ${subtasks.map((sub, sIdx) => `
+                        <div class="sub-row ${sub.completed ? 'completed' : ''}">
+                            <div class="check-area">
+                                <div class="sub-check" onclick="window.toggleSubtask(${index}, ${sIdx})">
+                                    <div class="custom-check"><i class="fas fa-check"></i></div>
+                                </div>
                             </div>
-                            <span class="sub-text" onclick="window.toggleSubtask(${index}, ${subIndex})">${sub.text}</span>
-                            <div class="task-actions">
-                                <button class="action-btn" onclick="window.startEdit(${index}, ${subIndex})" title="تعديل"><i class="fas fa-edit"></i></button>
-                                <button class="action-btn delete" onclick="window.deleteSubtask(${index}, ${subIndex})" title="حذف"><i class="fas fa-trash-alt"></i></button>
+                            <div class="sub-content" onclick="window.toggleSubtask(${index}, ${sIdx})">
+                                <span class="sub-text" dir="auto">${sub.text}</span>
+                            </div>
+                            <div class="sub-actions">
+                                <button class="btn-icon" onclick="window.startEdit(${index}, ${sIdx})" title="تعديل"><i class="fas fa-pen"></i></button>
+                                <button class="btn-icon delete" onclick="window.deleteSubtask(${index}, ${sIdx})" title="حذف"><i class="fas fa-trash"></i></button>
                             </div>
                         </div>
-                `;
-            });
-            subtasksHTML += `</div>`;
+                    `).join('')}
+                </div>
+            `;
         }
 
         card.innerHTML = `
-            <div class="task-main">
-                <div class="task-checkbox-wrapper" onclick="window.toggleTask(${index})">
-                    <div class="task-checkbox">
-                        <i class="fas fa-check"></i>
+            <div class="row-main">
+                <div class="check-area">
+                    <div class="row-check" onclick="window.toggleTask(${index})">
+                        <div class="custom-check"><i class="fas fa-check"></i></div>
                     </div>
                 </div>
-                <div class="task-text" onclick="window.toggleTask(${index})">${task.text}</div>
-                <div class="task-actions">
-                    <button class="action-btn add-sub" onclick="window.startAddSub(${index})" title="إضافة مهمة فرعية"><i class="fas fa-plus"></i></button>
-                    <button class="action-btn" onclick="window.startEdit(${index}, null)" title="تعديل"><i class="fas fa-edit"></i></button>
-                    <button class="action-btn delete" onclick="window.deleteTask(${index})" title="حذف"><i class="fas fa-trash-alt"></i></button>
+                <div class="row-content" onclick="window.toggleTask(${index})">
+                    <div class="row-title-bar">
+                        <span class="row-text" dir="auto">${task.text}</span>
+                        ${progressHTML}
+                    </div>
+                </div>
+                <div class="row-actions">
+                    <button class="btn-icon add" onclick="window.startAddSub(${index})" title="مهمة فرعية"><i class="fas fa-plus"></i></button>
+                    <button class="btn-icon" onclick="window.startEdit(${index}, null)" title="تعديل"><i class="fas fa-pen"></i></button>
+                    <button class="btn-icon delete" onclick="window.deleteTask(${index})" title="حذف"><i class="fas fa-trash"></i></button>
                 </div>
             </div>
             ${subtasksHTML}
         `;
 
         return card;
+    };
+
+    // Global function to toggle collapse state
+    window.toggleCollapse = (taskId) => {
+        collapsedTasks[taskId] = !collapsedTasks[taskId];
+        renderTasks();
     };
 
     // --- Core Operations ---
@@ -174,7 +217,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         tasks.unshift(data);
         mainInput.value = '';
-        renderTasks();
+        renderTasks(true); // Animate on new add
     };
 
     window.toggleTask = async (index) => {
@@ -383,14 +426,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         progressBar.style.width = `${percentage}%`;
         progressPercent.textContent = `${percentage}%`;
         if (percentage === 100) {
-            summaryText.textContent = "عاش يا بطل! خلصت كل اللي عليك🏆";
+            summaryText.textContent = "عاش يا بطل! خلصت كل اللي عليك انهارده😘";
             // Trigger custom massive celebration once per session
             if (sessionStorage.getItem('todo_100_celebration') !== 'true') {
                 triggerCelebration('massive');
                 sessionStorage.setItem('todo_100_celebration', 'true');
             }
         } else {
-            summaryText.textContent = "ذاكر و خلص اللي وراك🌟";
+            summaryText.textContent = "ذاكر و خلص كل اللي وراك";
             sessionStorage.removeItem('todo_100_celebration');
         }
     };
@@ -408,6 +451,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         const btn = document.getElementById('startPomodoroBtn');
         if (btn) btn.onclick = startPomodoroFlow;
 
+        const cancelDurBtn = document.getElementById('cancelDuration');
+        if (cancelDurBtn) {
+            cancelDurBtn.onclick = () => {
+                document.getElementById('durationModal').style.display = 'none';
+            };
+        }
         // Check for running timer in localStorage
         const savedEnd = localStorage.getItem('personal_pomodoro_end');
         if (savedEnd) {
@@ -415,7 +464,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (parseInt(savedEnd) > now) {
                 pomodoroEndTime = parseInt(savedEnd);
                 startLocalTimerDisplay();
-                btn.textContent = 'إيقاف المذاكرة 🛑';
+                btn.textContent = 'إيقاف المذاكرة';
                 btn.onclick = stopPomodoro;
             } else {
                 localStorage.removeItem('personal_pomodoro_end');
@@ -423,29 +472,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
-    const startPomodoroFlow = async () => {
-        const { value: duration } = await Swal.fire({
-            title: 'مدة المذاكرة؟ ⏱️',
-            input: 'select',
-            inputOptions: {
-                '25': '25 دقيقة',
-                '50': '50 دقيقة',
-                '60': 'ساعة كاملة',
-                '90': 'ساعة ونصف',
-                '120': 'ساعتين',
-                '150': 'ساعتين ونصف',
-                '180': '3 ساعات',
-                '210': '3 ساعات ونصف',
-                '240': '4 ساعات',
-            },
-            inputPlaceholder: 'اختار الوقت...',
-            showCancelButton: true,
-            confirmButtonText: 'ابدأ',
-            cancelButtonText: 'إلغاء'
-        });
+    const startPomodoroFlow = () => {
+        const modal = document.getElementById('durationModal');
+        if (modal) modal.style.display = 'flex';
+    };
 
-        if (!duration) return;
-
+    window.selectDuration = (duration) => {
         const durationMs = parseInt(duration) * 60 * 1000;
         pomodoroEndTime = Date.now() + durationMs;
         localStorage.setItem('personal_pomodoro_end', pomodoroEndTime);
@@ -453,10 +485,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         startLocalTimerDisplay();
 
         const btn = document.getElementById('startPomodoroBtn');
-        btn.textContent = 'وقف المذاكرة 🛑';
+        btn.textContent = 'وقف المذاكرة';
         btn.onclick = stopPomodoro;
-    };
 
+        document.getElementById('durationModal').style.display = 'none';
+    };
     const stopPomodoro = () => {
         if (pomodoroInterval) clearInterval(pomodoroInterval);
         pomodoroEndTime = null;
@@ -464,7 +497,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('pomodoroTimer').textContent = '25:00';
 
         const btn = document.getElementById('startPomodoroBtn');
-        btn.textContent = 'ابدأ المذاكرة 🔥';
+        btn.textContent = 'ابدأ المذاكرة';
         btn.onclick = startPomodoroFlow;
     };
 
@@ -477,7 +510,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             if (diff <= 0) {
                 stopPomodoro();
-                Swal.fire('عاش يا بطل! 🎉', 'خلصت مذاكرة.', 'success');
+                Swal.fire('عاش يا بطل!', 'خلصت مذاكرة.', 'success');
                 return;
             }
 

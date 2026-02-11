@@ -24,11 +24,15 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
 </head>
 
-<body>
-
+<body class="todo-page-body">
+    <div class="zen-bg-decoration">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
     <!-- Navbar -->
     <nav class="navbar">
         <div class="container">
@@ -65,28 +69,26 @@
     <header class="todo-simple-header">
         <div class="container header-flex">
             <div>
-                <h1 class="simple-title">مهامي اليومية 📝</h1>
+                <h1 class="simple-title" id="greetingTitle">مهامي اليومية 📝</h1>
                 <p class="simple-date" id="currentDateDisplay">...</p>
             </div>
             <div class="header-quote">
-                "إنجاز صغير كل يوم = نجاح كبير آخر السنة"
+                "وَأَنْ لَيْسَ لِلْإِنْسَانِ إِلَّا مَا سَعَى * وَأَنَّ سَعْيَهُ سَوْفَ يُرَى"
             </div>
         </div>
-    </header>
 
+    </header>
     <div class="todo-page">
         <div class="todo-container">
             <!-- Pomodoro Section -->
             <div class="pomodoro-box">
-                <div
-                    style="display: flex; justify-content: center; align-items: center; gap: 10px; font-weight: 800; font-size: 1.2rem; color: #1e293b; margin-bottom: 1rem;">
-                    <i class="fas fa-clock" style="color: #e53e3e;"></i>
-                    بومودورو المهام
+                <div class="timer-icon-area">
+                    <i class="fas fa-clock"></i>
                 </div>
                 <div class="timer-display" id="pomodoroTimer">25:00</div>
                 <button id="startPomodoroBtn"
-                    style="width: 100%; padding: 0.8rem; font-weight: 700; background-color: #ef4444; color: white; border: none; border-radius: 8px; cursor: pointer; transition: all 0.3s ease;">ابدأ
-                    المذاكرة 🔥</button>
+                    style="padding: 0.8rem 2rem; font-weight: 700; background-color: #ef4444; color: white; border: none; border-radius: 8px; cursor: pointer; transition: all 0.3s ease; display: block; margin: 0 auto; min-width: 200px;">ابدأ
+                    المذاكرة</button>
             </div>
 
             <!-- Overall Progress Card -->
@@ -111,8 +113,7 @@
                 </div>
             </div>
 
-            <!-- Quick Add Tags -->
-            <!-- Quick Add Tags Removed -->
+
 
             <!-- List Section -->
             <div id="todoList" class="todo-list">
@@ -185,6 +186,42 @@
     </div>
 
 
+    <!-- Pomodoro Duration Selection Modal -->
+    <div id="durationModal" class="modal-overlay">
+        <div class="modal-box duration-modal-box">
+            <div class="modal-icon" style="background: #FFF1F2; color: #E11D48;">
+                <i class="fas fa-stopwatch"></i>
+            </div>
+            <h3>مدة المذاكرة؟ ⏱️</h3>
+            <p>اختار الوقت اللي عاوز تذاكره</p>
+
+            <div class="duration-grid">
+                <button class="duration-chip recommended" onclick="window.selectDuration(25)">
+                    <span>25د</span>
+                </button>
+                <button class="duration-chip" onclick="window.selectDuration(50)">
+                    <span>50د</span>
+                </button>
+                <button class="duration-chip" onclick="window.selectDuration(60)">
+                    <span>1س</span>
+                </button>
+                <button class="duration-chip" onclick="window.selectDuration(90)">
+                    <span>1.5س</span>
+                </button>
+                <button class="duration-chip" onclick="window.selectDuration(120)">
+                    <span>2س</span>
+                </button>
+                <button class="duration-chip" onclick="window.selectDuration(180)">
+                    <span>3س</span>
+                </button>
+            </div>
+
+            <div class="modal-buttons" style="margin-top: 1.5rem;">
+                <button id="cancelDuration" class="btn-modal cancel" style="width: 100%;">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Footer -->
     <footer class="footer">
         <div class="container">
@@ -217,10 +254,6 @@
                 <i class="fas fa-user"></i>
                 <span>البروفايل</span>
             </a>
-            <!-- <a href="#" id="bottomLogoutBtn" class="bottom-nav-item">
-                <i class="fas fa-sign-out-alt"></i>
-                <span>خروج</span>
-            </a> -->
             <a href="admin.html" id="bottomAdminBtn" class="bottom-nav-item admin-link" style="display: none;">
                 <i class="fas fa-shield-alt"></i>
                 <span>Admin</span>
@@ -237,25 +270,13 @@
     <script type="module" src="assets/js/squad-notifications.js"></script>
     <script type="module" src="assets/js/todo.js"></script>
     <script>
-        // Inline script for date display and quick add
         document.addEventListener('DOMContentLoaded', () => {
             const dateEl = document.getElementById('currentDateDisplay');
-            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-            dateEl.textContent = new Date().toLocaleDateString('ar-EG', options);
+            if (dateEl) {
+                const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+                dateEl.textContent = new Date().toLocaleDateString('ar-EG', options);
+            }
         });
-
-        window.addQuickTask = (text, colorIndex) => {
-            const input = document.getElementById('mainTaskInput');
-            const addBtn = document.getElementById('addTaskBtn');
-            input.value = text;
-
-            // We need to trigger the add logic. Since todo.js is a module, we might not reach its internal functions directly if not exposed.
-            // But usually input value + click works if the event listener is set up.
-            // Let's try simulating a click or Enter.
-            input.focus();
-            // Optional: Auto submit? Maybe let user edit first.
-            // Let's just set focus for now so they can hit enter or edit.
-        };
     </script>
 </body>
 
