@@ -31,7 +31,9 @@
             --card-radius: 16px;
         }
 
-
+        body {
+            background-color: var(--bg-body);
+        }
 
         /* Reading Progress Bar */
         .reading-progress {
@@ -544,9 +546,13 @@
             direction: ltr;
         }
 
-        #lectureContent li {
+        #lectureContent ol li {
             margin-bottom: 1.5rem;
             position: relative;
+        }
+
+        /* Essential: Only increment counter for the LI itself */
+        #lectureContent ol>li {
             counter-increment: lecture-counter;
         }
 
@@ -555,12 +561,13 @@
             padding-left: 3.5rem !important;
         }
 
-        #lectureContent ol li .en::before {
+        /* Essential: Only show number for the FIRST .en directly inside the LI */
+        #lectureContent ol>li>.en::before {
             content: counter(lecture-counter);
             position: absolute;
             left: 14px;
-            top: 50%;
-            transform: translateY(-50%);
+            top: 25px;
+            /* Adjust for better alignment with text */
             width: 24px;
             height: 24px;
             background: var(--primary-color);
@@ -574,6 +581,30 @@
             z-index: 10;
             border: 2px solid white;
             box-shadow: 0 2px 8px rgba(30, 179, 245, 0.2);
+        }
+
+        /* Hide numbers for any further .en blocks (sub-sentences) inside the same LI */
+        #lectureContent ol>li>.en~.en::before {
+            display: none !important;
+        }
+
+        /* Ensure nested lists don't inherit the parent's enumeration style */
+        #lectureContent li ul,
+        #lectureContent li ol {
+            margin-top: 1rem;
+            padding-left: 1.5rem;
+        }
+
+        #lectureContent li ul li .en::before {
+            content: "\f111";
+            /* FontAwesome circle */
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            background: none;
+            color: var(--secondary-color);
+            box-shadow: none;
+            border: none;
+            font-size: 0.5rem;
         }
 
 
@@ -669,20 +700,6 @@
             margin: 3rem 0;
             border-radius: 15px;
             box-shadow: var(--shadow-md);
-        }
-
-        /* Specialized Scrollbar for Tables */
-        .table-wrapper::-webkit-scrollbar {
-            height: 8px;
-        }
-
-        .table-wrapper::-webkit-scrollbar-thumb {
-            background: rgba(30, 179, 245, 0.2);
-            border: 2px solid #ffffff;
-        }
-
-        .table-wrapper::-webkit-scrollbar-thumb:hover {
-            background: var(--primary-color);
         }
 
         table {
