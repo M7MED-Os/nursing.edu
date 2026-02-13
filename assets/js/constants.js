@@ -31,7 +31,7 @@ export const DEPARTMENTS = {
 // ========================================
 
 export const APP_CONFIG = {
-    CACHE_VERSION: 'v3.3', // Incremented for Phase 2 cleanup
+    CACHE_VERSION: 'v3.4', // Incremented for Phase 2 cleanup
     CACHE_TIME_PROFILE: 1, // 1 minute
     CACHE_TIME_STATS: 1,  // 1 minute for better sync
     CACHE_TIME_SUBJECTS: 1440, // 24 hours (static content)
