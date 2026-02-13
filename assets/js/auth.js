@@ -14,6 +14,38 @@ import { PRESENCE_UPDATE_INTERVAL, REGISTRATION_REDIRECT_DELAY, SUCCESS_REDIRECT
 let currentSession = null;
 let currentProfile = null;
 
+// ==========================
+// 0. Cache Version Management
+// ==========================
+
+/**
+ * Checks for app version update and clears cache if needed
+ */
+function checkVersionUpdate() {
+    const currentVersion = APP_CONFIG.CACHE_VERSION || 'v1.0';
+    const savedVersion = localStorage.getItem('app_version');
+
+    if (savedVersion !== currentVersion) {
+        console.log(`[Version] Updating from ${savedVersion} to ${currentVersion}. Clearing cache...`);
+
+        // Clear all localStorage items that start with 'cache_'
+        const keysToRemove = [];
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith('cache_')) {
+                keysToRemove.push(key);
+            }
+        }
+        keysToRemove.forEach(k => localStorage.removeItem(k));
+
+        // Save new version
+        localStorage.setItem('app_version', currentVersion);
+    }
+}
+
+// Run version check immediately
+checkVersionUpdate();
+
 /**
  * Enhanced Auth Check
  * Returns { user, profile } or redirects to login
